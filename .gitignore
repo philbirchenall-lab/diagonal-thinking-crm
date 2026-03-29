@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env.local
+.env.*.local
+*.local
+
+# CRM data file — never commit this, it's the live database
+Diagonal Thinking CRM Data - DO NOT DELETE.json
+
+# macOS
+.DS_Store
