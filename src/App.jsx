@@ -497,6 +497,14 @@ export default function App() {
   const companyToastTimerRef = useRef(null);
   const importFileRef = useRef(null);
   const dataLoadRef = useRef(null);
+  const contactsListRef = useRef(null);
+
+  function navigateToFilter(type) {
+    setTypeFilter(type);
+    setTimeout(() => {
+      contactsListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
 
   // Save contacts whenever they change (but not during initial load)
   useEffect(() => {
@@ -941,10 +949,10 @@ export default function App() {
 
           {/* Stats row */}
           <div className="grid grid-cols-2 gap-0 divide-x divide-y divide-line border-t border-line bg-white sm:grid-cols-3 lg:grid-cols-5 lg:divide-y-0">
-            <SummaryCard label="Total Contacts" value={contacts.length} />
-            <SummaryCard label="Clients" value={stats.counts.Client} />
-            <SummaryCard label="Warm Leads" value={stats.counts["Warm Lead"]} />
-            <SummaryCard label="Cold Leads" value={stats.counts["Cold Lead"]} />
+            <SummaryCard label="Total Contacts" value={contacts.length} onClick={() => navigateToFilter("All")} />
+            <SummaryCard label="Clients" value={stats.counts.Client} onClick={() => navigateToFilter("Client")} />
+            <SummaryCard label="Warm Leads" value={stats.counts["Warm Lead"]} onClick={() => navigateToFilter("Warm Lead")} />
+            <SummaryCard label="Cold Leads" value={stats.counts["Cold Lead"]} onClick={() => navigateToFilter("Cold Lead")} />
             <SummaryCard
               label="Projected Pipeline"
               value={formatCurrency(stats.projected)}
@@ -1152,7 +1160,7 @@ export default function App() {
           </div>
         </section>
 
-        <section className="mt-6 border border-line bg-white shadow-panel">
+        <section ref={contactsListRef} className="mt-6 border border-line bg-white shadow-panel">
           <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
             <div>
               <h2 className="font-editorial text-3xl font-semibold text-ink">Contact List</h2>
@@ -1797,9 +1805,16 @@ export default function App() {
   );
 }
 
-function SummaryCard({ label, value, className = "" }) {
+function SummaryCard({ label, value, className = "", onClick }) {
+  const interactive = Boolean(onClick);
   return (
-    <div className={`px-4 py-4 sm:px-5 sm:py-5 ${className}`}>
+    <div
+      className={`px-4 py-4 sm:px-5 sm:py-5 ${interactive ? "cursor-pointer transition-colors hover:bg-mist" : ""} ${className}`}
+      onClick={onClick}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={interactive ? (e) => e.key === "Enter" && onClick() : undefined}
+    >
       <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
         {label}
       </div>
