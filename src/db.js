@@ -42,6 +42,7 @@ function toSnake(contact) {
     date_added: contact.dateAdded ?? null,
     last_updated: contact.lastUpdated ?? null,
     linkedin_url: contact.linkedinUrl ?? null,
+    network_partner: contact.networkPartner ?? false,
   };
 }
 
@@ -60,6 +61,7 @@ function toCamel(row) {
     dateAdded: row.date_added ?? "",
     lastUpdated: row.last_updated ?? "",
     linkedinUrl: row.linkedin_url ?? "",
+    networkPartner: row.network_partner ?? false,
   };
 }
 

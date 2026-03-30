@@ -125,6 +125,7 @@ const emptyContact = () => ({
   source: "Manual",
   dateAdded: "",
   lastUpdated: "",
+  networkPartner: false,
 });
 
 function formatCurrency(value) {
@@ -484,6 +485,7 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
   const [serviceFilter, setServiceFilter] = useState("All");
+  const [networkPartnerFilter, setNetworkPartnerFilter] = useState(false);
   const [sortConfig, setSortConfig] = useState({
     key: "dateAdded",
     direction: "desc",
@@ -497,6 +499,14 @@ export default function App() {
   const companyToastTimerRef = useRef(null);
   const importFileRef = useRef(null);
   const dataLoadRef = useRef(null);
+  const contactsListRef = useRef(null);
+
+  function navigateToFilter(type) {
+    setTypeFilter(type);
+    setTimeout(() => {
+      contactsListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
 
   // Save contacts whenever they change (but not during initial load)
   useEffect(() => {
@@ -541,9 +551,10 @@ export default function App() {
           .toLowerCase()
           .includes(query);
       const matchesType = typeFilter === "All" || contact.type === typeFilter;
+      const matchesPartner = !networkPartnerFilter || contact.networkPartner === true;
       const matchesService =
         serviceFilter === "All" || contact.services.includes(serviceFilter);
-      return matchesSearch && matchesType && matchesService;
+      return matchesSearch && matchesType && matchesService && matchesPartner;
     });
 
     result.sort((left, right) => {
@@ -559,7 +570,7 @@ export default function App() {
     });
 
     return result;
-  }, [contacts, search, typeFilter, serviceFilter, sortConfig]);
+  }, [contacts, search, typeFilter, serviceFilter, sortConfig, networkPartnerFilter]);
 
   const stats = useMemo(() => {
     const counts = TYPE_OPTIONS.reduce(
@@ -578,10 +589,13 @@ export default function App() {
       .filter((contact) => contact.type === "Warm Lead")
       .reduce((sum, contact) => sum + (Number(contact.projectedValue) || 0), 0);
 
+    const networkPartnerCount = contacts.filter((c) => c.networkPartner).length;
+
     return {
       counts,
       projected,
       warmLeadValue,
+      networkPartnerCount,
       recent: [...contacts]
         .sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded))
         .slice(0, 5),
@@ -941,10 +955,15 @@ export default function App() {
 
           {/* Stats row */}
           <div className="grid grid-cols-2 gap-0 divide-x divide-y divide-line border-t border-line bg-white sm:grid-cols-3 lg:grid-cols-5 lg:divide-y-0">
-            <SummaryCard label="Total Contacts" value={contacts.length} />
-            <SummaryCard label="Clients" value={stats.counts.Client} />
-            <SummaryCard label="Warm Leads" value={stats.counts["Warm Lead"]} />
-            <SummaryCard label="Cold Leads" value={stats.counts["Cold Lead"]} />
+            <SummaryCard label="Total Contacts" value={contacts.length} onClick={() => navigateToFilter("All")} />
+            <SummaryCard label="Clients" value={stats.counts.Client} onClick={() => navigateToFilter("Client")} />
+            <SummaryCard label="Warm Leads" value={stats.counts["Warm Lead"]} onClick={() => navigateToFilter("Warm Lead")} />
+            <SummaryCard label="Cold Leads" value={stats.counts["Cold Lead"]} onClick={() => navigateToFilter("Cold Lead")} />
+            <SummaryCard
+              label="Network Partners"
+              value={stats.networkPartnerCount}
+              onClick={() => { setNetworkPartnerFilter(true); setTimeout(() => contactsListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }}
+            />
             <SummaryCard
               label="Projected Pipeline"
               value={formatCurrency(stats.projected)}
@@ -1148,11 +1167,20 @@ export default function App() {
                   </SelectInput>
                 </label>
               </div>
+              <label className="flex items-center gap-2.5 cursor-pointer select-none mt-1">
+                <input
+                  type="checkbox"
+                  checked={networkPartnerFilter}
+                  onChange={(e) => setNetworkPartnerFilter(e.target.checked)}
+                  className="h-4 w-4 rounded border-line accent-brand"
+                />
+                <span className="text-sm font-medium text-slate-700">Network Partners only</span>
+              </label>
             </div>
           </div>
         </section>
 
-        <section className="mt-6 border border-line bg-white shadow-panel">
+        <section ref={contactsListRef} className="mt-6 border border-line bg-white shadow-panel">
           <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
             <div>
               <h2 className="font-editorial text-3xl font-semibold text-ink">Contact List</h2>
@@ -1226,18 +1254,25 @@ export default function App() {
                         <div className="truncate text-slate-400">{contact.phone || ""}</div>
                       </td>
                       <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${
-                            TYPE_STYLES[contact.type]?.pill || TYPE_STYLES["Warm Lead"].pill
-                          }`}
-                        >
+                        <div className="flex flex-wrap gap-1">
                           <span
-                            className={`h-2 w-2 flex-shrink-0 rounded-full ${
-                              TYPE_STYLES[contact.type]?.dot || TYPE_STYLES["Warm Lead"].dot
+                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${
+                              TYPE_STYLES[contact.type]?.pill || TYPE_STYLES["Warm Lead"].pill
                             }`}
-                          />
-                          <span className="truncate">{contact.type}</span>
-                        </span>
+                          >
+                            <span
+                              className={`h-2 w-2 flex-shrink-0 rounded-full ${
+                                TYPE_STYLES[contact.type]?.dot || TYPE_STYLES["Warm Lead"].dot
+                              }`}
+                            />
+                            <span className="truncate">{contact.type}</span>
+                          </span>
+                          {contact.networkPartner && (
+                            <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 bg-amber-50 text-amber-700 ring-amber-200">
+                              Partner
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         {contact.services.length ? (
@@ -1315,18 +1350,25 @@ export default function App() {
                         {contact.email || "No email"}
                       </div>
                     </button>
-                    <span
-                      className={`shrink-0 inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs font-medium ring-1 ${
-                        TYPE_STYLES[contact.type]?.pill || TYPE_STYLES["Warm Lead"].pill
-                      }`}
-                    >
+                    <div className="flex flex-wrap gap-1 shrink-0">
                       <span
-                        className={`h-2 w-2 rounded-full ${
-                          TYPE_STYLES[contact.type]?.dot || TYPE_STYLES["Warm Lead"].dot
+                        className={`inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs font-medium ring-1 ${
+                          TYPE_STYLES[contact.type]?.pill || TYPE_STYLES["Warm Lead"].pill
                         }`}
-                      />
-                      {contact.type}
-                    </span>
+                      >
+                        <span
+                          className={`h-2 w-2 rounded-full ${
+                            TYPE_STYLES[contact.type]?.dot || TYPE_STYLES["Warm Lead"].dot
+                          }`}
+                        />
+                        {contact.type}
+                      </span>
+                      {contact.networkPartner && (
+                        <span className="inline-flex items-center rounded-sm px-2.5 py-1 text-xs font-medium ring-1 bg-amber-50 text-amber-700 ring-amber-200">
+                          Partner
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="mt-1.5 text-sm text-slate-600">
                     {contact.contactName || "No contact name"}
@@ -1462,6 +1504,17 @@ export default function App() {
                       <option key={source}>{source}</option>
                     ))}
                   </SelectInput>
+                </DetailField>
+                <DetailField label="Network Partner">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none mt-1">
+                    <input
+                      type="checkbox"
+                      checked={activeContact.networkPartner ?? false}
+                      onChange={(e) => updateActiveContact("networkPartner", e.target.checked)}
+                      className="h-4 w-4 rounded border-line accent-brand"
+                    />
+                    <span className="text-sm text-slate-700">This organisation is a network partner</span>
+                  </label>
                 </DetailField>
                 <DetailField label="Projected Value (GBP)">
                   <TextInput
@@ -1797,9 +1850,16 @@ export default function App() {
   );
 }
 
-function SummaryCard({ label, value, className = "" }) {
+function SummaryCard({ label, value, className = "", onClick }) {
+  const interactive = Boolean(onClick);
   return (
-    <div className={`px-4 py-4 sm:px-5 sm:py-5 ${className}`}>
+    <div
+      className={`px-4 py-4 sm:px-5 sm:py-5 ${interactive ? "cursor-pointer transition-colors hover:bg-mist" : ""} ${className}`}
+      onClick={onClick}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={interactive ? (e) => e.key === "Enter" && onClick() : undefined}
+    >
       <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
         {label}
       </div>
