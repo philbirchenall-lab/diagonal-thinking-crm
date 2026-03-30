@@ -7,8 +7,54 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+const MAILCHIMP_AUDIENCE_ID = "d89fc8d69c";
+const MAILCHIMP_SERVER = "us8";
+
+async function subscriberHash(email: string): Promise<string> {
+  const normalized = email.toLowerCase().trim();
+  const msgBuffer = new TextEncoder().encode(normalized);
+  const hashBuffer = await crypto.subtle.digest("MD5", msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function syncToMailchimp(
+  email: string,
+  firstName: string,
+  lastName: string,
+  company: string,
+  apiKey: string
+): Promise<void> {
+  const hash = await subscriberHash(email);
+  const url = `https://${MAILCHIMP_SERVER}.api.mailchimp.com/3.0/lists/${MAILCHIMP_AUDIENCE_ID}/members/${hash}`;
+
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Basic ${btoa(`anystring:${apiKey}`)}`,
+    },
+    body: JSON.stringify({
+      email_address: email.toLowerCase().trim(),
+      status_if_new: "subscribed",
+      merge_fields: {
+        FNAME: firstName,
+        LNAME: lastName,
+        COMPANY: company,
+        TYPE: "Warm Lead",
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error(`Mailchimp sync failed (${res.status}): ${err}`);
+  } else {
+    console.log(`Mailchimp sync OK for ${email}`);
+  }
+}
+
 serve(async (req: Request) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders, status: 204 });
   }
@@ -80,6 +126,18 @@ serve(async (req: Request) => {
         JSON.stringify({ error: "Failed to save your details. Please try again." }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
       );
+    }
+
+    // Sync to Mailchimp (non-blocking — failure doesn't break the response)
+    const mailchimpKey = Deno.env.get("MAILCHIMP_API_KEY");
+    if (mailchimpKey) {
+      syncToMailchimp(
+        email.trim().toLowerCase(),
+        first_name.trim(),
+        last_name.trim(),
+        company.trim(),
+        mailchimpKey
+      ).catch((err) => console.error("Mailchimp sync error:", err));
     }
 
     return new Response(

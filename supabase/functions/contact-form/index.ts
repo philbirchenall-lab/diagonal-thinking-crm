@@ -7,6 +7,56 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+const MAILCHIMP_AUDIENCE_ID = "d89fc8d69c";
+const MAILCHIMP_SERVER = "us8";
+
+async function subscriberHash(email: string): Promise<string> {
+  const normalized = email.toLowerCase().trim();
+  const msgBuffer = new TextEncoder().encode(normalized);
+  const hashBuffer = await crypto.subtle.digest("MD5", msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function syncToMailchimp(
+  email: string,
+  name: string,
+  company: string,
+  apiKey: string
+): Promise<void> {
+  const hash = await subscriberHash(email);
+  const url = `https://${MAILCHIMP_SERVER}.api.mailchimp.com/3.0/lists/${MAILCHIMP_AUDIENCE_ID}/members/${hash}`;
+
+  const parts = name.trim().split(/\s+/);
+  const fname = parts[0] ?? "";
+  const lname = parts.slice(1).join(" ");
+
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Basic ${btoa(`anystring:${apiKey}`)}`,
+    },
+    body: JSON.stringify({
+      email_address: email.toLowerCase().trim(),
+      status_if_new: "subscribed",
+      merge_fields: {
+        FNAME: fname,
+        LNAME: lname,
+        COMPANY: company ?? "",
+        TYPE: "Enquiry",
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error(`Mailchimp sync failed (${res.status}): ${err}`);
+  } else {
+    console.log(`Mailchimp sync OK for ${email}`);
+  }
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders, status: 204 });
@@ -58,7 +108,6 @@ serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Upsert the contact record
     const { error: contactError } = await supabase
       .from("contacts")
       .upsert(
@@ -80,14 +129,24 @@ serve(async (req: Request) => {
       );
     }
 
-    // Also log the message to an enquiries table if it exists
-    // (Run: CREATE TABLE enquiries (id uuid default gen_random_uuid() primary key, email text, message text, created_at timestamptz default now());)
+    // Log to enquiries table
     await supabase.from("enquiries").insert({
       email: email.trim().toLowerCase(),
       name: name.trim(),
       company: company ? company.trim() : null,
       message: message.trim(),
-    }).then(() => {}).catch(() => {}); // Silently skip if table doesn't exist yet
+    }).then(() => {}).catch(() => {});
+
+    // Sync to Mailchimp (non-blocking)
+    const mailchimpKey = Deno.env.get("MAILCHIMP_API_KEY");
+    if (mailchimpKey) {
+      syncToMailchimp(
+        email.trim().toLowerCase(),
+        name.trim(),
+        company?.trim() ?? "",
+        mailchimpKey
+      ).catch((err) => console.error("Mailchimp sync error:", err));
+    }
 
     return new Response(
       JSON.stringify({ success: true }),
