@@ -581,13 +581,15 @@ export default function App() {
       {},
     );
 
-    const projected = contacts.reduce(
-      (sum, contact) => sum + (Number(contact.projectedValue) || 0),
-      0,
-    );
-    const warmLeadValue = contacts
-      .filter((contact) => contact.type === "Warm Lead")
-      .reduce((sum, contact) => sum + (Number(contact.projectedValue) || 0), 0);
+    // Projected pipeline: Warm Leads only, deduplicated by company (take max value per company)
+    const warmLeadsForProjected = contacts.filter((c) => c.type === "Warm Lead");
+    const companyBestValues = new Map();
+    warmLeadsForProjected.forEach((c) => {
+      const key = (c.company || "").trim().toLowerCase() || c.id;
+      companyBestValues.set(key, Math.max(companyBestValues.get(key) ?? 0, Number(c.projectedValue) || 0));
+    });
+    const projected = [...companyBestValues.values()].reduce((sum, v) => sum + v, 0);
+    const warmLeadValue = projected;
 
     const networkPartnerCount = contacts.filter((c) => c.networkPartner).length;
 
