@@ -1,0 +1,4343 @@
+[
+  {
+    "company": "AEC",
+    "contactName": "Emma Carter",
+    "email": "emma.carter@aec.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Additional contacts: mandy.reid@aec.uk (Mandy Reid), emma.carter@aec.uk (Emma Carter)",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "AEC",
+    "contactName": "Mandy Reid",
+    "email": "mandy.reid@aec.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Additional contacts: mandy.reid@aec.uk (Mandy Reid), emma.carter@aec.uk (Emma Carter)",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "AEC",
+    "contactName": "Jarrod Kay",
+    "email": "jarrod.kay@aec.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Additional contacts: mandy.reid@aec.uk (Mandy Reid), emma.carter@aec.uk (Emma Carter)",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Abri",
+    "contactName": "Mary Gibbons",
+    "email": "hello@abri.co.uk",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Chief Operating Officer. South of England. Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "Acis Group",
+    "contactName": "Claire Woodward",
+    "email": "claire.woodward@acisgroup.co.uk",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Director of Community Investment. Lincolnshire. Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "Activaire",
+    "contactName": "Lara",
+    "email": "lara@activaire.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Multiple invoices FY2020-21. adesh@activaire.com & lara@activaire.com on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Adrian Bentley – Brandforth",
+    "contactName": "Adrian Bentley",
+    "email": "adrian@brandforth.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk"
+    ],
+    "projectedValue": 0,
+    "notes": "AI Training Day (50% deposit). adrian@brandforth.co.uk on mailing list. FY2023-24.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Aesthetica",
+    "contactName": "Fruzsina Vida",
+    "email": "fruzsina.vida@aestheticamagazine.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk",
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Delivery of 2x workshops within Creative Business Skills programme (2024). Helen on mailing list: helen@aestheticamagazine.com. Fruzsina Vida is Projects Administrator (CBSA). Additional: Helen Osbond (helen.osbond@aestheticamagazine.com). Finance: finance@aestheticamagazine.com",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Aesthetica",
+    "contactName": "Helen Osbond",
+    "email": "helen.osbond@aestheticamagazine.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk",
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Delivery of 2x workshops within Creative Business Skills programme (2024). Helen on mailing list: helen@aestheticamagazine.com. Fruzsina Vida is Projects Administrator (CBSA). Additional: Helen Osbond (helen.osbond@aestheticamagazine.com). Finance: finance@aestheticamagazine.com",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Alliance Business School",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Andy Hall",
+    "contactName": "Andy Hall",
+    "email": "commander269@googlemail.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Single small invoice FY2021-22.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Angus Housing Association",
+    "contactName": "Linlay Anderson",
+    "email": "admin@aha.org.uk",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Director of Housing Services. Scotland. Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "Ashfield MedComms",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "BHA for Equality",
+    "contactName": "Sophia Mulliss",
+    "email": "sophia@thebha.org.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "Ticket for The AI Advantage: Next Level (RNCM, Manchester). sophia@thebha.org.uk on mailing list. FY2025-26.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Beatles Story",
+    "contactName": "Mary Chadwick",
+    "email": "marychadwick@beatlesstory.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: beatlesstory.com",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Beaver Road",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Bellyfeel Media Limited",
+    "contactName": "Krish",
+    "email": "krish@bellyfeel.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Consultancy: UKGF grant application. krish@bellyfeel.co.uk on mailing list. FY2022-23 & FY2024-25.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Boxed Off TV Ltd",
+    "contactName": "David",
+    "email": "david@boxedoff.tv",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Breaking the Interactive Barrier — final payment FY2024-25. Interactive TV/digital work.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Bradford Digital Creatives",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Broadland Housing",
+    "contactName": "Michael Newey",
+    "email": "michael.newey@broadlandgroup.org",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Chief Executive. Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "Brook Therm",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "CAS (Computing at Schools)",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "CHP",
+    "contactName": "Isabel Varey",
+    "email": "governance@chp.org.uk",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Customer Service Director. Essex. Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "CTConsults",
+    "contactName": "Pam",
+    "email": "pam@ctconsults.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Multiple invoices FY2021-22 & FY2022-23. alex@ctconsults.com on mailing list. Also: Lead for AI Workshop — Alex Saint (alex@ctconsults.com).",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Castles & Coasts Housing Association",
+    "contactName": "Marie Hardeman",
+    "email": "cs@castlesandcoasts.co.uk",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Executive Director Customers & Communities. North West/Cumbria. Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "Clancy Consulting",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Clarion Housing Group",
+    "contactName": "Catrin Jones",
+    "email": "catrin.jones@clarionhg.com",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Chief People, Data and Digital Officer. UK's largest HA. Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "Clever-IT",
+    "contactName": "Ben Griffiths",
+    "email": "ben@clever-it.com",
+    "phone": "07538 577 928",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Ben Griffiths is Managing Director, Cloud Clever Ltd t/as Clever IT. Active relationship Mar 2026.",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Cloud Energy Software",
+    "contactName": "",
+    "email": "accounts@cloudenergysoftware.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Multiple invoices FY2021-22. Energy software client.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Cloud Enterprise",
+    "contactName": "",
+    "email": "accounts@cloudenterprise.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Multiple invoices FY2020-22. Likely tech/SaaS client.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "CogniSoft Ltd",
+    "contactName": "Alicia Bradley",
+    "email": "",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "Ticket for The AI Advantage: Next Level (RNCM, Manchester). Sale, Manchester. FY2025-26.",
+    "source": "Invoices"
+  },
+  {
+    "company": "Connexin",
+    "contactName": "Jason Legget",
+    "email": "jason.legget@connexin.co.uk",
+    "phone": "07799 034 973",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Jason Legget was Public Sector & Enterprise Solution Sales. NOTE: Auto-reply Sep 2025 says he has left Connexin - contact may need updating. Additional: j.legget@connexin.co.uk. Auto-reply noted Sep 2024.",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Contollo Group Ltd",
+    "contactName": "Ruth Percival",
+    "email": "ruth.percival@contollogroup.com",
+    "phone": "",
+    "type": "Client",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Primary contact at Contollo.",
+    "source": "Invoices"
+  },
+  {
+    "company": "Contollo Group Ltd",
+    "contactName": "James Massey",
+    "email": "j.massey@tace.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Intermediary via TACE.",
+    "source": "Invoices"
+  },
+  {
+    "company": "Contollo Group Ltd",
+    "contactName": "Ellis Goodfellow",
+    "email": "",
+    "phone": "",
+    "type": "Client",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Associated subsidiary contact.",
+    "source": "Invoices"
+  },
+  {
+    "company": "Convensis",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Cooperatives UK",
+    "contactName": "Amaia Diaz",
+    "email": "amaia.diaz@uk.coop",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "AI Advantage Workshop — staff session. Holyoake House, Hanover Street, Manchester. Invoices FY2024-25 & FY2025-26. Amy Gittins is Digital & IT Manager. Additional contacts: Rose Marley (rose.marley@uk.coop), Amaia Diaz (amaia.diaz@uk.coop). Finance: finace@uk.coop",
+    "source": "Squarespace"
+  },
+  {
+    "company": "Cooperatives UK",
+    "contactName": "Rose Marley",
+    "email": "rose.marley@uk.coop",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "AI Advantage Workshop — staff session. Holyoake House, Hanover Street, Manchester. Invoices FY2024-25 & FY2025-26. Amy Gittins is Digital & IT Manager. Additional contacts: Rose Marley (rose.marley@uk.coop), Amaia Diaz (amaia.diaz@uk.coop). Finance: finace@uk.coop",
+    "source": "Squarespace"
+  },
+  {
+    "company": "Cooperatives UK",
+    "contactName": "Amy Gittins",
+    "email": "Amy.Gittins@uk.coop",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "AI Advantage Workshop — staff session. Holyoake House, Hanover Street, Manchester. Invoices FY2024-25 & FY2025-26. Amy Gittins is Digital & IT Manager. Additional contacts: Rose Marley (rose.marley@uk.coop), Amaia Diaz (amaia.diaz@uk.coop). Finance: finace@uk.coop",
+    "source": "Squarespace"
+  },
+  {
+    "company": "Creative England",
+    "contactName": "Maeve Reynolds / Olivia Savage",
+    "email": "maeve.reynolds@creativeengland.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Consultancy",
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Long-running client: market research (2021), events/programmes (2022-24), AI work (2024-25). olivia.savage@wearecreative.uk on mailing list (now at We Are Creative). Suite 7, MediaCityUK.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Creative Enterprise",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Cube HR",
+    "contactName": "Lisa",
+    "email": "lisa@cubehr.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Single invoice FY2021-22.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Cuckoo Design",
+    "contactName": "Rachel",
+    "email": "rachel@cuckoodesign.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Multiple small invoices FY2020-21. Design agency.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Cultch Vultcha",
+    "contactName": "Chris Peacock",
+    "email": "c.peacock1@icloud.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "Ticket for The AI Advantage: Next Level. FY2025-26. Credit note also issued.",
+    "source": "Squarespace"
+  },
+  {
+    "company": "Curated Place Ltd",
+    "contactName": "Andy Brydon",
+    "email": "info@curatedplace.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Consultancy"
+    ],
+    "projectedValue": 0,
+    "notes": "Development of CBDP AI course programme and materials for 6x workshops. Manchester. FY2025-26.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "DISC College",
+    "contactName": "",
+    "email": "ezra@digitaladvantage.org.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk"
+    ],
+    "projectedValue": 0,
+    "notes": "AI Workshop for Staff. ezra@digitaladvantage.org.uk & fatima.h@disc.ac.uk on mailing list. FY2023-24.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "DMA",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Digital Advantage",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Dinosaur",
+    "contactName": "Nicola",
+    "email": "nicola@dinosaur.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Brown bag + blog exploration (writing/presentation) FY2023-24. nicola@ & mark@dinosaur.co.uk on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Discovery Education",
+    "contactName": "Phil Birchinall",
+    "email": "",
+    "phone": "",
+    "type": "Client",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "ADA AI Pilot (ICA&SOW#1). US-based edtech company, large project. FY2024-25. Phil's internal email: pbirchinall@discoveryed.com. No Gmail email thread found - contact may be from referral or in-person. Contact at Discovery Education. Different person from Phil Birchenall (owner).",
+    "source": "Invoices"
+  },
+  {
+    "company": "Dustid",
+    "contactName": "Michael Livingstone",
+    "email": "michael.livingstone@dustid.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "Ticket for The AI Advantage: Next Level (RNCM, Manchester). FY2025-26.",
+    "source": "Squarespace"
+  },
+  {
+    "company": "Dynamix - James Wight",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "EPNE",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Ear To The Ground",
+    "contactName": "Dolan Hewison",
+    "email": "dolan@eartotheground.org",
+    "phone": "07809 708...",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Largest historical client — 27+ invoices FY2020-22. owen.laverty@ & callummacgregor@eartotheground.agency on mailing list. Content/copywriting retainer. Dolan Hewison is COO. Additional: Callum MacGregor. Finance: accounts@eartotheground.org",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Ear To The Ground",
+    "contactName": "Callum MacGregor",
+    "email": "",
+    "phone": "07809 708...",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Largest historical client — 27+ invoices FY2020-22. owen.laverty@ & callummacgregor@eartotheground.agency on mailing list. Content/copywriting retainer. Dolan Hewison is COO. Additional: Callum MacGregor. Finance: accounts@eartotheground.org",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Enterprise Control Systems",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Feedfirst",
+    "contactName": "Simon Alexander",
+    "email": "",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "1 Day AI Training — The AI Advantage. Kelsall, Cheshire. FY2025-26.",
+    "source": "Invoices"
+  },
+  {
+    "company": "Flagship Group / Bromford",
+    "contactName": "Rohini Stewart",
+    "email": "rohini.stewart@bromford.co.uk",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Chief Integration Officer (post merger Feb 2025). Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "Freudenberg Home and Cleaning Solutions Limited",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Futures Housing Group",
+    "contactName": "Nicola Hope",
+    "email": "nicola.hope@futureshg.co.uk",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Group Director Business Change & Strategy. East Midlands. Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "GM Colleges FI CPD - Tom",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Gare La Bete Watches",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Genre Music",
+    "contactName": "Nathan Burroughs",
+    "email": "nathan@genremusic.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course",
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Earlier work: Vision/Mission/Values (Non-AI). Later: The AI Advantage (discounted rate). Great Ancoats Street, Manchester. nathan@genremusic.co.uk on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Glasgow",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Great Northern Events",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Greater Manchester Chamber of Commerce",
+    "contactName": "Clare Clark",
+    "email": "phoebe.wakeman@gmchamber.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "Contra deal on The AI Advantage (no money exchanged). Elliot House, Deansgate. phoebe.wakeman@ & chris.fletcher@gmchamber.co.uk on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Greatwell Homes",
+    "contactName": "Chris Holloway",
+    "email": "chris.holloway@greatwellhomes.org.uk",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Executive Director. Wellingborough. Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "HABI",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "HOST Salford",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Heamar Company Limited",
+    "contactName": "Dave Martin",
+    "email": "david.martin@heamar.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk",
+      "AI Action Day"
+    ],
+    "projectedValue": 0,
+    "notes": "AI Leadership Workshop (deposit) + AI Staff Development (deposit). Congleton. FY2024-25.",
+    "source": "Squarespace"
+  },
+  {
+    "company": "Heard Storytelling",
+    "contactName": "Colette",
+    "email": "colette@heardstorytelling.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "StoryLab copy, Nuffield Education Pack, workshop revisions. FY2022-23 & FY2023-24.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Heaton Group",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Copywriting POs FY2020-21.",
+    "source": "Invoices"
+  },
+  {
+    "company": "Home Group",
+    "contactName": "Mark Henderson",
+    "email": "mark.henderson@homegroup.org.uk",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Chief Executive (retiring 2026). 62,000 homes nationally. Newcastle HQ. Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "Homes England",
+    "contactName": "",
+    "email": "jon.sandford@homesengland.gov.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: homesengland.gov.uk",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Hopwood Hall College",
+    "contactName": "Lisa Vincent",
+    "email": "Lisa.Vincent@hopwood.ac.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk"
+    ],
+    "projectedValue": 0,
+    "notes": "Presentation at CDI Roadshow (Oct 2024). Middleton, Manchester. lisa.vincent@hopwood.ac.uk on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Influential Agency",
+    "contactName": "",
+    "email": "hulme@thisisinfluential.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: thisisinfluential.com",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Innovate UK",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Innovate UK / BFI",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "JMW Solicitors",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Jack Freedman: Cat & Mouse Theatre",
+    "contactName": "Jack Freedman",
+    "email": "freedjack@gmail.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Jayne Compton – Switchflicker",
+    "contactName": "Jayne Compton",
+    "email": "jayne@switchflicker.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Consultancy work FY2022-23. jayne@switchflicker.co.uk on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Jon Turner – Kilogramme Animation",
+    "contactName": "Jon Turner",
+    "email": "jon.turner@kilogramme.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Consultancy FY2022-23. jon.turner@kilogramme.co.uk on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Kelsey Miller – Animalz Inc.",
+    "contactName": "Kelsey Miller",
+    "email": "kelsey@animalz.co",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Content/writing work FY2021-22. NYC-based content agency.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Knowledge Transfer Network Limited",
+    "contactName": "Chris Filip. Finance email: finance@ktn-uk.org",
+    "email": "",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Consultancy",
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Earlier work: TV & Gaming event workshop (Non-AI). Later: delivery work for Innovate UK Creative Catalyst. rachel.beach@iukbc.org.uk on mailing list. Rachel Beach is Knowledge Transfer Manager - Digital Economy & Creative Industries. Additional contact: Chris Filip. Finance email: finance@ktn-uk.org (for invoices only)",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Knowledge Transfer Network Limited",
+    "contactName": "Rachel Beach",
+    "email": "rachel.beach@iuk.ktn-uk.org",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Consultancy",
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Earlier work: TV & Gaming event workshop (Non-AI). Later: delivery work for Innovate UK Creative Catalyst. rachel.beach@iukbc.org.uk on mailing list. Rachel Beach is Knowledge Transfer Manager - Digital Economy & Creative Industries. Additional contact: Chris Filip. Finance email: finance@ktn-uk.org (for invoices only)",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Lancashire Environmental Services",
+    "contactName": "Janis McCann",
+    "email": "janis.mccann@lancashireenvironmentalservices.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Single invoice FY2021-22.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Leeds Beckett University",
+    "contactName": "",
+    "email": "d.p.turner@leedsbeckett.ac.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk"
+    ],
+    "projectedValue": 0,
+    "notes": "Talk/workshop. Leeds. FY2023-24.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Liverpool BID",
+    "contactName": "Chloe Gaughan",
+    "email": "chloe.gaughan@liverpoolbidcompany.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk"
+    ],
+    "projectedValue": 0,
+    "notes": "Prep and delivery of AI Workshop session. chloe.gaughan@ & katie.bentley@liverpoolbidcompany.com on mailing list. FY2025-26.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Livin Housing Limited",
+    "contactName": "Eileen Cotterill",
+    "email": "eileen.cotterill@livin.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Retainer"
+    ],
+    "projectedValue": 0,
+    "notes": "Multi-invoice AI Support retainer. Eileen Cotterill & Alan Boddy on mailing list. DurhamGate, Spennymoor. Additional contacts: Tommy Edmundson (IT, tommy.edmundson@livin.co.uk), Camilla Race (People & OD, camilla.race@livin.co.uk)",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Livin Housing Limited",
+    "contactName": "Tommy Edmundson",
+    "email": "tommy.edmundson@livin.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Retainer"
+    ],
+    "projectedValue": 0,
+    "notes": "Multi-invoice AI Support retainer. Eileen Cotterill & Alan Boddy on mailing list. DurhamGate, Spennymoor. Additional contacts: Tommy Edmundson (IT, tommy.edmundson@livin.co.uk), Camilla Race (People & OD, camilla.race@livin.co.uk)",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Livin Housing Limited",
+    "contactName": "Camilla Race",
+    "email": "camilla.race@livin.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Retainer"
+    ],
+    "projectedValue": 0,
+    "notes": "Multi-invoice AI Support retainer. Eileen Cotterill & Alan Boddy on mailing list. DurhamGate, Spennymoor. Additional contacts: Tommy Edmundson (IT, tommy.edmundson@livin.co.uk), Camilla Race (People & OD, camilla.race@livin.co.uk)",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Love2Shop",
+    "contactName": "Katherine Scott",
+    "email": "katherine.scott@love2shop.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk"
+    ],
+    "projectedValue": 0,
+    "notes": "Prep and delivery of AI presentation. 20 Chapel Street, Liverpool. katherine.scott@love2shop.co.uk on mailing list. FY2025-26.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Lucky Ghost",
+    "contactName": "James",
+    "email": "james@luckyghost.studio",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Creative Enterprise Business Planning Project FY2023-24. james@luckyghost.studio on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Luke Staton",
+    "contactName": "Luke Staton",
+    "email": "luke@lukestaton.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Single invoice FY2022-23.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "MCC",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "MHA",
+    "contactName": "Michelle Mullany",
+    "email": "michelle.mullany@mha.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: mha.co.uk",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "MMU – Business School & Student Hub",
+    "contactName": "Dr Nader Virk",
+    "email": "",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "AI Advantage series — webinars & workshops. Multiple invoices FY2024-25 & FY2025-26. g.farrugia@mmu.ac.uk, s.lowry@mmu.ac.uk & others on mailing list. George Farrugia is Lecturer in Enterprise Practice, Centre for Enterprise. Additional contacts: David Edmundson-Bird (d.edmundson-bird@mmu.ac.uk), Emma Holt (e.holt@mmu.ac.uk), Dr Nader Virk. Finance: invoices@mmu.ac.uk (for invoices only)",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "MMU – Business School & Student Hub",
+    "contactName": "George Farrugia",
+    "email": "g.farrugia@mmu.ac.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "AI Advantage series — webinars & workshops. Multiple invoices FY2024-25 & FY2025-26. g.farrugia@mmu.ac.uk, s.lowry@mmu.ac.uk & others on mailing list. George Farrugia is Lecturer in Enterprise Practice, Centre for Enterprise. Additional contacts: David Edmundson-Bird (d.edmundson-bird@mmu.ac.uk), Emma Holt (e.holt@mmu.ac.uk), Dr Nader Virk. Finance: invoices@mmu.ac.uk (for invoices only)",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "MMU – Business School & Student Hub",
+    "contactName": "Emma Holt",
+    "email": "e.holt@mmu.ac.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "AI Advantage series — webinars & workshops. Multiple invoices FY2024-25 & FY2025-26. g.farrugia@mmu.ac.uk, s.lowry@mmu.ac.uk & others on mailing list. George Farrugia is Lecturer in Enterprise Practice, Centre for Enterprise. Additional contacts: David Edmundson-Bird (d.edmundson-bird@mmu.ac.uk), Emma Holt (e.holt@mmu.ac.uk), Dr Nader Virk. Finance: invoices@mmu.ac.uk (for invoices only)",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "MMU – Business School & Student Hub",
+    "contactName": "David Edmundson-Bird",
+    "email": "d.edmundson-bird@mmu.ac.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "AI Advantage series — webinars & workshops. Multiple invoices FY2024-25 & FY2025-26. g.farrugia@mmu.ac.uk, s.lowry@mmu.ac.uk & others on mailing list. George Farrugia is Lecturer in Enterprise Practice, Centre for Enterprise. Additional contacts: David Edmundson-Bird (d.edmundson-bird@mmu.ac.uk), Emma Holt (e.holt@mmu.ac.uk), Dr Nader Virk. Finance: invoices@mmu.ac.uk (for invoices only)",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Manchester Digital",
+    "contactName": "Katie Gallagher",
+    "email": "katie@manchesterdigital.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "The AI Advantage (reduced rate / deposit). Manchester Technology Centre. katie@manchesterdigital.com on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Manchester Histories",
+    "contactName": "Karen Shannon",
+    "email": "karen@manchesterhistories.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course",
+      "AI Talk",
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Multiple services: AI Workshop (FY2023-24), AI training & support (FY2024-25), plus earlier scoping work. Mansfield Cooper Bldg. karen@ & janine@manchesterhistories.co.uk on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Matt Wilden - Rencai",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Media City Innovation Hub",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Melville Housing Association",
+    "contactName": "Kirsten Dean",
+    "email": "kdean@melville.org.uk",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Depute CEO — Finance & Corporate Services. Scotland/Midlothian. Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "Microbiological Solutions",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Modern Audiences Conference",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Nicholas Rhodes",
+    "contactName": "Nicholas Rhodes",
+    "email": "nicholas@outsnapped.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Photography/digital work FY2021-22.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Northern Gritstone Innovation Services",
+    "contactName": "James Hadley",
+    "email": "james.hadley@northern-gritstone.com",
+    "phone": "",
+    "type": "Client",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Presentation at NG Portfolio Day 16/10/25. No.1 Circle Square, Manchester. Multiple Northern Gritstone invoices FY2025-26.",
+    "source": "Invoices"
+  },
+  {
+    "company": "Northern Gritstone Innovation Services",
+    "contactName": "Frances Garside",
+    "email": "",
+    "phone": "",
+    "type": "Client",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Presentation at NG Portfolio Day 16/10/25. No.1 Circle Square, Manchester. Multiple Northern Gritstone invoices FY2025-26.",
+    "source": "Invoices"
+  },
+  {
+    "company": "Northern Gritstone Innovation Services",
+    "contactName": "Joanne Hosker",
+    "email": "",
+    "phone": "",
+    "type": "Client",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Presentation at NG Portfolio Day 16/10/25. No.1 Circle Square, Manchester. Multiple Northern Gritstone invoices FY2025-26.",
+    "source": "Invoices"
+  },
+  {
+    "company": "Northumbria Water Group",
+    "contactName": "Elouise Leonard",
+    "email": "",
+    "phone": "+44 7958 746051",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Dr Angela MacOscar, Head of Innovation. Additional: Nigel Watson (nigel.watson@nwl.co.uk, former CIO), Michelle Todd-Davis (Skills/Workforce), Michael Moore (People Manager), John Burluraux (Technical Training), Elouise Leonard.",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Northumbria Water Group",
+    "contactName": "John Burluraux",
+    "email": "",
+    "phone": "+44 7958 746051",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Dr Angela MacOscar, Head of Innovation. Additional: Nigel Watson (nigel.watson@nwl.co.uk, former CIO), Michelle Todd-Davis (Skills/Workforce), Michael Moore (People Manager), John Burluraux (Technical Training), Elouise Leonard.",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Northumbria Water Group",
+    "contactName": "Michael Moore",
+    "email": "",
+    "phone": "+44 7958 746051",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Dr Angela MacOscar, Head of Innovation. Additional: Nigel Watson (nigel.watson@nwl.co.uk, former CIO), Michelle Todd-Davis (Skills/Workforce), Michael Moore (People Manager), John Burluraux (Technical Training), Elouise Leonard.",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Northumbria Water Group",
+    "contactName": "Angela Macoscar",
+    "email": "angela.macoscar@nwl.co.uk",
+    "phone": "+44 7958 746051",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Dr Angela MacOscar, Head of Innovation. Additional: Nigel Watson (nigel.watson@nwl.co.uk, former CIO), Michelle Todd-Davis (Skills/Workforce), Michael Moore (People Manager), John Burluraux (Technical Training), Elouise Leonard.",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Northumbria Water Group",
+    "contactName": "Nigel Watson",
+    "email": "nigel.watson@nwl.co.uk",
+    "phone": "+44 7958 746051",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Dr Angela MacOscar, Head of Innovation. Additional: Nigel Watson (nigel.watson@nwl.co.uk, former CIO), Michelle Todd-Davis (Skills/Workforce), Michael Moore (People Manager), John Burluraux (Technical Training), Elouise Leonard.",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Northumbria Water Group",
+    "contactName": "Michelle Todd-Davis",
+    "email": "",
+    "phone": "+44 7958 746051",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Dr Angela MacOscar, Head of Innovation. Additional: Nigel Watson (nigel.watson@nwl.co.uk, former CIO), Michelle Todd-Davis (Skills/Workforce), Michael Moore (People Manager), John Burluraux (Technical Training), Elouise Leonard.",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "OKRE",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "OPEX",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Ollie & Sarp",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Pabla + Pabla",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Pallet People",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Palmer Squared",
+    "contactName": "Helen",
+    "email": "helen@palmersquared.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "Delivery of The AI Advantage course. helen@palmersquared.co.uk on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Peaks and Plains Housing",
+    "contactName": "Emma Richman",
+    "email": "e.richman@peaksplains.org",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Executive Director of Operations. Cheshire. Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "Planit",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Poplar HARCA",
+    "contactName": "Liz Williams",
+    "email": "liz.williams@poplarharca.co.uk",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Chief Operating Officer. Tower Hamlets, London. Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "Port of Tyne Authority",
+    "contactName": "Jo North",
+    "email": "purchasing@portoftyne.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Consultancy"
+    ],
+    "projectedValue": 0,
+    "notes": "AI Consultancy at Maritime Innovation Week. South Shields. Multiple invoices FY2024-25 & FY2025-26. jo.north@portoftyne.co.uk also known.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Radiology Management Solutions Ltd",
+    "contactName": "Jason Massa",
+    "email": "",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "50% deposit on The AI Advantage 1-day workshop. Deansgate, Manchester. FY2025-26.",
+    "source": "Invoices"
+  },
+  {
+    "company": "Richard Evans – Cold Star Media",
+    "contactName": "Richard Evans",
+    "email": "richardevans001@icloud.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Single invoice FY2020-21.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Ripple & Co",
+    "contactName": "Tracey Gerhold",
+    "email": "tracey@rippleandco.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk",
+      "AI Action Day"
+    ],
+    "projectedValue": 0,
+    "notes": "1 Day AI Action Day. FY2025-26.",
+    "source": "Squarespace"
+  },
+  {
+    "company": "Rochdale Creates",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Rochdale Development Agency",
+    "contactName": "Suman Kamran",
+    "email": "",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Consultancy"
+    ],
+    "projectedValue": 0,
+    "notes": "AI Programme Fees — as per proposal. Number One Riverside, Rochdale. FY2025-26.",
+    "source": "Invoices"
+  },
+  {
+    "company": "SGS College",
+    "contactName": "Jake Barnes",
+    "email": "jake.barnes@sgscol.ac.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk",
+      "AI Action Day"
+    ],
+    "projectedValue": 0,
+    "notes": "Creative AI Training at the Staff Conference. jake.barnes@sgscol.ac.uk on mailing list. FY2023-24.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Saffron Cherry",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Salford City College",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk"
+    ],
+    "projectedValue": 0,
+    "notes": "Talk at CDI MediaCity Roadshow. FY2023-24.",
+    "source": "Invoices"
+  },
+  {
+    "company": "Sanctuary Housing",
+    "contactName": "David Shaw",
+    "email": "david.shaw@sanctuary-housing.co.uk",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Director of Operations – Supported Living. National provider. Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "Scott PR",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Seek Social",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Shaping Cloud",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "SharpFutures Manchester CIC",
+    "contactName": "Sarah Taylor",
+    "email": "sarah.taylor@sharpfutures.org.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk"
+    ],
+    "projectedValue": 0,
+    "notes": "Prep and delivery of 2x AI workshops. The Sharp Project, Manchester. tom.clarke@ & lee.stanley@sharpfutures.org.uk also on mailing list.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "SheInspires",
+    "contactName": "",
+    "email": "gulnaz@sheinspiresfoundation.org.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: sheinspiresfoundation.org.uk",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Small World",
+    "contactName": "Tim Crescenti",
+    "email": "timcrescenti@smallworldift.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: smallworldift.com",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "South Gloucester and Stroud College",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Steven Hunt",
+    "contactName": "Anne",
+    "email": "anne@stevenhunt.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Via Rach",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Stonewater",
+    "contactName": "Gareth Lloyd",
+    "email": "gareth.lloyd@stonewater.org",
+    "phone": "",
+    "type": "Cold Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Chief Information and Transformation Officer. 82,000+ customers. Source: housing_ai_advantage_hotlist",
+    "source": "Income & Expenditure / Business Dev"
+  },
+  {
+    "company": "Supportive Care",
+    "contactName": "Lucy Flynn",
+    "email": "lucy.flynn@supportive.care",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk"
+    ],
+    "projectedValue": 0,
+    "notes": "Delivery of AI workshop. Cheadle, Cheshire. FY2024-25.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Sutcliffe",
+    "contactName": "William Baldwin",
+    "email": "william.baldwin@sutcliffe.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Via Rach — proposal for TAA. £2,500",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "TM Duche",
+    "contactName": "Accounts Payable",
+    "email": "",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "50% deposit on The AI Advantage 1-day workshop. Station House, Knutsford. FY2025-26.",
+    "source": "Invoices"
+  },
+  {
+    "company": "TRC Media",
+    "contactName": "Amy",
+    "email": "amy.baddeley@trcmedia.org",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Tall Story Games",
+    "contactName": "Emma",
+    "email": "emma@consideredcreative.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Game/content work FY2020-21. emma@consideredcreative.com & tom@tallstorygames.com on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "The Albany",
+    "contactName": "Gavin Barlow",
+    "email": "gavin.barlow@thealbany.org.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "The Fashion Network",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "The Fifth Sector Ltd",
+    "contactName": "Sara / Lynne / Iain",
+    "email": "sara@thefifthsector.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Consultancy"
+    ],
+    "projectedValue": 0,
+    "notes": "Mastering AI Programme deposit. Liverpool. Multiple contacts on mailing list: sara@, lynne@, iain@thefifthsector.co.uk",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "The Slate Works",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Thornton and Lowe",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Tina Redford – Left Coast",
+    "contactName": "Tina Redford",
+    "email": "redfordtina@gmail.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk"
+    ],
+    "projectedValue": 0,
+    "notes": "AI half-day. redfordtina@gmail.com on mailing list. FY2023-24.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Tom and Dee",
+    "contactName": "Tom",
+    "email": "tom@dogpackbox.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Small invoices FY2021-22.",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Trafford Council",
+    "contactName": "Claire Saville",
+    "email": "claire.saville@trafford.gov.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Consultancy",
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Strategic planning, events, AI consultancy across multiple years. louise.burgess@ & simon.davis@ & claire.saville@trafford.gov.uk known. Waterside House, Sale. Claire Saville is Marketing Manager (p/t), Waterside & Creative Industries Trafford. Additional: Emily Lyons (emily.lyons@trafford.gov.uk) Also: Lead for 'Creative Industries Trafford' work (same contact, Claire Saville).",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Trafford Council",
+    "contactName": "Emily Lyons (emily.lyons@trafford.gov.uk) Also: Lead for 'Creative Industries Trafford' work",
+    "email": "",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Consultancy",
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Strategic planning, events, AI consultancy across multiple years. louise.burgess@ & simon.davis@ & claire.saville@trafford.gov.uk known. Waterside House, Sale. Claire Saville is Marketing Manager (p/t), Waterside & Creative Industries Trafford. Additional: Emily Lyons (emily.lyons@trafford.gov.uk) Also: Lead for 'Creative Industries Trafford' work (same contact, Claire Saville).",
+    "source": "Invoices / Invoice PDFs (email)"
+  },
+  {
+    "company": "Troop&Co.",
+    "contactName": "David",
+    "email": "david@troopand.co",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Multiple projects including Oldham College delivery. david@ & jake@troopand.co on mailing list. FY2021-22 & FY2022-23 & FY2023-24.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "UCLAN",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "University of Manchester - Careers",
+    "contactName": "Anna Lomas",
+    "email": "anna.lomas@manchester.ac.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "University of Salford",
+    "contactName": "",
+    "email": "d.prinselaar@salford.ac.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Talk",
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Away Day Workshop (2023) — some AI content. d.prinselaar@salford.ac.uk on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Via Kate Butler",
+    "contactName": "Kate Butler",
+    "email": "kate@katebutler.net",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: katebutler.net",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Via Studios",
+    "contactName": "Frank",
+    "email": "frank@viastudios.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Care Plan and copy work FY2023-24. frank@viastudios.co.uk on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Vistage",
+    "contactName": "Mike Carter",
+    "email": "mike.carter@vistagechair.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "AI workshops / coaching. Mike Carter is Vistage Chair.",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Vital Culture",
+    "contactName": "",
+    "email": "vitalcultureuk@gmail.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Business strategy project (2022). vitalcultureuk@gmail.com on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "WORDSCAPE",
+    "contactName": "Fiona",
+    "email": "fiona@wordscape.org.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: wordscape.org.uk",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "WY Create",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "Waterside Arts",
+    "contactName": "Darren",
+    "email": "darren@watersidearts.org",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "SPF session — invoiced via Trafford Council. darren@watersidearts.org on mailing list. FY2023-24.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "Wealth Teck",
+    "contactName": "Christiane Hutchins",
+    "email": "christiane.hutchinson@wealth-teck.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "2x tickets for The AI Advantage: Next Level (RNCM, Manchester). FY2025-26.",
+    "source": "Squarespace"
+  },
+  {
+    "company": "Wejo",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Copywriting PO FY2020-21. Connected vehicle data company.",
+    "source": "Invoices"
+  },
+  {
+    "company": "Yes Please Productions",
+    "contactName": "Tom",
+    "email": "tom@yespleaseproductions.com",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "Non-AI Work"
+    ],
+    "projectedValue": 0,
+    "notes": "Business support. tom@ & lucy@yespleaseproductions.com on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "York St John University",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "York and North Yorkshire Combined Authority (YNYCA)",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "c21",
+    "contactName": "",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "pro-manchester",
+    "contactName": "Amy Brown",
+    "email": "amy.brown@pro-manchester.co.uk",
+    "phone": "",
+    "type": "Client",
+    "services": [
+      "AI Advantage Course"
+    ],
+    "projectedValue": 0,
+    "notes": "AI Advantage Workshop — Skills Academy. Centurion House, Deansgate. amy.brown@pro-manchester.co.uk on mailing list.",
+    "source": "Invoices / Invoice PDFs (email) / Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Adam Wishart",
+    "email": "adam@theslateworks.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Adesh Deosaran",
+    "email": "adesh@activaire.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Alan Boddy",
+    "email": "alan.boddy@livin.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Alex Saint",
+    "email": "alex@ctconsults.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Andy Booth",
+    "email": "andy.booth@sasdaniels.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Andy Lovatt",
+    "email": "andrewlovatt1@me.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Anna Bagley",
+    "email": "anna.bagley@iukbc.org.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Ben Cooper",
+    "email": "benhamin@gmail.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Brendan Paddison",
+    "email": "b.paddison@yorksj.ac.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Callum MacGregor",
+    "email": "callummacgregor@eartotheground.agency",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Chris Fletcher",
+    "email": "chris.fletcher@gmchamber.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Christine MacKay",
+    "email": "christine@salamandra.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Colette Rose-Burroughs",
+    "email": "colette@genremusic.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Daisy Birchenall",
+    "email": "daisybirchenall@mac.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "David Prior",
+    "email": "david@prolificnorth.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "David Smalley",
+    "email": "david@materialsource.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Debbie Black",
+    "email": "iod.northwest@iod.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Dr Colin Birchenall",
+    "email": "colin.birchenall@yahoo.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "Ripple & Co",
+    "contactName": "Eileen Donnelly",
+    "email": "eileen@rippleandco.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Elliot Smith",
+    "email": "elliot@ehe.ai",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Emma Nuttall",
+    "email": "hello@emmanuttall.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Erica Roberts",
+    "email": "erica.roberts@pro-manchester.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Fasih Ul Haq",
+    "email": "fasih.ulhaq@portoftyne.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Fatima Hassan",
+    "email": "fatima.h@disc.ac.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Gordon Bateman",
+    "email": "gordon@investorladder.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Helen Osbond",
+    "email": "helen@aestheticamagazine.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Jake Geen",
+    "email": "jake@troopand.co",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "James Crawley",
+    "email": "j.crawley@mmu.ac.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "janine hague",
+    "email": "janine@manchesterhistories.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Janis McCann",
+    "email": "janis.mccann@lespestmgt.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Jeff Bennison",
+    "email": "info@wribenconsultancy.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Jo North",
+    "email": "jo.north@portoftyne.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Joe Persichetti",
+    "email": "joep99@yahoo.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "John Conibear",
+    "email": "john.conibear@cda.uk.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Karon Bentley",
+    "email": "karon.bentley@hopwood.ac.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Kate Dimbleby",
+    "email": "kate@stornaway.io",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Katie Bentley",
+    "email": "katie.bentley@liverpoolbidcompany.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Laura Connelly",
+    "email": "laura@materialsource.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Lee Stanley",
+    "email": "lee.stanley@sharpfutures.org.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Lucy Dawkins",
+    "email": "lucy@yespleaseproductions.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Lucy Mulligan",
+    "email": "lucy.mulligan@gmchamber.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Lynne McCadden",
+    "email": "lynne@thefifthsector.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Marc Collett",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "",
+    "contactName": "Mark Beaumont",
+    "email": "mark@dinosaur.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Martha Sama",
+    "email": "m.sama@mmu.ac.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Martin Jackson",
+    "email": "martin.jackson@nwl.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Matt Rudkin",
+    "email": "mattrudkin@hotmail.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: hotmail.com",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "",
+    "contactName": "Michael DeCosta Babb",
+    "email": "michaelndacosta@gmail.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Mike Park",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "",
+    "contactName": "Oli Wilson",
+    "email": "oli@beyondthemusic.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Olivia Savage",
+    "email": "olivia.savage@wearecreative.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Owen Laverty",
+    "email": "owenlaverty@eartotheground.org",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Paul Beattie",
+    "email": "pbeattie@mba-consultants.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Paul Collins",
+    "email": "thepc@mac.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Peter Smith",
+    "email": "peter.smith@mmu.ac.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "phil birchenall",
+    "email": "phil_birchenall@mac.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Phil Birchinall",
+    "email": "pbirchinall@discoveryed.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Philip Coen",
+    "email": "philip.coen@googlemail.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Rachel Beach",
+    "email": "rachel.beach@iukbc.org.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Reece Burley",
+    "email": "reece.burley@heamar.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Richard Wormwell",
+    "email": "richard.wormwell@dock10.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Ruth Raban",
+    "email": "r.raban@mmu.ac.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Sam Booth",
+    "email": "sam.booth@pro-manchester.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Sam Crowe",
+    "email": "",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Income & Expenditure"
+  },
+  {
+    "company": "",
+    "contactName": "Sam Thompson",
+    "email": "sam.thompson.play@gmail.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Sarah Elderkin",
+    "email": "sarah.elderkin@manchester.gov.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Sarah Jones",
+    "email": "sarah.jones@wearecreative.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Sarah Lowry",
+    "email": "s.lowry@mmu.ac.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Serena Kennedy",
+    "email": "serena@theslateworks.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Shell Critchley",
+    "email": "shell.critchley@brsk.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Simon Davis",
+    "email": "simon.davis@trafford.gov.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Sophie Birchenall",
+    "email": "sophiebirchenall@mac.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Steve Kuncewicz",
+    "email": "stevekuncewicz@me.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Subrah Krishnan-Harihara",
+    "email": "subrahmaniam.krishnanharihara@gmchamber.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Terry Simmons",
+    "email": "terry@elearningplus.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "test test",
+    "email": "phil@diagonalthinking.co",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Tom Clarke",
+    "email": "tom.clarke@sharpfutures.org.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Tom Hardwidge",
+    "email": "tom@tallstorygames.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "Tom Parson",
+    "email": "tom@workwithhuddle.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "benelkington@hotmail.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "bethhewitt13@gmail.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "carl@3wm.tv",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "clayy1990@gmail.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "dan@craftyvintage.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "gill@thenantwichclinic.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "iain@thefifthsector.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "josetxupalenzuela@gmail.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "julierachelkavanagh@hotmail.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "laura.davies@cognisoft.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "lisa.tran@uk.coop",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "m.grogan@yahoo.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "mh@weaspire.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "michelle.todd@nwl.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "millco@me.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "post@stopthepigeon.co.uk",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "roddersr@gmail.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "suzi.dolan@dbca.wa.gov.au",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "tom@dctutormentor.org",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "tulikadhanuka@gmail.com",
+    "phone": "",
+    "type": "Warm Lead",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "a.ahmed@investinrochdale.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: investinrochdale.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "akomlosy@ucenmanchester.ac.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: ucenmanchester.ac.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "andrew@awaonline.org.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: awaonline.org.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "angus@snowrivermedia.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: snowrivermedia.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "anna@comartsnw.org.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: comartsnw.org.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "annika@vulse.co",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: vulse.co",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "anthony.hatton@salford.gov.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: salford.gov.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "ashley.sisson@ntlworld.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: ntlworld.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "atul@sheilabird.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: sheilabird.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "avriel.marie@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "chris.filip@bfi.org.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: bfi.org.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "claire.hoang@itv.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: itv.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "clare.ireland@coop.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: coop.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "clare.leavey@scienceandmediamuseum.org.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: scienceandmediamuseum.org.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "coral.grainger@oldham.ac.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: oldham.ac.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "daciaramella@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "dale@manchesterfashion.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: manchesterfashion.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "dan@edufuturists.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: edufuturists.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "dan@reevescreative.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: reevescreative.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "dave.murat@oldham.ac.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: oldham.ac.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "david.gaffney@artscouncil.org.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: artscouncil.org.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "dawn.tyler@mercia.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: mercia.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "ebdewinter@hotmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: hotmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "emily.lyons@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "guy@dapdip.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: dapdip.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "hellokate@mac.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: mac.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "hui8888@hotmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: hotmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "ian.dickinson@coop.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: coop.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "info@franchisecreatordevelopment.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: franchisecreatordevelopment.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "info@jonshard.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: jonshard.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "info@lauralyontrends.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: lauralyontrends.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "ingridnt2013@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "ireneandfrank@icloud.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: icloud.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "j.legget@connexin.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: connexin.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "james.alexander@exteriorarchitecture.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: exteriorarchitecture.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "james@jameshanson.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: jameshanson.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "jamie.campbell@ruraldesigncentre.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: ruraldesigncentre.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "jdbscouse@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "jeff@wordswordswords.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: wordswordswords.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "jennifer.b.burr@outlook.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: outlook.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "joe@typocom.net",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: typocom.net",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "john@reallyusefulconsultancy.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: reallyusefulconsultancy.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "johnukjay@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "jordan@takara.ai",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: takara.ai",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "josetxu.palenzuela@mediacrest.es",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: mediacrest.es",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "kelvin.harding@coresys-ltd.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: coresys-ltd.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "kenny.skelton@essencemediacom.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: essencemediacom.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "lauren.briggs@nwl.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: nwl.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "lee.robson@ingrammicro.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: ingrammicro.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "leeann@address-properties.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: address-properties.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "lisaharding@me.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: me.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "liz.scott@manchester.ac.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: manchester.ac.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "louis.georgiou@codecomputerlove.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: codecomputerlove.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "luke.dennis@nwl.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: nwl.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "luke.milne@mycustoms.ai",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: mycustoms.ai",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "lynne@themorra.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: themorra.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "m.dore@pwhs.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: pwhs.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "malcolm@360spin.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: 360spin.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "marc@burnscollett.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: burnscollett.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "maresemulligan@hotmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: hotmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "mark@e-rocks.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: e-rocks.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "martin@atlantictimber.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: atlantictimber.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "marty@takara.ai",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: takara.ai",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "martynjohnwalsh@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "matthewwemyss17@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "michelers@icloud.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: icloud.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "mikechavezdawson@yahoo.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: yahoo.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "millco@icloud.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: icloud.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "moe@we-make.fr",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: we-make.fr",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "moondotcreative@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "mstukoff@yahoo.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: yahoo.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "nattysewandsew@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "neil@neilsimpson.info",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: neilsimpson.info",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "nick.devitt@ruraldesigncentre.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: ruraldesigncentre.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "nick@nickfry.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: nickfry.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "niki.page@deepfusionfilms.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: deepfusionfilms.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "overthewire@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "paul.cowie@ruraldesigncentre.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: ruraldesigncentre.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "pauljglossop@outlook.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: outlook.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "pcunningham7@me.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: me.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "rachael@bampton-aiken.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: bampton-aiken.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "rachel.james@oldham.ac.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: oldham.ac.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "rachel@pomona.partners",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: pomona.partners",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "rachelboyd@crocodilemedia.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: crocodilemedia.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "rdavdavis1@aol.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: aol.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "richard.jones@love2shop.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: love2shop.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "richard.waterside@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "ricmichael@btinternet.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: btinternet.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "sam@makeitbe.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: makeitbe.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "sean.radford@pablasolicitors.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: pablasolicitors.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "simon@pushon.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: pushon.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "simonpatiniott@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "stef@stickupmedia.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: stickupmedia.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "tgiles100@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "tintin.mcr@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "tom.marshall@oldham.ac.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: oldham.ac.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "tom@pomona.partners",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: pomona.partners",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "tommaskell@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "tommychap@hotmail.co.uk",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: hotmail.co.uk",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "trevor@trevorjohnson.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: trevorjohnson.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "udut.katya@gmail.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: gmail.com",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "vladimir.mulhem@voxelo.ai",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: voxelo.ai",
+    "source": "Squarespace"
+  },
+  {
+    "company": "",
+    "contactName": "",
+    "email": "warren@warrenbramley.com",
+    "phone": "",
+    "type": "Mailing List",
+    "services": [],
+    "projectedValue": 0,
+    "notes": "Squarespace subscriber. Domain: warrenbramley.com",
+    "source": "Squarespace"
+  }
+]
