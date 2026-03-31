@@ -1237,6 +1237,11 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
                 ) : (
                   <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                     <div className="bg-gradient-to-br from-[#C5D7E8] to-[#A8C0D6] px-8 py-10 text-white">
+                      <img
+                        src={diagonalThinkingLogo}
+                        alt="Diagonal Thinking logo"
+                        className="mb-8 h-16 w-auto object-contain"
+                      />
                       <div className="mb-5 text-xs font-bold uppercase tracking-[0.18em]">Proposal</div>
                       <h1 className="mb-2 text-3xl font-bold leading-tight">{form.programTitle || "Untitled proposal"}</h1>
                       {form.subtitle && <p className="mb-5 max-w-2xl text-lg leading-7 text-white/90">{form.subtitle}</p>}
