@@ -3,6 +3,7 @@ import diagonalThinkingLogo from "./assets/diagonal-thinking-logo.png";
 import Papa from "papaparse";
 import { loadContacts, saveAllContacts, isSupabaseMode, loadProposals, saveProposal, deleteProposal, loadProposalAccesses } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
+import ProposalWriterForm from "./proposals/ProposalForm.jsx";
 import {
   Download,
   FileSpreadsheet,
@@ -496,336 +497,6 @@ function todayFormatted() {
   return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
 
-const PROPOSAL_VIEWER_URL = "https://dt-proposals.vercel.app/view";
-
-function makeText(text) {
-  return { type: "text", text };
-}
-
-function makeBoldText(text) {
-  return { type: "text", marks: [{ type: "bold" }], text };
-}
-
-function makeItalicText(text) {
-  return { type: "text", marks: [{ type: "italic" }], text };
-}
-
-function makeHeading(text) {
-  return {
-    type: "heading",
-    attrs: { level: 2 },
-    content: [makeText(text)],
-  };
-}
-
-function makeParagraph(content) {
-  return { type: "paragraph", content };
-}
-
-function makeEmptyParagraph() {
-  return { type: "paragraph", content: [] };
-}
-
-function makeBulletList(items) {
-  return {
-    type: "bulletList",
-    content: items.map((item) => ({
-      type: "listItem",
-      content: [makeParagraph([makeText(item)])],
-    })),
-  };
-}
-
-function makeLabelParagraph(label, value) {
-  return {
-    type: "paragraph",
-    attrs: { class: "label-paragraph" },
-    content: [makeBoldText(`${label}: `), makeText(value)],
-  };
-}
-
-const COVER_PREPARED_FOR = /^prepared\s+for\s*:\s*(.+)/i;
-const COVER_PREPARED_BY = /^prepared\s+by\s*:\s*(.+)/i;
-const COVER_DATE = /^date\s*:\s*(.+)/i;
-const COVER_PROGRAM = /^program\s*(?:title)?\s*:\s*(.+)/i;
-const COVER_SUBTITLE = /^subtitle\s*:\s*(.+)/i;
-const LABEL_RE = /^([A-Za-z][^:]{1,25}):\s+(\S.*)$/;
-const NUMBERED_RE = /^\d+\.\s+/;
-const BULLET_RE = /^[•\-*]\s*/;
-const QUOTE_RE = /^"/;
-
-function isAllCaps(line) {
-  return line.length > 2 && line === line.toUpperCase() && /[A-Z]/.test(line);
-}
-
-function parseProposalText(text) {
-  const lines = text.split("\n");
-  const coverFields = {
-    program_title: "",
-    subtitle: "",
-    prepared_for: "",
-    prepared_by: "",
-    date: "",
-  };
-  const bodyLines = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (COVER_PREPARED_FOR.test(trimmed)) {
-      coverFields.prepared_for = trimmed.replace(COVER_PREPARED_FOR, "$1").trim();
-    } else if (COVER_PREPARED_BY.test(trimmed)) {
-      coverFields.prepared_by = trimmed.replace(COVER_PREPARED_BY, "$1").trim();
-    } else if (COVER_DATE.test(trimmed)) {
-      coverFields.date = trimmed.replace(COVER_DATE, "$1").trim();
-    } else if (COVER_PROGRAM.test(trimmed)) {
-      coverFields.program_title = trimmed.replace(COVER_PROGRAM, "$1").trim();
-    } else if (COVER_SUBTITLE.test(trimmed)) {
-      coverFields.subtitle = trimmed.replace(COVER_SUBTITLE, "$1").trim();
-    } else {
-      bodyLines.push(line);
-    }
-  }
-
-  const nodes = [];
-  let pendingBullets = [];
-  let prevWasBlank = true;
-
-  function flushBullets() {
-    if (pendingBullets.length > 0) {
-      nodes.push(makeBulletList(pendingBullets));
-      pendingBullets = [];
-    }
-  }
-
-  for (const raw of bodyLines) {
-    const trimmed = raw.trim();
-
-    if (trimmed === "") {
-      flushBullets();
-      nodes.push(makeEmptyParagraph());
-      prevWasBlank = true;
-      continue;
-    }
-
-    if (BULLET_RE.test(trimmed)) {
-      pendingBullets.push(trimmed.replace(BULLET_RE, ""));
-      prevWasBlank = false;
-      continue;
-    }
-
-    flushBullets();
-
-    if (QUOTE_RE.test(trimmed)) {
-      nodes.push(makeParagraph([makeItalicText(trimmed)]));
-      prevWasBlank = false;
-      continue;
-    }
-
-    if (NUMBERED_RE.test(trimmed)) {
-      nodes.push(makeParagraph([makeBoldText(trimmed)]));
-      prevWasBlank = false;
-      continue;
-    }
-
-    const labelMatch = LABEL_RE.exec(trimmed);
-    if (labelMatch) {
-      nodes.push(makeLabelParagraph(labelMatch[1], labelMatch[2]));
-      prevWasBlank = false;
-      continue;
-    }
-
-    if (isAllCaps(trimmed) && trimmed.length < 60) {
-      nodes.push(makeHeading(trimmed));
-      prevWasBlank = false;
-      continue;
-    }
-
-    if (prevWasBlank && trimmed.length < 50 && !/[,;]/.test(trimmed) && !trimmed.endsWith(".")) {
-      nodes.push(makeHeading(trimmed));
-      prevWasBlank = false;
-      continue;
-    }
-
-    nodes.push(makeParagraph([makeText(trimmed)]));
-    prevWasBlank = false;
-  }
-
-  flushBullets();
-
-  return {
-    coverFields,
-    doc: {
-      type: "doc",
-      content: nodes,
-    },
-  };
-}
-
-function inlineNodeText(node) {
-  return node?.text ?? "";
-}
-
-function proposalDocToText(doc) {
-  if (!doc?.content?.length) return "";
-
-  return doc.content.map((node) => {
-    switch (node.type) {
-      case "heading":
-        return (node.content ?? []).map(inlineNodeText).join("");
-      case "paragraph":
-        return (node.content ?? []).map(inlineNodeText).join("");
-      case "bulletList":
-        return (node.content ?? []).map((item) => {
-          const text = (item.content ?? [])
-            .flatMap((paragraph) => paragraph.content ?? [])
-            .map(inlineNodeText)
-            .join("");
-          return `• ${text}`;
-        }).join("\n");
-      case "orderedList":
-        return (node.content ?? []).map((item, index) => {
-          const text = (item.content ?? [])
-            .flatMap((paragraph) => paragraph.content ?? [])
-            .map(inlineNodeText)
-            .join("");
-          return `${index + 1}. ${text}`;
-        }).join("\n");
-      case "horizontalRule":
-        return "---";
-      default:
-        return "";
-    }
-  }).join("\n\n");
-}
-
-function createGenericProposalText(clientName = "your team", programmeName = "the programme") {
-  return [
-    "OVERVIEW",
-    "",
-    `This proposal outlines how Diagonal Thinking can support ${clientName} through ${programmeName}.`,
-    "The approach below is designed to be practical, tailored, and focused on meaningful outcomes.",
-    "",
-    "OBJECTIVES",
-    "",
-    "• Clarify the outcomes this work needs to achieve",
-    "• Build confidence and capability in the team",
-    "• Create practical next steps that can be implemented quickly",
-    "",
-    "WHAT WE WILL DELIVER",
-    "",
-    "• Discovery and preparation ahead of the session",
-    "• A tailored facilitated workshop or engagement",
-    "• A concise set of recommendations and next actions",
-    "",
-    "APPROACH",
-    "",
-    "We will shape the work around your context, current priorities, and the people involved.",
-    "Sessions are designed to be engaging, clear, and immediately useful.",
-    "",
-    "NEXT STEPS",
-    "",
-    "• Confirm scope and timing",
-    "• Agree attendees and any pre-work",
-    "• Schedule delivery and follow-up",
-  ].join("\n");
-}
-
-function createWorkshopProposalText(clientName = "your team") {
-  return [
-    "SESSION FOCUS",
-    "",
-    `This workshop is designed for ${clientName} and will combine strategic discussion with practical working sessions.`,
-    "",
-    "WHAT PARTICIPANTS WILL LEAVE WITH",
-    "",
-    "• A clearer understanding of the opportunity and challenge",
-    "• Shared language and confidence across the group",
-    "• A practical action plan for immediate next steps",
-    "",
-    "SUGGESTED STRUCTURE",
-    "",
-    "• Context setting and goals",
-    "• Interactive working session",
-    "• Priority mapping and decision-making",
-    "• Action planning and close",
-    "",
-    "OUTPUTS",
-    "",
-    "• Facilitated session design",
-    "• Supporting materials where needed",
-    "• A follow-up summary with recommendations",
-  ].join("\n");
-}
-
-function renderInlineContent(node, key) {
-  const text = inlineNodeText(node);
-  const isBold = node.marks?.some((mark) => mark.type === "bold");
-  const isItalic = node.marks?.some((mark) => mark.type === "italic");
-
-  let content = text;
-  if (isBold && isItalic) content = <strong><em>{text}</em></strong>;
-  else if (isBold) content = <strong>{text}</strong>;
-  else if (isItalic) content = <em>{text}</em>;
-
-  return <span key={key}>{content}</span>;
-}
-
-function renderProposalNode(node, index) {
-  switch (node.type) {
-    case "heading":
-      return (
-        <h2 key={index} className="mb-3 mt-10 border-b border-[#1B4F8A] pb-2 text-[20px] font-bold text-[#1B4F8A] first:mt-0">
-          {(node.content ?? []).map((child, childIndex) => renderInlineContent(child, childIndex))}
-        </h2>
-      );
-    case "paragraph": {
-      const content = node.content ?? [];
-      if (content.length === 0) return <div key={index} className="h-4" />;
-      const isLabelParagraph =
-        node.attrs?.class === "label-paragraph" ||
-        (content.length === 2 && content[0].marks?.some((mark) => mark.type === "bold"));
-      return (
-        <p key={index} className={`mb-3 text-[15px] leading-7 text-slate-700 ${isLabelParagraph ? "font-normal" : ""}`}>
-          {content.map((child, childIndex) => renderInlineContent(child, childIndex))}
-        </p>
-      );
-    }
-    case "bulletList":
-      return (
-        <ul key={index} className="mb-4 space-y-2 pl-5 text-[15px] leading-7 text-slate-700">
-          {(node.content ?? []).map((item, itemIndex) => (
-            <li key={itemIndex} className="list-disc">
-              {(item.content ?? [])
-                .flatMap((paragraph) => paragraph.content ?? [])
-                .map((child, childIndex) => renderInlineContent(child, `${itemIndex}-${childIndex}`))}
-            </li>
-          ))}
-        </ul>
-      );
-    case "orderedList":
-      return (
-        <ol key={index} className="mb-4 list-decimal space-y-2 pl-5 text-[15px] leading-7 text-slate-700">
-          {(node.content ?? []).map((item, itemIndex) => (
-            <li key={itemIndex}>
-              {(item.content ?? [])
-                .flatMap((paragraph) => paragraph.content ?? [])
-                .map((child, childIndex) => renderInlineContent(child, `${itemIndex}-${childIndex}`))}
-            </li>
-          ))}
-        </ol>
-      );
-    default:
-      return null;
-  }
-}
-
-function renderProposalDoc(doc) {
-  if (!doc?.content?.length) {
-    return <p className="text-sm italic text-slate-400">No proposal content yet.</p>;
-  }
-  return doc.content.map((node, index) => renderProposalNode(node, index));
-}
-
 // ─── ProposalAccessPanel ──────────────────────────────────────────────────────
 
 function ProposalAccessPanel({ proposal, onClose }) {
@@ -878,34 +549,22 @@ function ProposalAccessPanel({ proposal, onClose }) {
 
 function ProposalForm({ proposal, contacts, onSave, onClose }) {
   const isNew = !proposal;
-  const draftKey = `crm-proposal-draft:${proposal?.id ?? "new"}`;
-  const initialBodyText = proposal?.tiptap_json?.content?.length
-    ? proposalDocToText(proposal.tiptap_json)
-    : createGenericProposalText(proposal?.client_name ?? "", proposal?.program_title ?? "the programme");
   const [form, setForm] = useState({
-    clientName: proposal?.client_name ?? "",
     programTitle: proposal?.program_title ?? "",
     subtitle: proposal?.subtitle ?? "",
     preparedFor: proposal?.prepared_for ?? "",
-    preparedBy: proposal?.prepared_by ?? "Phil Birchenall, DIAGONAL // THINKING",
     proposalCode: proposal?.proposal_code ?? "",
     date: proposal?.date ?? todayFormatted(),
-    footerLabel: proposal?.footer_label ?? "The AI Advantage",
+    footerLabel: proposal?.footer_label ?? "",
     isActive: proposal?.is_active ?? true,
     contactId: proposal?.contact_id ?? null,
   });
-  const [bodyText, setBodyText] = useState(initialBodyText);
-  const [importOpen, setImportOpen] = useState(false);
-  const [importText, setImportText] = useState("");
-  const [viewMode, setViewMode] = useState("write");
   const [contactSearch, setContactSearch] = useState(
     proposal?.contacts ? `${proposal.contacts.contact_name ?? ""} — ${proposal.contacts.company ?? ""}` : ""
   );
   const [showContactDropdown, setShowContactDropdown] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  const [draftRestored, setDraftRestored] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const filteredContacts = contacts.filter((c) => {
     const q = contactSearch.toLowerCase();
@@ -916,122 +575,37 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
     );
   }).slice(0, 8);
 
-  const previewDoc = useMemo(() => parseProposalText(bodyText).doc, [bodyText]);
-  const baselineSnapshot = useMemo(() => JSON.stringify({
-    form: {
-      clientName: proposal?.client_name ?? "",
-      programTitle: proposal?.program_title ?? "",
-      subtitle: proposal?.subtitle ?? "",
-      preparedFor: proposal?.prepared_for ?? "",
-      preparedBy: proposal?.prepared_by ?? "Phil Birchenall, DIAGONAL // THINKING",
-      proposalCode: proposal?.proposal_code ?? "",
-      date: proposal?.date ?? todayFormatted(),
-      footerLabel: proposal?.footer_label ?? "The AI Advantage",
-      isActive: proposal?.is_active ?? true,
-      contactId: proposal?.contact_id ?? null,
-    },
-    bodyText: initialBodyText,
-    contactSearch: proposal?.contacts ? `${proposal.contacts.contact_name ?? ""} — ${proposal.contacts.company ?? ""}` : "",
-  }), [initialBodyText, proposal]);
-  const currentSnapshot = useMemo(() => JSON.stringify({ form, bodyText, contactSearch }), [form, bodyText, contactSearch]);
-  const isDirty = currentSnapshot !== baselineSnapshot;
-
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(draftKey);
-      if (!raw) return;
-      const draft = JSON.parse(raw);
-      if (draft.form) setForm((f) => ({ ...f, ...draft.form }));
-      if (typeof draft.bodyText === "string") setBodyText(draft.bodyText);
-      if (typeof draft.contactSearch === "string") setContactSearch(draft.contactSearch);
-      setDraftRestored(true);
-    } catch {
-      window.localStorage.removeItem(draftKey);
-    }
-  }, [draftKey]);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      window.localStorage.setItem(draftKey, JSON.stringify({ form, bodyText, contactSearch }));
-    }, 300);
-    return () => window.clearTimeout(timeout);
-  }, [draftKey, form, bodyText, contactSearch]);
-
-  useEffect(() => {
-    function handleBeforeUnload(event) {
-      if (!isDirty) return;
-      event.preventDefault();
-      event.returnValue = "";
-    }
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [isDirty]);
-
   function selectContact(c) {
     setForm((f) => ({
       ...f,
       contactId: c.id,
-      clientName: f.clientName || c.company || c.contactName,
       preparedFor: [c.contactName, c.company].filter(Boolean).join(", "),
     }));
     setContactSearch(`${c.contactName} — ${c.company}`);
     setShowContactDropdown(false);
   }
 
-  function applyTemplate(kind) {
-    setBodyText(
-      kind === "workshop"
-        ? createWorkshopProposalText(form.clientName || "your team")
-        : createGenericProposalText(form.clientName || "your team", form.programTitle || "the programme")
-    );
-  }
-
-  function handleImport() {
-    if (!importText.trim()) return;
-    const parsed = parseProposalText(importText);
-    setForm((f) => ({
-      ...f,
-      programTitle: parsed.coverFields.program_title || f.programTitle,
-      subtitle: parsed.coverFields.subtitle || f.subtitle,
-      preparedFor: parsed.coverFields.prepared_for || f.preparedFor,
-      preparedBy: parsed.coverFields.prepared_by || f.preparedBy,
-      date: parsed.coverFields.date || f.date,
-      clientName: f.clientName || f.preparedFor || f.programTitle,
-    }));
-    setBodyText(proposalDocToText(parsed.doc));
-    setImportOpen(false);
-  }
-
-  function handleClose() {
-    if (isDirty && !confirm("You have unsaved changes. Close the writer anyway?")) return;
-    onClose();
-  }
-
   async function handleSave() {
-    if (!form.clientName.trim()) { setError("Client name is required."); return; }
-    if (!form.preparedFor.trim()) { setError("Prepared for is required."); return; }
-    if (!form.date.trim()) { setError("Date is required."); return; }
+    if (!form.programTitle.trim()) { setError("Program title is required."); return; }
     setSaving(true);
     setError(null);
     try {
-      const slug = proposal?.slug ?? generateSlug(form.programTitle || "proposal", form.clientName);
-      const code = form.proposalCode || generateCode(form.programTitle || form.clientName);
+      const slug = proposal?.slug ?? generateSlug(form.programTitle, form.preparedFor || "proposal");
+      const code = form.proposalCode || generateCode(form.programTitle);
       await saveProposal({
         id: proposal?.id,
         slug,
         proposalCode: code,
-        clientName: form.clientName,
+        clientName: form.preparedFor || form.programTitle,
         programTitle: form.programTitle,
         subtitle: form.subtitle,
         preparedFor: form.preparedFor,
-        preparedBy: form.preparedBy,
         date: form.date,
-        footerLabel: form.footerLabel || form.programTitle || "The AI Advantage",
+        footerLabel: form.footerLabel || form.programTitle,
         isActive: form.isActive,
         contactId: form.contactId,
-        tiptapJson: previewDoc,
+        tiptapJson: proposal?.tiptap_json ?? {},
       });
-      window.localStorage.removeItem(draftKey);
       onSave();
     } catch (e) {
       setError(e.message);
@@ -1040,234 +614,79 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
     }
   }
 
-  function handleCopyLink() {
-    const code = proposal?.proposal_code || form.proposalCode;
-    if (!code) return;
-    navigator.clipboard.writeText(`${PROPOSAL_VIEWER_URL}?code=${code}`).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
-
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-10">
-      <div className="w-full max-w-6xl bg-white shadow-xl">
+      <div className="w-full max-w-xl bg-white shadow-xl">
         <div className="flex items-center justify-between border-b border-line bg-white px-6 py-4">
-          <div>
-            <div className="font-semibold text-ink">{isNew ? "New Proposal" : "Edit Proposal"}</div>
-            <div className="mt-1 text-xs text-slate-500">Write, preview, and safely draft proposals inside the CRM.</div>
-          </div>
-          <button type="button" onClick={handleClose} className="text-slate-400 hover:text-slate-600">
+          <div className="font-semibold text-ink">{isNew ? "New Proposal" : "Edit Proposal"}</div>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <X size={20} />
           </button>
         </div>
-        <div className="max-h-[calc(100vh-120px)] overflow-y-auto px-6 py-5">
-          {draftRestored && (
-            <div className="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              Restored your last local draft for this proposal.
-            </div>
-          )}
-
-          {!isNew && proposal?.proposal_code && (
-            <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-blue-900">Client access link</p>
-                  <p className="mt-0.5 text-xs text-blue-700">
-                    Share the public viewer with code <strong>{proposal.proposal_code}</strong>.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  className="rounded border border-blue-300 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100"
-                >
-                  {copied ? "Copied!" : "Copy client link"}
-                </button>
+        <div className="space-y-4 px-6 py-5">
+          {/* Contact picker */}
+          <div className="relative">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Contact</label>
+            <input
+              type="text"
+              value={contactSearch}
+              onChange={(e) => { setContactSearch(e.target.value); setShowContactDropdown(true); }}
+              onFocus={() => setShowContactDropdown(true)}
+              placeholder="Search by name, company, or email…"
+              className="w-full border border-line px-3 py-2 text-sm focus:border-brand focus:outline-none"
+            />
+            {showContactDropdown && filteredContacts.length > 0 && (
+              <div className="absolute z-10 w-full border border-line bg-white shadow-lg">
+                {filteredContacts.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onMouseDown={() => selectContact(c)}
+                    className="flex w-full flex-col px-3 py-2 text-left text-sm hover:bg-slate-50"
+                  >
+                    <span className="font-medium text-ink">{c.contactName}</span>
+                    <span className="text-xs text-slate-400">{c.company}</span>
+                  </button>
+                ))}
               </div>
-            </div>
-          )}
-
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex rounded-lg border border-line bg-white p-1">
-              {["write", "preview"].map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setViewMode(tab)}
-                  className={`rounded px-3 py-1.5 text-sm font-medium ${viewMode === tab ? "bg-brand text-white" : "text-slate-500 hover:bg-slate-50"}`}
-                >
-                  {tab === "write" ? "Write" : "Preview"}
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Quick start</span>
-              <button type="button" onClick={() => applyTemplate("generic")} className="rounded border border-line px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
-                Generic template
-              </button>
-              <button type="button" onClick={() => applyTemplate("workshop")} className="rounded border border-line px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
-                Workshop template
-              </button>
-            </div>
+            )}
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[320px,1fr]">
-            <div className="space-y-5">
-              <div className="rounded-lg border border-gray-200 bg-white p-5">
-                <div className="relative">
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Linked Contact</label>
-                  <input
-                    type="text"
-                    value={contactSearch}
-                    onChange={(e) => { setContactSearch(e.target.value); setShowContactDropdown(true); }}
-                    onFocus={() => setShowContactDropdown(true)}
-                    placeholder="Search by name, company, or email…"
-                    className="w-full border border-line px-3 py-2 text-sm focus:border-brand focus:outline-none"
-                  />
-                  {showContactDropdown && filteredContacts.length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full border border-line bg-white shadow-lg">
-                      {filteredContacts.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onMouseDown={() => selectContact(c)}
-                          className="flex w-full flex-col px-3 py-2 text-left text-sm hover:bg-slate-50"
-                        >
-                          <span className="font-medium text-ink">{c.contactName}</span>
-                          <span className="text-xs text-slate-400">{c.company}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-gray-200 bg-white p-5">
-                <h2 className="mb-4 text-sm font-semibold text-gray-700">Cover Details</h2>
-                <div className="space-y-4">
-                  {[
-                    { key: "clientName", label: "Client Name", placeholder: "e.g. TACE" },
-                    { key: "programTitle", label: "Program Title", placeholder: "e.g. Agent Action Day" },
-                    { key: "subtitle", label: "Subtitle", placeholder: "e.g. TACE Prototype Development Workshop" },
-                    { key: "preparedFor", label: "Prepared For", placeholder: "e.g. Jim Massey, TACE" },
-                    { key: "preparedBy", label: "Prepared By", placeholder: "e.g. Phil Birchenall, DIAGONAL // THINKING" },
-                    { key: "proposalCode", label: "Proposal Code (4 chars)", placeholder: "e.g. TACE — auto-generated if blank" },
-                    { key: "date", label: "Date", placeholder: "e.g. 31 March 2026" },
-                    { key: "footerLabel", label: "Footer Label", placeholder: "e.g. Agent Action Day" },
-                  ].map(({ key, label, placeholder }) => (
-                    <div key={key}>
-                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</label>
-                      <input
-                        type="text"
-                        value={form[key]}
-                        onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                        placeholder={placeholder}
-                        className="w-full border border-line px-3 py-2 text-sm focus:border-brand focus:outline-none"
-                      />
-                    </div>
-                  ))}
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="isActive"
-                      checked={form.isActive}
-                      onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
-                      className="h-4 w-4 accent-brand"
-                    />
-                    <label htmlFor="isActive" className="text-sm text-ink">Active (clients can access this proposal)</label>
-                  </div>
-                </div>
-              </div>
+          {[
+            { key: "programTitle", label: "Program Title", placeholder: "e.g. Agent Action Day" },
+            { key: "subtitle", label: "Subtitle", placeholder: "e.g. TACE Prototype Development Workshop" },
+            { key: "preparedFor", label: "Prepared For", placeholder: "e.g. Jim Massey, TACE" },
+            { key: "proposalCode", label: "Proposal Code (4 chars)", placeholder: "e.g. TACE — auto-generated if blank" },
+            { key: "date", label: "Date", placeholder: "e.g. 31 March 2026" },
+            { key: "footerLabel", label: "Footer Label", placeholder: "e.g. Agent Action Day" },
+          ].map(({ key, label, placeholder }) => (
+            <div key={key}>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</label>
+              <input
+                type="text"
+                value={form[key]}
+                onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                placeholder={placeholder}
+                className="w-full border border-line px-3 py-2 text-sm focus:border-brand focus:outline-none"
+              />
             </div>
+          ))}
 
-            <div className="space-y-4">
-              <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-                <button
-                  type="button"
-                  onClick={() => setImportOpen((open) => !open)}
-                  className="flex w-full items-center justify-between bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100"
-                >
-                  <span>Import from text</span>
-                  <span className="text-slate-400">{importOpen ? "▲" : "▼"}</span>
-                </button>
-                {importOpen && (
-                  <div className="border-t border-line p-4">
-                    <p className="mb-3 text-xs text-slate-500">
-                      Paste a draft proposal and the tool will pull out cover details like Program title, Prepared for, Prepared by, and Date.
-                    </p>
-                    <textarea
-                      value={importText}
-                      onChange={(e) => setImportText(e.target.value)}
-                      rows={10}
-                      placeholder={`Program title: AI for Leadership Teams\nPrepared for: ACME Corp\nPrepared by: Phil Birchenall, DIAGONAL // THINKING\nDate: April 2026\n\nINTRODUCTION\n\nThis proposal outlines...\n\n• Bullet point one\n• Bullet point two`}
-                      className="w-full resize-y rounded border border-line px-3 py-3 font-mono text-sm focus:border-brand focus:outline-none"
-                    />
-                    <div className="mt-3 flex gap-2">
-                      <button type="button" onClick={handleImport} className="rounded bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90">
-                        Parse and import
-                      </button>
-                      <button type="button" onClick={() => setImportText("")} className="rounded border border-line px-4 py-2 text-sm text-slate-500 hover:bg-slate-50">
-                        Clear
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-lg border border-gray-200 bg-white p-4">
-                <div className="mb-3 border-b border-line pb-3">
-                  <h2 className="text-sm font-semibold text-gray-700">{viewMode === "write" ? "Proposal Body" : "Proposal Preview"}</h2>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {viewMode === "write"
-                      ? "Write directly in the CRM. Use headings, blank lines, and bullet points to structure the proposal."
-                      : "Preview the proposal layout before saving or sharing it."}
-                  </p>
-                </div>
-
-                {viewMode === "write" ? (
-                  <textarea
-                    value={bodyText}
-                    onChange={(e) => setBodyText(e.target.value)}
-                    rows={26}
-                    className="min-h-[520px] w-full resize-y rounded border border-line px-4 py-4 font-mono text-sm leading-7 text-slate-700 focus:border-brand focus:outline-none"
-                    placeholder="Start writing your proposal..."
-                  />
-                ) : (
-                  <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                    <div className="bg-gradient-to-br from-[#C5D7E8] to-[#A8C0D6] px-8 py-10 text-white">
-                      <img
-                        src={diagonalThinkingLogo}
-                        alt="Diagonal Thinking logo"
-                        className="mb-8 h-16 w-auto object-contain"
-                      />
-                      <div className="mb-5 text-xs font-bold uppercase tracking-[0.18em]">Proposal</div>
-                      <h1 className="mb-2 text-3xl font-bold leading-tight">{form.programTitle || "Untitled proposal"}</h1>
-                      {form.subtitle && <p className="mb-5 max-w-2xl text-lg leading-7 text-white/90">{form.subtitle}</p>}
-                      <div className="grid gap-2 text-sm text-[#173F68]">
-                        <div><strong>Client:</strong> {form.clientName || "Not set yet"}</div>
-                        <div><strong>Prepared for:</strong> {form.preparedFor || "Not set yet"}</div>
-                        <div><strong>Date:</strong> {form.date || "Not set yet"}</div>
-                      </div>
-                    </div>
-                    <div className="mx-auto max-w-3xl px-8 py-10">
-                      {renderProposalDoc(previewDoc)}
-                      <div className="mt-10 flex justify-between border-t border-slate-200 pt-4 text-xs text-slate-500">
-                        <span>{form.footerLabel || "The AI Advantage"}</span>
-                        <span>{form.preparedBy || "Diagonal Thinking"}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isActive"
+              checked={form.isActive}
+              onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
+              className="h-4 w-4 accent-brand"
+            />
+            <label htmlFor="isActive" className="text-sm text-ink">Active (clients can access this proposal)</label>
           </div>
 
-          {error && <div className="mt-4 border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          {error && <div className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
         </div>
         <div className="flex justify-end gap-2 border-t border-line px-6 py-4">
-          <button type="button" onClick={handleClose} className="border border-line px-4 py-2 text-sm text-slate-500 hover:bg-slate-50">
+          <button type="button" onClick={onClose} className="border border-line px-4 py-2 text-sm text-slate-500 hover:bg-slate-50">
             Cancel
           </button>
           <button
@@ -1276,7 +695,7 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
             disabled={saving}
             className="bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-50"
           >
-            {saving ? "Saving…" : isNew ? "Create Proposal" : "Save Proposal"}
+            {saving ? "Saving…" : "Save Proposal"}
           </button>
         </div>
       </div>
@@ -1292,6 +711,8 @@ function ProposalsTab({ contacts }) {
   const [editingProposal, setEditingProposal] = useState(undefined); // undefined=closed, null=new, obj=edit
   const [accessProposal, setAccessProposal] = useState(null);
   const [copied, setCopied] = useState(null);
+
+  const VIEWER_URL = "https://dt-proposals-gilt.vercel.app/view";
 
   async function refresh() {
     setLoading(true);
@@ -1314,7 +735,7 @@ function ProposalsTab({ contacts }) {
   }
 
   function copyLink(p) {
-    const text = `${PROPOSAL_VIEWER_URL}?code=${p.proposal_code}`;
+    const text = `${VIEWER_URL}?code=${p.proposal_code}`;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(p.id);
       setTimeout(() => setCopied(null), 2000);
@@ -1438,7 +859,7 @@ function ProposalsTab({ contacts }) {
       )}
 
       {editingProposal !== undefined && (
-        <ProposalForm
+        <ProposalWriterForm
           proposal={editingProposal}
           contacts={contacts}
           onSave={() => { setEditingProposal(undefined); refresh(); }}
