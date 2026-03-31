@@ -138,6 +138,15 @@ export async function deleteProposal(id) {
   if (error) throw new Error(`Supabase proposal delete failed: ${error.message}`);
 }
 
+export async function deleteContact(id) {
+  if (!USE_SUPABASE) return;
+  // Nullify contact_id on any linked proposals before deleting
+  // (handles FK regardless of ON DELETE behaviour in the schema)
+  await supabase.from("proposals").update({ contact_id: null }).eq("contact_id", id);
+  const { error } = await supabase.from("contacts").delete().eq("id", id);
+  if (error) throw new Error(`Supabase contact delete failed: ${error.message}`);
+}
+
 export async function loadProposalAccesses(proposalId) {
   if (!USE_SUPABASE) return [];
   const { data, error } = await supabase
