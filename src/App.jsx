@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import diagonalThinkingLogo from "./assets/diagonal-thinking-logo.png";
 import Papa from "papaparse";
-import { loadContacts, saveAllContacts, isSupabaseMode } from "./db.js";
+import { loadContacts, saveAllContacts, isSupabaseMode, loadProposals, saveProposal, deleteProposal, loadProposalAccesses } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
 import {
   Download,
@@ -478,7 +478,405 @@ function ModalShell({ title, subtitle, onClose, children }) {
   );
 }
 
+// ─── Proposals helpers ────────────────────────────────────────────────────────
+
+function generateSlug(programTitle, clientName) {
+  const s = `${programTitle}-${clientName}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return s.slice(0, 60) + "-" + Math.random().toString(36).slice(2, 6);
+}
+
+function generateCode(programTitle) {
+  const words = programTitle.trim().split(/\s+/);
+  if (words.length >= 4) return words.map((w) => w[0]).join("").toUpperCase().slice(0, 4);
+  if (words.length >= 2) return words.map((w) => w.slice(0, 2)).join("").toUpperCase().slice(0, 4);
+  return (programTitle.slice(0, 4).toUpperCase() || "PROP");
+}
+
+function todayFormatted() {
+  return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+}
+
+// ─── ProposalAccessPanel ──────────────────────────────────────────────────────
+
+function ProposalAccessPanel({ proposal, onClose }) {
+  const [accesses, setAccesses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadProposalAccesses(proposal.id)
+      .then(setAccesses)
+      .finally(() => setLoading(false));
+  }, [proposal.id]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-lg bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-line bg-white px-6 py-4">
+          <div>
+            <div className="font-semibold text-ink">{proposal.program_title}</div>
+            <div className="text-xs text-slate-500">Access history · Code: {proposal.proposal_code}</div>
+          </div>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="max-h-96 overflow-y-auto px-6 py-4">
+          {loading && <div className="text-sm text-slate-500">Loading...</div>}
+          {!loading && accesses.length === 0 && (
+            <div className="text-sm text-slate-400 italic">No one has accessed this proposal yet.</div>
+          )}
+          {accesses.map((a) => (
+            <div key={a.id} className="flex items-start justify-between border-b border-line py-3 text-sm last:border-0">
+              <div>
+                <div className="font-medium text-ink">{a.email}</div>
+                <div className="text-xs text-slate-400">
+                  {new Date(a.accessed_at).toLocaleString("en-GB")}
+                </div>
+              </div>
+              {a.downloaded_pdf && (
+                <span className="ml-2 rounded bg-brand/10 px-2 py-0.5 text-xs font-medium text-brand">PDF downloaded</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ProposalForm ─────────────────────────────────────────────────────────────
+
+function ProposalForm({ proposal, contacts, onSave, onClose }) {
+  const isNew = !proposal;
+  const [form, setForm] = useState({
+    programTitle: proposal?.program_title ?? "",
+    subtitle: proposal?.subtitle ?? "",
+    preparedFor: proposal?.prepared_for ?? "",
+    proposalCode: proposal?.proposal_code ?? "",
+    date: proposal?.date ?? todayFormatted(),
+    footerLabel: proposal?.footer_label ?? "",
+    isActive: proposal?.is_active ?? true,
+    contactId: proposal?.contact_id ?? null,
+  });
+  const [contactSearch, setContactSearch] = useState(
+    proposal?.contacts ? `${proposal.contacts.contact_name ?? ""} — ${proposal.contacts.company ?? ""}` : ""
+  );
+  const [showContactDropdown, setShowContactDropdown] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const filteredContacts = contacts.filter((c) => {
+    const q = contactSearch.toLowerCase();
+    return (
+      c.contactName.toLowerCase().includes(q) ||
+      c.company.toLowerCase().includes(q) ||
+      c.email.toLowerCase().includes(q)
+    );
+  }).slice(0, 8);
+
+  function selectContact(c) {
+    setForm((f) => ({
+      ...f,
+      contactId: c.id,
+      preparedFor: [c.contactName, c.company].filter(Boolean).join(", "),
+    }));
+    setContactSearch(`${c.contactName} — ${c.company}`);
+    setShowContactDropdown(false);
+  }
+
+  async function handleSave() {
+    if (!form.programTitle.trim()) { setError("Program title is required."); return; }
+    setSaving(true);
+    setError(null);
+    try {
+      const slug = proposal?.slug ?? generateSlug(form.programTitle, form.preparedFor || "proposal");
+      const code = form.proposalCode || generateCode(form.programTitle);
+      await saveProposal({
+        id: proposal?.id,
+        slug,
+        proposalCode: code,
+        clientName: form.preparedFor || form.programTitle,
+        programTitle: form.programTitle,
+        subtitle: form.subtitle,
+        preparedFor: form.preparedFor,
+        date: form.date,
+        footerLabel: form.footerLabel || form.programTitle,
+        isActive: form.isActive,
+        contactId: form.contactId,
+        tiptapJson: proposal?.tiptap_json ?? {},
+      });
+      onSave();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-10">
+      <div className="w-full max-w-xl bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-line bg-white px-6 py-4">
+          <div className="font-semibold text-ink">{isNew ? "New Proposal" : "Edit Proposal"}</div>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="space-y-4 px-6 py-5">
+          {/* Contact picker */}
+          <div className="relative">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Contact</label>
+            <input
+              type="text"
+              value={contactSearch}
+              onChange={(e) => { setContactSearch(e.target.value); setShowContactDropdown(true); }}
+              onFocus={() => setShowContactDropdown(true)}
+              placeholder="Search by name, company, or email…"
+              className="w-full border border-line px-3 py-2 text-sm focus:border-brand focus:outline-none"
+            />
+            {showContactDropdown && filteredContacts.length > 0 && (
+              <div className="absolute z-10 w-full border border-line bg-white shadow-lg">
+                {filteredContacts.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onMouseDown={() => selectContact(c)}
+                    className="flex w-full flex-col px-3 py-2 text-left text-sm hover:bg-slate-50"
+                  >
+                    <span className="font-medium text-ink">{c.contactName}</span>
+                    <span className="text-xs text-slate-400">{c.company}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {[
+            { key: "programTitle", label: "Program Title", placeholder: "e.g. Agent Action Day" },
+            { key: "subtitle", label: "Subtitle", placeholder: "e.g. TACE Prototype Development Workshop" },
+            { key: "preparedFor", label: "Prepared For", placeholder: "e.g. Jim Massey, TACE" },
+            { key: "proposalCode", label: "Proposal Code (4 chars)", placeholder: "e.g. TACE — auto-generated if blank" },
+            { key: "date", label: "Date", placeholder: "e.g. 31 March 2026" },
+            { key: "footerLabel", label: "Footer Label", placeholder: "e.g. Agent Action Day" },
+          ].map(({ key, label, placeholder }) => (
+            <div key={key}>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</label>
+              <input
+                type="text"
+                value={form[key]}
+                onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                placeholder={placeholder}
+                className="w-full border border-line px-3 py-2 text-sm focus:border-brand focus:outline-none"
+              />
+            </div>
+          ))}
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isActive"
+              checked={form.isActive}
+              onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
+              className="h-4 w-4 accent-brand"
+            />
+            <label htmlFor="isActive" className="text-sm text-ink">Active (clients can access this proposal)</label>
+          </div>
+
+          {error && <div className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+        </div>
+        <div className="flex justify-end gap-2 border-t border-line px-6 py-4">
+          <button type="button" onClick={onClose} className="border border-line px-4 py-2 text-sm text-slate-500 hover:bg-slate-50">
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "Save Proposal"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ProposalsTab ─────────────────────────────────────────────────────────────
+
+function ProposalsTab({ contacts }) {
+  const [proposals, setProposals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editingProposal, setEditingProposal] = useState(undefined); // undefined=closed, null=new, obj=edit
+  const [accessProposal, setAccessProposal] = useState(null);
+  const [copied, setCopied] = useState(null);
+
+  const VIEWER_URL = "https://dt-proposals.vercel.app/view";
+
+  async function refresh() {
+    setLoading(true);
+    try {
+      const data = await loadProposals();
+      setProposals(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { refresh(); }, []);
+
+  async function handleDelete(p) {
+    if (!confirm(`Delete proposal "${p.program_title}"? This cannot be undone.`)) return;
+    await deleteProposal(p.id);
+    refresh();
+  }
+
+  function copyLink(p) {
+    const text = `${VIEWER_URL}?code=${p.proposal_code}`;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(p.id);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  }
+
+  return (
+    <div>
+      {/* Proposals header */}
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="font-editorial text-2xl font-bold text-ink">Proposals</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            {isSupabaseMode() ? `${proposals.length} proposal${proposals.length !== 1 ? "s" : ""}` : "Connect to Supabase to manage proposals"}
+          </p>
+        </div>
+        {isSupabaseMode() && (
+          <button
+            type="button"
+            onClick={() => setEditingProposal(null)}
+            className="flex items-center gap-2 bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90"
+          >
+            <Plus size={16} /> New Proposal
+          </button>
+        )}
+      </div>
+
+      {!isSupabaseMode() && (
+        <div className="border border-line bg-slate-50 px-5 py-8 text-center text-sm text-slate-400">
+          Proposals are stored in Supabase. Run the app in Supabase mode to manage proposals.
+        </div>
+      )}
+
+      {isSupabaseMode() && loading && (
+        <div className="py-10 text-center text-sm text-slate-400">Loading proposals…</div>
+      )}
+
+      {isSupabaseMode() && !loading && proposals.length === 0 && (
+        <div className="border border-line bg-slate-50 px-5 py-10 text-center text-sm text-slate-400">
+          No proposals yet. Create your first one.
+        </div>
+      )}
+
+      {isSupabaseMode() && !loading && proposals.length > 0 && (
+        <div className="border border-line bg-white">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-line bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <th className="px-4 py-3">Program</th>
+                <th className="px-4 py-3">Contact</th>
+                <th className="px-4 py-3">Code</th>
+                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {proposals.map((p) => (
+                <tr key={p.id} className="border-b border-line last:border-0 hover:bg-slate-50">
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-ink">{p.program_title}</div>
+                    {p.subtitle && <div className="text-xs text-slate-400">{p.subtitle}</div>}
+                  </td>
+                  <td className="px-4 py-3">
+                    {p.contacts ? (
+                      <div>
+                        <div className="text-ink">{p.contacts.contact_name}</div>
+                        <div className="text-xs text-slate-400">{p.contacts.company}</div>
+                      </div>
+                    ) : (
+                      <span className="text-slate-300 italic">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <code className="rounded bg-slate-100 px-2 py-0.5 text-xs font-bold text-brand">{p.proposal_code}</code>
+                  </td>
+                  <td className="px-4 py-3 text-slate-500">{p.date}</td>
+                  <td className="px-4 py-3">
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${p.is_active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-400"}`}>
+                      {p.is_active ? "Active" : "Inactive"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingProposal(p)}
+                        className="text-xs text-brand hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => copyLink(p)}
+                        className="text-xs text-slate-500 hover:text-brand"
+                        title={`Copy client link for code ${p.proposal_code}`}
+                      >
+                        {copied === p.id ? "Copied!" : "Copy link"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAccessProposal(p)}
+                        className="text-xs text-slate-500 hover:text-brand"
+                      >
+                        Accesses
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(p)}
+                        className="text-xs text-red-400 hover:text-red-600"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {editingProposal !== undefined && (
+        <ProposalForm
+          proposal={editingProposal}
+          contacts={contacts}
+          onSave={() => { setEditingProposal(undefined); refresh(); }}
+          onClose={() => setEditingProposal(undefined)}
+        />
+      )}
+
+      {accessProposal && (
+        <ProposalAccessPanel proposal={accessProposal} onClose={() => setAccessProposal(null)} />
+      )}
+    </div>
+  );
+}
+
+// ─── App ──────────────────────────────────────────────────────────────────────
+
 export default function App() {
+  const [activeTab, setActiveTab] = useState("crm");
   const [contacts, setContacts] = useState([]);
   const [syncStatus, setSyncStatus] = useState("syncing");
   const initialLoadDoneRef = useRef(false);
@@ -581,13 +979,25 @@ export default function App() {
       {},
     );
 
-    const projected = contacts.reduce(
-      (sum, contact) => sum + (Number(contact.projectedValue) || 0),
+    // Projected Pipeline: Warm Leads only, with a projection attached,
+    // deduplicated by company (one entry per company, using the highest value
+    // where multiple contacts exist at the same company).
+    const warmLeadsWithProjection = contacts.filter(
+      (c) => c.type === "Warm Lead" && Number(c.projectedValue) > 0,
+    );
+    const projectionByCompany = new Map();
+    warmLeadsWithProjection.forEach((c) => {
+      const key = c.company?.trim() || c.id;
+      const existing = projectionByCompany.get(key) ?? 0;
+      if (Number(c.projectedValue) > existing) {
+        projectionByCompany.set(key, Number(c.projectedValue));
+      }
+    });
+    const projected = Array.from(projectionByCompany.values()).reduce(
+      (sum, val) => sum + val,
       0,
     );
-    const warmLeadValue = contacts
-      .filter((contact) => contact.type === "Warm Lead")
-      .reduce((sum, contact) => sum + (Number(contact.projectedValue) || 0), 0);
+    const warmLeadValue = projected;
 
     const networkPartnerCount = contacts.filter((c) => c.networkPartner).length;
 
@@ -910,9 +1320,6 @@ export default function App() {
               />
               <div className="flex items-center gap-3">
                 <SyncDot status={syncStatus} />
-                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  CRM
-                </span>
                 {isSupabaseMode() && (
                   <button
                     type="button"
@@ -927,7 +1334,28 @@ export default function App() {
             </div>
           </div>
 
-          {/* Blue hero section */}
+          {/* Tab nav */}
+          <div className="border-b border-line bg-white px-5 sm:px-6">
+            <div className="flex">
+              {["crm", "proposals"].map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-5 py-3 text-xs font-semibold uppercase tracking-[0.18em] border-b-2 transition-colors ${
+                    activeTab === tab
+                      ? "border-brand text-brand"
+                      : "border-transparent text-slate-400 hover:text-slate-600"
+                  }`}
+                >
+                  {tab === "crm" ? "CRM" : "Proposals"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Blue hero section — CRM tab only */}
+          {activeTab === "crm" && (<>
           <div className="bg-brand px-5 py-7 text-white sm:px-6 sm:py-9">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -970,9 +1398,16 @@ export default function App() {
               className="col-span-2 sm:col-span-3 lg:col-span-1"
             />
           </div>
+          </>)}
         </header>
 
-        {syncStatus === "error" && (
+        {activeTab === "proposals" && (
+          <div className="mt-6">
+            <ProposalsTab contacts={contacts} />
+          </div>
+        )}
+
+        {activeTab === "crm" && syncStatus === "error" && (
           <div className="mt-6 border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
             <span className="font-semibold">Could not connect to the local CRM server.</span>{" "}
             Make sure the Express server is running:{" "}
@@ -981,7 +1416,7 @@ export default function App() {
           </div>
         )}
 
-        {importSummary ? (
+        {activeTab === "crm" && importSummary ? (
           <div className="mt-6 border border-brand bg-brandSoft px-5 py-4 text-sm text-ink">
             Imported from <span className="font-semibold">{importSummary.fileName}</span>:
             {" "}
@@ -991,7 +1426,7 @@ export default function App() {
           </div>
         ) : null}
 
-        <section className="mt-6 grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
+        {activeTab === "crm" && <section className="mt-6 grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
           <div className="border border-line bg-white p-5 shadow-panel sm:p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -1178,9 +1613,9 @@ export default function App() {
               </label>
             </div>
           </div>
-        </section>
+        </section>}
 
-        <section ref={contactsListRef} className="mt-6 border border-line bg-white shadow-panel">
+        {activeTab === "crm" && <section ref={contactsListRef} className="mt-6 border border-line bg-white shadow-panel">
           <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
             <div>
               <h2 className="font-editorial text-3xl font-semibold text-ink">Contact List</h2>
@@ -1421,8 +1856,9 @@ export default function App() {
               </div>
             )}
           </div>
-        </section>
+        </section>}
 
+        {activeTab === "crm" && <>
         <input
           ref={importFileRef}
           type="file"
@@ -1437,6 +1873,7 @@ export default function App() {
           className="hidden"
           onChange={(event) => handleImportFile(event.target.files?.[0], "Initial CRM load")}
         />
+        </>}
       </div>
 
       {activeContact ? (

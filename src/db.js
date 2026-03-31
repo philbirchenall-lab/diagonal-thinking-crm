@@ -93,6 +93,62 @@ export async function loadContacts() {
   }
 }
 
+// ─── Proposals ───────────────────────────────────────────────────────────────
+
+export async function loadProposals() {
+  if (!USE_SUPABASE) return [];
+  const { data, error } = await supabase
+    .from("proposals")
+    .select("*, contacts(id, contact_name, company, email)")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`Supabase proposals load failed: ${error.message}`);
+  return data ?? [];
+}
+
+export async function saveProposal(proposal) {
+  if (!USE_SUPABASE) return null;
+  const row = {
+    id: proposal.id,
+    slug: proposal.slug,
+    proposal_code: proposal.proposalCode,
+    client_name: proposal.clientName,
+    program_title: proposal.programTitle,
+    subtitle: proposal.subtitle,
+    prepared_for: proposal.preparedFor,
+    prepared_by: proposal.preparedBy ?? "Phil Birchenall, DIAGONAL // THINKING",
+    date: proposal.date,
+    footer_label: proposal.footerLabel ?? "The AI Advantage",
+    tiptap_json: proposal.tiptapJson ?? {},
+    is_active: proposal.isActive ?? true,
+    contact_id: proposal.contactId ?? null,
+    updated_at: new Date().toISOString(),
+  };
+  const { data, error } = await supabase
+    .from("proposals")
+    .upsert(row, { onConflict: "id" })
+    .select()
+    .single();
+  if (error) throw new Error(`Supabase proposal save failed: ${error.message}`);
+  return data;
+}
+
+export async function deleteProposal(id) {
+  if (!USE_SUPABASE) return;
+  const { error } = await supabase.from("proposals").delete().eq("id", id);
+  if (error) throw new Error(`Supabase proposal delete failed: ${error.message}`);
+}
+
+export async function loadProposalAccesses(proposalId) {
+  if (!USE_SUPABASE) return [];
+  const { data, error } = await supabase
+    .from("proposal_access")
+    .select("*")
+    .eq("proposal_id", proposalId)
+    .order("accessed_at", { ascending: false });
+  if (error) throw new Error(`Supabase accesses load failed: ${error.message}`);
+  return data ?? [];
+}
+
 export async function saveAllContacts(contacts) {
   if (USE_SUPABASE) {
     const rows = contacts.map(toSnake);
