@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { EditorContent, useEditor } from "@tiptap/react";
+import Placeholder from "@tiptap/extension-placeholder";
+import StarterKit from "@tiptap/starter-kit";
 import diagonalThinkingLogo from "./assets/diagonal-thinking-logo.png";
 import Papa from "papaparse";
 import { loadContacts, saveAllContacts, isSupabaseMode, loadProposals, saveProposal, deleteProposal, loadProposalAccesses } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
-import ProposalWriterForm from "./proposals/ProposalForm.jsx";
 import {
   Download,
   FileSpreadsheet,
@@ -547,22 +549,354 @@ function ProposalAccessPanel({ proposal, onClose }) {
 
 // ─── ProposalForm ─────────────────────────────────────────────────────────────
 
+function ProposalToolbarButton({ onClick, isActive, children, title }) {
+  return (
+    <button
+      type="button"
+      onMouseDown={(event) => {
+        event.preventDefault();
+        onClick();
+      }}
+      title={title}
+      className={`rounded px-2.5 py-1.5 text-sm font-medium transition-colors ${
+        isActive
+          ? "border border-blue-300 bg-blue-100 text-blue-700"
+          : "border border-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ProposalToolbarDivider() {
+  return <div className="mx-1 h-6 w-px bg-gray-200" />;
+}
+
+function ProposalEditorToolbar({ editor }) {
+  if (!editor) return null;
+
+  return (
+    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 border-b border-gray-200 bg-gray-50 p-2">
+      <ProposalToolbarButton
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        isActive={editor.isActive("bold")}
+        title="Bold"
+      >
+        <strong>B</strong>
+      </ProposalToolbarButton>
+
+      <ProposalToolbarButton
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        isActive={editor.isActive("italic")}
+        title="Italic"
+      >
+        <em>I</em>
+      </ProposalToolbarButton>
+
+      <ProposalToolbarDivider />
+
+      <ProposalToolbarButton
+        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        isActive={editor.isActive("heading", { level: 2 })}
+        title="Heading 2"
+      >
+        H2
+      </ProposalToolbarButton>
+
+      <ProposalToolbarDivider />
+
+      <ProposalToolbarButton
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        isActive={editor.isActive("bulletList")}
+        title="Bullet list"
+      >
+        • List
+      </ProposalToolbarButton>
+
+      <ProposalToolbarButton
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        isActive={editor.isActive("orderedList")}
+        title="Numbered list"
+      >
+        1. List
+      </ProposalToolbarButton>
+
+      <ProposalToolbarDivider />
+
+      <ProposalToolbarButton
+        onClick={() => editor.chain().focus().setParagraph().run()}
+        isActive={editor.isActive("paragraph")}
+        title="Paragraph"
+      >
+        ¶
+      </ProposalToolbarButton>
+
+      <ProposalToolbarButton
+        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+        title="Horizontal rule"
+      >
+        ―
+      </ProposalToolbarButton>
+
+      <ProposalToolbarDivider />
+
+      <ProposalToolbarButton onClick={() => editor.chain().focus().undo().run()} title="Undo">
+        ↩
+      </ProposalToolbarButton>
+
+      <ProposalToolbarButton onClick={() => editor.chain().focus().redo().run()} title="Redo">
+        ↪
+      </ProposalToolbarButton>
+    </div>
+  );
+}
+
+function ProposalRichEditor({ initialContent, onChange }) {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Placeholder.configure({ placeholder: "Start writing your proposal..." }),
+    ],
+    content: initialContent || { type: "doc", content: [] },
+    immediatelyRender: false,
+    onUpdate: ({ editor: currentEditor }) => {
+      onChange(currentEditor.getJSON());
+    },
+    editorProps: {
+      attributes: {
+        class: "proposal-document proposal-body",
+      },
+    },
+  });
+
+  useEffect(() => {
+    if (!editor || !initialContent) return;
+    const current = JSON.stringify(editor.getJSON());
+    const next = JSON.stringify(initialContent);
+    if (current !== next) {
+      editor.commands.setContent(initialContent, { emitUpdate: false });
+    }
+  }, [editor, initialContent]);
+
+  return (
+    <div className="overflow-hidden rounded-md border border-gray-200">
+      <ProposalEditorToolbar editor={editor} />
+      <div className="proposal-editor-wrapper">
+        <EditorContent editor={editor} />
+      </div>
+    </div>
+  );
+}
+
+const EMPTY_PROPOSAL_DOC = { type: "doc", content: [] };
+
+function textNode(text, marks = []) {
+  return { type: "text", text, ...(marks.length ? { marks } : {}) };
+}
+
+function paragraphNode(text) {
+  return {
+    type: "paragraph",
+    content: text ? [textNode(text)] : [],
+  };
+}
+
+function headingNode(text) {
+  return {
+    type: "heading",
+    attrs: { level: 2 },
+    content: text ? [textNode(text)] : [],
+  };
+}
+
+function bulletListNode(items) {
+  return {
+    type: "bulletList",
+    content: items.map((item) => ({
+      type: "listItem",
+      content: [paragraphNode(item)],
+    })),
+  };
+}
+
+function orderedListNode(items) {
+  return {
+    type: "orderedList",
+    attrs: { start: 1 },
+    content: items.map((item) => ({
+      type: "listItem",
+      content: [paragraphNode(item)],
+    })),
+  };
+}
+
+function buildGenericProposalDoc(programTitle) {
+  const label = programTitle?.trim() || "this proposal";
+  return {
+    type: "doc",
+    content: [
+      paragraphNode(`Thank you for the opportunity to support ${label}. This proposal outlines a practical route from ambition to action, with a focus on clear outcomes, confident delivery, and tangible momentum.`),
+      headingNode("Context"),
+      paragraphNode("You are looking for support that is thoughtful, commercially grounded, and immediately useful. The intention is not simply to explore ideas, but to turn them into meaningful action within the organisation."),
+      headingNode("What this proposal covers"),
+      bulletListNode([
+        "A tailored scope of work shaped around your goals",
+        "Facilitation, strategic input, and practical delivery support",
+        "Clear outputs, next steps, and ownership",
+      ]),
+      headingNode("Recommended approach"),
+      paragraphNode("We would begin with a focused discovery phase to align on priorities, define the right shape of the work, and make sure the programme speaks directly to the people involved. From there, the work can be delivered in a format that balances strategic thinking with practical implementation."),
+      headingNode("Indicative outputs"),
+      orderedListNode([
+        "Alignment on objectives, audience, and success criteria",
+        "Delivery of the agreed workshop, programme, or intervention",
+        "A clear follow-on plan with recommended next steps",
+      ]),
+      headingNode("Next steps"),
+      paragraphNode("If this direction feels right, we can confirm scope, timings, and any delivery details, then move straight into preparation."),
+    ],
+  };
+}
+
+function buildWorkshopProposalDoc(programTitle) {
+  const label = programTitle?.trim() || "the workshop";
+  return {
+    type: "doc",
+    content: [
+      paragraphNode(`${label} is designed to help the group move from curiosity to confident action. The session combines strategic framing, hands-on exploration, and structured discussion so participants leave with clarity as well as momentum.`),
+      headingNode("Workshop aims"),
+      bulletListNode([
+        "Build shared understanding of the opportunity",
+        "Identify the most valuable use cases and priorities",
+        "Turn insights into clear, practical next steps",
+      ]),
+      headingNode("What the session includes"),
+      bulletListNode([
+        "Pre-session alignment on goals and audience",
+        "Facilitated workshop design and delivery",
+        "Examples, prompts, and live exploration where useful",
+        "A summary of outputs and recommendations afterwards",
+      ]),
+      headingNode("Outputs"),
+      paragraphNode("The session will produce a stronger shared picture of where value sits, what to prioritise next, and how to keep momentum after the workshop."),
+      headingNode("Suggested follow-on"),
+      paragraphNode("Depending on the outcome of the workshop, we can then move into deeper advisory support, team capability-building, or focused prototype work."),
+    ],
+  };
+}
+
+function proposalDocHasMeaningfulContent(doc) {
+  const content = Array.isArray(doc?.content) ? doc.content : [];
+  return content.some((node) => {
+    if (node.type === "horizontalRule") return true;
+    if (node.type === "heading" || node.type === "paragraph") {
+      return Array.isArray(node.content) && node.content.some((item) => item.text?.trim());
+    }
+    if (node.type === "bulletList" || node.type === "orderedList") {
+      return Array.isArray(node.content) && node.content.length > 0;
+    }
+    return false;
+  });
+}
+
+function renderProposalInline(nodes, keyPrefix) {
+  return (nodes ?? []).map((node, index) => {
+    const key = `${keyPrefix}-inline-${index}`;
+
+    if (node.type === "text") {
+      let content = node.text ?? "";
+      (node.marks ?? []).forEach((mark) => {
+        if (mark.type === "bold") content = <strong key={`${key}-bold`}>{content}</strong>;
+        if (mark.type === "italic") content = <em key={`${key}-italic`}>{content}</em>;
+      });
+      return <span key={key}>{content}</span>;
+    }
+
+    if (node.type === "hardBreak") {
+      return <br key={key} />;
+    }
+
+    return null;
+  });
+}
+
+function renderProposalBlocks(nodes, keyPrefix = "proposal") {
+  return (nodes ?? []).map((node, index) => {
+    const key = `${keyPrefix}-${index}`;
+
+    if (node.type === "paragraph") {
+      return <p key={key}>{renderProposalInline(node.content, key)}</p>;
+    }
+
+    if (node.type === "heading") {
+      return <h2 key={key}>{renderProposalInline(node.content, key)}</h2>;
+    }
+
+    if (node.type === "bulletList") {
+      return (
+        <ul key={key}>
+          {(node.content ?? []).map((item, itemIndex) => (
+            <li key={`${key}-item-${itemIndex}`}>
+              {renderProposalBlocks(item.content, `${key}-item-${itemIndex}`)}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+
+    if (node.type === "orderedList") {
+      return (
+        <ol key={key}>
+          {(node.content ?? []).map((item, itemIndex) => (
+            <li key={`${key}-item-${itemIndex}`}>
+              {renderProposalBlocks(item.content, `${key}-item-${itemIndex}`)}
+            </li>
+          ))}
+        </ol>
+      );
+    }
+
+    if (node.type === "blockquote") {
+      return <blockquote key={key}>{renderProposalBlocks(node.content, key)}</blockquote>;
+    }
+
+    if (node.type === "horizontalRule") {
+      return <hr key={key} />;
+    }
+
+    return null;
+  });
+}
+
 function ProposalForm({ proposal, contacts, onSave, onClose }) {
   const isNew = !proposal;
+  const draftKey = proposal?.id ? `crm-proposal-draft-${proposal.id}` : "crm-proposal-draft-new";
   const [form, setForm] = useState({
+    clientName: proposal?.client_name ?? proposal?.prepared_for ?? "",
     programTitle: proposal?.program_title ?? "",
     subtitle: proposal?.subtitle ?? "",
     preparedFor: proposal?.prepared_for ?? "",
+    preparedBy: proposal?.prepared_by ?? "Phil Birchenall, DIAGONAL // THINKING",
     proposalCode: proposal?.proposal_code ?? "",
     date: proposal?.date ?? todayFormatted(),
-    footerLabel: proposal?.footer_label ?? "",
+    footerLabel: proposal?.footer_label ?? "The AI Advantage",
     isActive: proposal?.is_active ?? true,
     contactId: proposal?.contact_id ?? null,
+  });
+  const [doc, setDoc] = useState(() => {
+    if (proposal?.tiptap_json && proposalDocHasMeaningfulContent(proposal.tiptap_json)) {
+      return proposal.tiptap_json;
+    }
+    return buildGenericProposalDoc(proposal?.program_title);
   });
   const [contactSearch, setContactSearch] = useState(
     proposal?.contacts ? `${proposal.contacts.contact_name ?? ""} — ${proposal.contacts.company ?? ""}` : ""
   );
   const [showContactDropdown, setShowContactDropdown] = useState(false);
+  const [viewMode, setViewMode] = useState("write");
+  const [restoredDraft, setRestoredDraft] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -575,37 +909,117 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
     );
   }).slice(0, 8);
 
+  const baselineRef = useRef(
+    JSON.stringify({
+      form: {
+        clientName: proposal?.client_name ?? proposal?.prepared_for ?? "",
+        programTitle: proposal?.program_title ?? "",
+        subtitle: proposal?.subtitle ?? "",
+        preparedFor: proposal?.prepared_for ?? "",
+        preparedBy: proposal?.prepared_by ?? "Phil Birchenall, DIAGONAL // THINKING",
+        proposalCode: proposal?.proposal_code ?? "",
+        date: proposal?.date ?? todayFormatted(),
+        footerLabel: proposal?.footer_label ?? "The AI Advantage",
+        isActive: proposal?.is_active ?? true,
+        contactId: proposal?.contact_id ?? null,
+      },
+      doc: proposal?.tiptap_json && proposalDocHasMeaningfulContent(proposal.tiptap_json)
+        ? proposal.tiptap_json
+        : buildGenericProposalDoc(proposal?.program_title),
+    })
+  );
+
+  useEffect(() => {
+    const raw = localStorage.getItem(draftKey);
+    if (!raw) return;
+    const parsed = safeJsonParse(raw, null);
+    if (!parsed?.form || !parsed?.doc) return;
+    setForm((current) => ({ ...current, ...parsed.form }));
+    setDoc(parsed.doc);
+    if (parsed.form.contactId) {
+      const selectedContact = contacts.find((contact) => contact.id === parsed.form.contactId);
+      if (selectedContact) {
+        setContactSearch(`${selectedContact.contactName} — ${selectedContact.company}`);
+      }
+    }
+    setRestoredDraft(true);
+  }, [draftKey, contacts]);
+
+  useEffect(() => {
+    localStorage.setItem(draftKey, JSON.stringify({ form, doc }));
+  }, [draftKey, form, doc]);
+
+  const isDirty =
+    JSON.stringify({ form, doc }) !== baselineRef.current;
+
+  function closeWithGuard() {
+    if (isDirty && !confirm("Close the proposal editor? You have unsaved changes.")) return;
+    onClose();
+  }
+
   function selectContact(c) {
     setForm((f) => ({
       ...f,
       contactId: c.id,
+      clientName: c.company || c.contactName,
       preparedFor: [c.contactName, c.company].filter(Boolean).join(", "),
     }));
     setContactSearch(`${c.contactName} — ${c.company}`);
     setShowContactDropdown(false);
   }
 
+  function applyTemplate(kind) {
+    if (
+      proposalDocHasMeaningfulContent(doc) &&
+      !confirm("Replace the current proposal body with a starter template?")
+    ) {
+      return;
+    }
+    const nextDoc =
+      kind === "workshop"
+        ? buildWorkshopProposalDoc(form.programTitle)
+        : buildGenericProposalDoc(form.programTitle);
+    setDoc(nextDoc);
+    setViewMode("write");
+  }
+
+  function importPlainText() {
+    const text = window.prompt("Paste the proposal text you want to import into the editor.");
+    if (!text?.trim()) return;
+    const paragraphs = text
+      .split(/\n{2,}/)
+      .map((chunk) => chunk.trim())
+      .filter(Boolean)
+      .map((chunk) => paragraphNode(chunk.replace(/\n/g, " ")));
+    if (!paragraphs.length) return;
+    setDoc({ type: "doc", content: paragraphs });
+    setViewMode("write");
+  }
+
   async function handleSave() {
     if (!form.programTitle.trim()) { setError("Program title is required."); return; }
+    if (!form.preparedFor.trim()) { setError("Prepared for is required."); return; }
     setSaving(true);
     setError(null);
     try {
-      const slug = proposal?.slug ?? generateSlug(form.programTitle, form.preparedFor || "proposal");
+      const slug = proposal?.slug ?? generateSlug(form.programTitle, form.clientName || form.preparedFor || "proposal");
       const code = form.proposalCode || generateCode(form.programTitle);
       await saveProposal({
         id: proposal?.id,
         slug,
         proposalCode: code,
-        clientName: form.preparedFor || form.programTitle,
+        clientName: form.clientName || form.preparedFor || form.programTitle,
         programTitle: form.programTitle,
         subtitle: form.subtitle,
         preparedFor: form.preparedFor,
+        preparedBy: form.preparedBy,
         date: form.date,
-        footerLabel: form.footerLabel || form.programTitle,
+        footerLabel: form.footerLabel || "The AI Advantage",
         isActive: form.isActive,
         contactId: form.contactId,
-        tiptapJson: proposal?.tiptap_json ?? {},
+        tiptapJson: doc,
       });
+      localStorage.removeItem(draftKey);
       onSave();
     } catch (e) {
       setError(e.message);
@@ -616,87 +1030,193 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-10">
-      <div className="w-full max-w-xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-line bg-white px-6 py-4">
-          <div className="font-semibold text-ink">{isNew ? "New Proposal" : "Edit Proposal"}</div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
-            <X size={20} />
-          </button>
-        </div>
-        <div className="space-y-4 px-6 py-5">
-          {/* Contact picker */}
-          <div className="relative">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Contact</label>
-            <input
-              type="text"
-              value={contactSearch}
-              onChange={(e) => { setContactSearch(e.target.value); setShowContactDropdown(true); }}
-              onFocus={() => setShowContactDropdown(true)}
-              placeholder="Search by name, company, or email…"
-              className="w-full border border-line px-3 py-2 text-sm focus:border-brand focus:outline-none"
-            />
-            {showContactDropdown && filteredContacts.length > 0 && (
-              <div className="absolute z-10 w-full border border-line bg-white shadow-lg">
-                {filteredContacts.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onMouseDown={() => selectContact(c)}
-                    className="flex w-full flex-col px-3 py-2 text-left text-sm hover:bg-slate-50"
-                  >
-                    <span className="font-medium text-ink">{c.contactName}</span>
-                    <span className="text-xs text-slate-400">{c.company}</span>
-                  </button>
-                ))}
+      <div className="w-full max-w-7xl overflow-hidden rounded-xl border border-line bg-white shadow-2xl">
+        <div className="flex flex-col gap-4 border-b border-line bg-white px-6 py-5 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div className="font-semibold text-ink">{isNew ? "New Proposal" : "Edit Proposal"}</div>
+            <div className="mt-1 text-sm text-slate-500">
+              Write and shape the full client-facing proposal here, then save it back into the CRM.
+            </div>
+            {restoredDraft && (
+              <div className="mt-3 inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-200">
+                Unsaved draft restored from this browser
               </div>
             )}
           </div>
-
-          {[
-            { key: "programTitle", label: "Program Title", placeholder: "e.g. Agent Action Day" },
-            { key: "subtitle", label: "Subtitle", placeholder: "e.g. TACE Prototype Development Workshop" },
-            { key: "preparedFor", label: "Prepared For", placeholder: "e.g. Jim Massey, TACE" },
-            { key: "proposalCode", label: "Proposal Code (4 chars)", placeholder: "e.g. TACE — auto-generated if blank" },
-            { key: "date", label: "Date", placeholder: "e.g. 31 March 2026" },
-            { key: "footerLabel", label: "Footer Label", placeholder: "e.g. Agent Action Day" },
-          ].map(({ key, label, placeholder }) => (
-            <div key={key}>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</label>
-              <input
-                type="text"
-                value={form[key]}
-                onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                placeholder={placeholder}
-                className="w-full border border-line px-3 py-2 text-sm focus:border-brand focus:outline-none"
-              />
-            </div>
-          ))}
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="isActive"
-              checked={form.isActive}
-              onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
-              className="h-4 w-4 accent-brand"
-            />
-            <label htmlFor="isActive" className="text-sm text-ink">Active (clients can access this proposal)</label>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setViewMode("write")}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                viewMode === "write"
+                  ? "bg-brand text-white"
+                  : "border border-line text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              Write
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("preview")}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                viewMode === "preview"
+                  ? "bg-brand text-white"
+                  : "border border-line text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              Preview
+            </button>
+            {proposal?.proposal_code && (
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(proposal.proposal_code);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="rounded-full border border-line px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              >
+                {copied ? "Code copied" : `Copy code: ${proposal.proposal_code}`}
+              </button>
+            )}
           </div>
-
-          {error && <div className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          <button type="button" onClick={closeWithGuard} className="text-slate-400 hover:text-slate-600">
+            <X size={20} />
+          </button>
         </div>
-        <div className="flex justify-end gap-2 border-t border-line px-6 py-4">
-          <button type="button" onClick={onClose} className="border border-line px-4 py-2 text-sm text-slate-500 hover:bg-slate-50">
+        <div className="grid gap-0 lg:grid-cols-[340px_minmax(0,1fr)]">
+          <aside className="space-y-6 border-b border-line bg-slate-50/70 px-6 py-6 lg:border-b-0 lg:border-r">
+            <div className="space-y-4">
+              <div className="relative">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Contact</label>
+                <input
+                  type="text"
+                  value={contactSearch}
+                  onChange={(e) => { setContactSearch(e.target.value); setShowContactDropdown(true); }}
+                  onFocus={() => setShowContactDropdown(true)}
+                  placeholder="Search by name, company, or email..."
+                  className="w-full rounded-md border border-line px-3 py-2 text-sm focus:border-brand focus:outline-none"
+                />
+                {showContactDropdown && filteredContacts.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full rounded-md border border-line bg-white shadow-lg">
+                    {filteredContacts.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onMouseDown={() => selectContact(c)}
+                        className="flex w-full flex-col px-3 py-2 text-left text-sm hover:bg-slate-50"
+                      >
+                        <span className="font-medium text-ink">{c.contactName}</span>
+                        <span className="text-xs text-slate-400">{[c.company, c.email].filter(Boolean).join(" · ")}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {[
+                { key: "programTitle", label: "Program title", placeholder: "e.g. Agent Action Day" },
+                { key: "subtitle", label: "Subtitle", placeholder: "e.g. TACE prototype development workshop" },
+                { key: "clientName", label: "Client name", placeholder: "e.g. TACE" },
+                { key: "preparedFor", label: "Prepared for", placeholder: "e.g. Jim Massey, TACE" },
+                { key: "preparedBy", label: "Prepared by", placeholder: "e.g. Phil Birchenall, DIAGONAL // THINKING" },
+                { key: "proposalCode", label: "Proposal code", placeholder: "Auto-generated if left blank" },
+                { key: "date", label: "Date", placeholder: "e.g. 31 March 2026" },
+                { key: "footerLabel", label: "Footer label", placeholder: "e.g. The AI Advantage" },
+              ].map(({ key, label, placeholder }) => (
+                <div key={key}>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</label>
+                  <input
+                    type="text"
+                    value={form[key]}
+                    onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className="w-full rounded-md border border-line px-3 py-2 text-sm focus:border-brand focus:outline-none"
+                  />
+                </div>
+              ))}
+
+              <label className="flex items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  checked={form.isActive}
+                  onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
+                  className="h-4 w-4 accent-brand"
+                />
+                Active proposal
+              </label>
+            </div>
+
+            <div className="space-y-2 border-t border-line pt-5">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Quick start</div>
+              <div className="grid gap-2">
+                <button
+                  type="button"
+                  onClick={() => applyTemplate("generic")}
+                  className="rounded-md border border-line bg-white px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                >
+                  Generic proposal template
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyTemplate("workshop")}
+                  className="rounded-md border border-line bg-white px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                >
+                  Workshop proposal template
+                </button>
+                <button
+                  type="button"
+                  onClick={importPlainText}
+                  className="rounded-md border border-line bg-white px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                >
+                  Paste plain text into the editor
+                </button>
+              </div>
+            </div>
+          </aside>
+
+          <section className="space-y-4 px-6 py-6">
+            <div className="rounded-xl border border-line bg-slate-50 px-4 py-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Proposal body</div>
+              <div className="mt-1 text-sm text-slate-500">
+                Use the toolbar to shape sections, lists, and emphasis. The saved document controls how the client-facing proposal is rendered.
+              </div>
+            </div>
+
+            {viewMode === "write" ? (
+              <ProposalRichEditor initialContent={doc} onChange={setDoc} />
+            ) : (
+              <div className="proposal-editor-preview rounded-xl border border-line bg-slate-100 p-4">
+                <div className="proposal-document proposal-body">
+                  {proposalDocHasMeaningfulContent(doc) ? (
+                    renderProposalBlocks(doc.content)
+                  ) : (
+                    <p className="text-slate-400">This proposal body is still empty.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          </section>
+        </div>
+        <div className="flex flex-col gap-3 border-t border-line px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-slate-400">
+            {isDirty ? "Unsaved changes" : "All changes saved in this draft session"}
+          </div>
+          <div className="flex justify-end gap-2">
+          <button type="button" onClick={closeWithGuard} className="rounded-md border border-line px-4 py-2 text-sm text-slate-500 hover:bg-slate-50">
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-50"
+            className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save Proposal"}
           </button>
+          </div>
         </div>
       </div>
     </div>
@@ -735,7 +1255,7 @@ function ProposalsTab({ contacts }) {
   }
 
   function copyLink(p) {
-    const text = VIEWER_URL;
+    const text = `${VIEWER_URL}?code=${encodeURIComponent(p.proposal_code)}`;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(p.id);
       setTimeout(() => setCopied(null), 2000);
@@ -859,7 +1379,7 @@ function ProposalsTab({ contacts }) {
       )}
 
       {editingProposal !== undefined && (
-        <ProposalWriterForm
+        <ProposalForm
           proposal={editingProposal}
           contacts={contacts}
           onSave={() => { setEditingProposal(undefined); refresh(); }}
