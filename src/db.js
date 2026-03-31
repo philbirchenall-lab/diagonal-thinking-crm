@@ -93,6 +93,44 @@ export async function loadContacts() {
   }
 }
 
+// ─── Proposals ───────────────────────────────────────────────────────────────
+
+export async function loadProposals() {
+  const { data, error } = await supabase
+    .from("proposals")
+    .select("*, contact:contacts(contact_name, company)")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`Failed to load proposals: ${error.message}`);
+  return data ?? [];
+}
+
+export async function saveProposal(proposal) {
+  const { data, error } = await supabase
+    .from("proposals")
+    .upsert(proposal)
+    .select("*, contact:contacts(contact_name, company)")
+    .single();
+  if (error) throw new Error(`Failed to save proposal: ${error.message}`);
+  return data;
+}
+
+export async function deleteProposal(id) {
+  const { error } = await supabase.from("proposals").delete().eq("id", id);
+  if (error) throw new Error(`Failed to delete proposal: ${error.message}`);
+}
+
+export async function loadProposalAccesses(proposalId) {
+  const { data, error } = await supabase
+    .from("proposal_access")
+    .select("*")
+    .eq("proposal_id", proposalId)
+    .order("accessed_at", { ascending: false });
+  if (error) throw new Error(`Failed to load accesses: ${error.message}`);
+  return data ?? [];
+}
+
+// ─── Contacts ────────────────────────────────────────────────────────────────
+
 export async function saveAllContacts(contacts) {
   if (USE_SUPABASE) {
     const rows = contacts.map(toSnake);

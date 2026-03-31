@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import diagonalThinkingLogo from "./assets/diagonal-thinking-logo.png";
 import Papa from "papaparse";
-import { loadContacts, saveAllContacts, isSupabaseMode } from "./db.js";
+import {
+  loadContacts,
+  saveAllContacts,
+  isSupabaseMode,
+  loadProposals,
+  saveProposal,
+  deleteProposal,
+  loadProposalAccesses,
+} from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
 import {
   Download,
@@ -478,7 +486,628 @@ function ModalShell({ title, subtitle, onClose, children }) {
   );
 }
 
+// ─── Proposal helpers ────────────────────────────────────────────────────────
+
+function todayProposalDate() {
+  const d = new Date();
+  return `${d.getDate()} ${d.toLocaleString("en-GB", { month: "long" })} ${d.getFullYear()}`;
+}
+
+function generateProposalCode(title) {
+  const initials = (title || "")
+    .split(/[\s\-–/]+/)
+    .filter((w) => w.length > 0)
+    .map((w) => w[0].toUpperCase())
+    .join("")
+    .slice(0, 4);
+  if (initials.length >= 4) return initials.slice(0, 4);
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  let code = initials;
+  while (code.length < 4) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+function generateProposalSlug(title, clientName) {
+  const clean = (s) =>
+    String(s || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+  return [clean(title), clean(clientName)]
+    .filter(Boolean)
+    .join("-")
+    .replace(/-+/g, "-");
+}
+
+// ─── ProposalEditModal ───────────────────────────────────────────────────────
+
+function ProposalEditModal({ proposal, isNew, contacts, saving, onChange, onSave, onClose }) {
+  const [contactSearch, setContactSearch] = useState(() => {
+    if (!proposal.contact_id) return "";
+    const c = contacts.find((c) => c.id === proposal.contact_id);
+    return c ? [c.contactName, c.company].filter(Boolean).join(" — ") : "";
+  });
+  const [showContactDropdown, setShowContactDropdown] = useState(false);
+
+  const filteredContacts = useMemo(() => {
+    const q = contactSearch.toLowerCase().trim();
+    if (!q) return contacts.slice(0, 8);
+    return contacts
+      .filter(
+        (c) =>
+          (c.contactName || "").toLowerCase().includes(q) ||
+          (c.company || "").toLowerCase().includes(q) ||
+          (c.email || "").toLowerCase().includes(q),
+      )
+      .slice(0, 8);
+  }, [contacts, contactSearch]);
+
+  function selectContact(contact) {
+    setContactSearch([contact.contactName, contact.company].filter(Boolean).join(" — "));
+    setShowContactDropdown(false);
+    onChange("contact_id", contact.id);
+    onChange("client_name", contact.company || contact.contactName || "");
+    onChange("prepared_for", [contact.contactName, contact.company].filter(Boolean).join(", "));
+  }
+
+  function handleTitleChange(title) {
+    onChange("program_title", title);
+    const currentCode = proposal.proposal_code || "";
+    const prevGenerated = generateProposalCode(proposal.program_title || "");
+    if (!currentCode || currentCode === prevGenerated) {
+      onChange("proposal_code", generateProposalCode(title));
+    }
+  }
+
+  return (
+    <ModalShell
+      title={isNew ? "New Proposal" : "Edit Proposal"}
+      subtitle={
+        isNew
+          ? "Create a new proposal and link it to a contact."
+          : `Editing: ${proposal.program_title || "Untitled"}`
+      }
+      onClose={onClose}
+    >
+      <div className="grid gap-5 px-5 py-6 sm:grid-cols-2 sm:px-6">
+        {/* Contact picker */}
+        <div className="space-y-2 sm:col-span-2">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Contact
+          </div>
+          <div className="relative">
+            <input
+              type="text"
+              value={contactSearch}
+              onChange={(e) => {
+                setContactSearch(e.target.value);
+                setShowContactDropdown(true);
+              }}
+              onFocus={() => setShowContactDropdown(true)}
+              onBlur={() => setTimeout(() => setShowContactDropdown(false), 150)}
+              placeholder="Search by name, company, or email…"
+              className="w-full rounded-md border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+            />
+            {showContactDropdown && filteredContacts.length > 0 && (
+              <ul className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-md border border-line bg-white shadow-lg">
+                {filteredContacts.map((c) => (
+                  <li
+                    key={c.id}
+                    onMouseDown={() => selectContact(c)}
+                    className="cursor-pointer px-4 py-2.5 text-sm transition hover:bg-mist"
+                  >
+                    <span className="font-medium text-ink">{c.contactName || c.company}</span>
+                    {c.company && c.contactName && (
+                      <span className="text-slate-400"> — {c.company}</span>
+                    )}
+                    {c.email && (
+                      <span className="ml-2 text-xs text-slate-400">{c.email}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* Program title */}
+        <div className="space-y-2 sm:col-span-2">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Program Title
+          </div>
+          <input
+            type="text"
+            value={proposal.program_title || ""}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            className="w-full rounded-md border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+          />
+        </div>
+
+        {/* Subtitle */}
+        <div className="space-y-2 sm:col-span-2">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Subtitle
+          </div>
+          <input
+            type="text"
+            value={proposal.subtitle || ""}
+            onChange={(e) => onChange("subtitle", e.target.value)}
+            className="w-full rounded-md border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+          />
+        </div>
+
+        {/* Prepared for */}
+        <div className="space-y-2">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Prepared For
+          </div>
+          <input
+            type="text"
+            value={proposal.prepared_for || ""}
+            onChange={(e) => onChange("prepared_for", e.target.value)}
+            className="w-full rounded-md border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+          />
+        </div>
+
+        {/* Proposal code */}
+        <div className="space-y-2">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Proposal Code
+          </div>
+          <input
+            type="text"
+            value={proposal.proposal_code || ""}
+            onChange={(e) => onChange("proposal_code", e.target.value.toUpperCase().slice(0, 4))}
+            maxLength={4}
+            placeholder="ABCD"
+            className="w-full rounded-md border border-line bg-white px-4 py-3 font-mono text-sm text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+          />
+        </div>
+
+        {/* Date */}
+        <div className="space-y-2">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Date
+          </div>
+          <input
+            type="text"
+            value={proposal.date || ""}
+            onChange={(e) => onChange("date", e.target.value)}
+            placeholder="31 March 2026"
+            className="w-full rounded-md border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+          />
+        </div>
+
+        {/* Footer label */}
+        <div className="space-y-2">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Footer Label
+          </div>
+          <input
+            type="text"
+            value={proposal.footer_label || ""}
+            onChange={(e) => onChange("footer_label", e.target.value)}
+            className="w-full rounded-md border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+          />
+        </div>
+
+        {/* Is active */}
+        <label className="flex cursor-pointer items-center gap-3 sm:col-span-2">
+          <input
+            type="checkbox"
+            checked={proposal.is_active ?? true}
+            onChange={(e) => onChange("is_active", e.target.checked)}
+            className="h-4 w-4 rounded border-line accent-brand"
+          />
+          <span className="text-sm font-medium text-slate-700">
+            Active — proposal is accessible to clients
+          </span>
+        </label>
+      </div>
+
+      <div className="flex justify-end gap-3 border-t border-line px-6 py-5">
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-md border border-line px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-black hover:text-ink"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving}
+          className="rounded-md bg-black px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-inkSoft disabled:opacity-60"
+        >
+          {saving ? "Saving…" : isNew ? "Create Proposal" : "Save Changes"}
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+// ─── ProposalsTab ────────────────────────────────────────────────────────────
+
+function ProposalsTab({ contacts }) {
+  const [proposals, setProposals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editingProposal, setEditingProposal] = useState(null);
+  const [isNew, setIsNew] = useState(false);
+  const [accessView, setAccessView] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [copiedId, setCopiedId] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
+  const toastTimerRef = useRef(null);
+
+  function showToast(msg) {
+    setToast(msg);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 3000);
+  }
+
+  useEffect(() => {
+    if (!isSupabaseMode()) { setLoading(false); return; }
+    loadProposals()
+      .then((data) => { setProposals(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  function openNew() {
+    setIsNew(true);
+    setEditingProposal({
+      id: crypto.randomUUID(),
+      slug: "",
+      proposal_code: "",
+      client_name: "",
+      program_title: "",
+      subtitle: "",
+      prepared_for: "",
+      prepared_by: "Phil Birchenall",
+      date: todayProposalDate(),
+      footer_label: "",
+      is_active: true,
+      contact_id: null,
+    });
+  }
+
+  function openEdit(proposal) {
+    setIsNew(false);
+    setEditingProposal({ ...proposal });
+  }
+
+  async function handleSave() {
+    if (!editingProposal) return;
+    setSaving(true);
+    const slug = generateProposalSlug(editingProposal.program_title, editingProposal.client_name);
+    try {
+      const saved = await saveProposal({
+        ...editingProposal,
+        slug,
+        updated_at: new Date().toISOString(),
+      });
+      setProposals((prev) =>
+        isNew ? [saved, ...prev] : prev.map((p) => (p.id === saved.id ? saved : p)),
+      );
+      setEditingProposal(null);
+      showToast("Proposal saved");
+    } catch (err) {
+      showToast(`Error: ${err.message}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id) {
+    try {
+      await deleteProposal(id);
+      setProposals((prev) => prev.filter((p) => p.id !== id));
+      setDeleteConfirmId(null);
+      showToast("Proposal deleted");
+    } catch (err) {
+      showToast(`Error: ${err.message}`);
+    }
+  }
+
+  async function openAccessHistory(proposal) {
+    const accesses = await loadProposalAccesses(proposal.id).catch(() => []);
+    setAccessView({ proposal, accesses });
+  }
+
+  function copyLink(proposal) {
+    const url = `https://dt-proposals.vercel.app/view/${proposal.proposal_code}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(proposal.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  }
+
+  if (!isSupabaseMode()) {
+    return (
+      <div className="mt-6 border border-line bg-white p-8 text-center shadow-panel">
+        <p className="text-sm text-slate-500">
+          Proposals are only available in Supabase mode (deployed app).
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6">
+      <div className="border border-line bg-white shadow-panel">
+        <div className="flex items-center justify-between border-b border-line px-6 py-5">
+          <div>
+            <h2 className="font-editorial text-3xl font-semibold text-ink">Proposals</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {proposals.length} proposal{proposals.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={openNew}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-md bg-black px-4 py-2.5 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-inkSoft"
+          >
+            <Plus size={16} />
+            New Proposal
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="px-6 py-16 text-center text-sm text-slate-500">Loading proposals…</div>
+        ) : proposals.length === 0 ? (
+          <div className="px-6 py-16 text-center text-sm text-slate-500">
+            No proposals yet. Create one to get started.
+          </div>
+        ) : (
+          <>
+            {/* Desktop table */}
+            <div className="hidden sm:block">
+              <table className="w-full text-left">
+                <thead className="bg-mist text-xs uppercase tracking-[0.16em] text-slate-500">
+                  <tr>
+                    <th className="px-5 py-4 font-semibold w-[28%]">Program</th>
+                    <th className="px-5 py-4 font-semibold w-[22%]">Client</th>
+                    <th className="px-5 py-4 font-semibold w-[8%]">Code</th>
+                    <th className="px-5 py-4 font-semibold w-[10%]">Status</th>
+                    <th className="px-5 py-4 font-semibold w-[12%]">Date</th>
+                    <th className="px-5 py-4 font-semibold w-[20%]">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {proposals.map((p) => (
+                    <tr key={p.id} className="border-t border-line transition hover:bg-mist">
+                      <td className="px-5 py-3 max-w-0">
+                        <button
+                          type="button"
+                          onClick={() => openAccessHistory(p)}
+                          className="w-full text-left"
+                        >
+                          <div className="truncate font-semibold text-ink">
+                            {p.program_title || "Untitled"}
+                          </div>
+                          {p.subtitle && (
+                            <div className="truncate text-sm text-slate-500">{p.subtitle}</div>
+                          )}
+                        </button>
+                      </td>
+                      <td className="px-5 py-3 text-sm text-slate-600">
+                        <div>{p.client_name || p.contact?.contact_name || "—"}</div>
+                        {p.contact?.company && (
+                          <div className="text-slate-400">{p.contact.company}</div>
+                        )}
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className="rounded border border-line bg-mist px-2 py-1 font-mono text-xs font-semibold text-ink">
+                          {p.proposal_code || "—"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${
+                            p.is_active
+                              ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                              : "bg-slate-100 text-slate-500 ring-slate-200"
+                          }`}
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              p.is_active ? "bg-emerald-500" : "bg-slate-400"
+                            }`}
+                          />
+                          {p.is_active ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-sm text-slate-600">{p.date || "—"}</td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => openEdit(p)}
+                            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-black hover:text-ink"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => copyLink(p)}
+                            className={`rounded-md border px-3 py-1.5 text-xs font-medium transition ${
+                              copiedId === p.id
+                                ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                                : "border-line text-slate-600 hover:border-black hover:text-ink"
+                            }`}
+                          >
+                            {copiedId === p.id ? "Copied!" : "Copy link"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteConfirmId(p.id)}
+                            className="rounded-md border border-line p-1.5 text-rose-500 transition hover:bg-rose-50"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="space-y-3 p-4 sm:hidden">
+              {proposals.map((p) => (
+                <div key={p.id} className="border border-line bg-white p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate font-semibold text-ink">
+                        {p.program_title || "Untitled"}
+                      </div>
+                      <div className="truncate text-sm text-slate-500">
+                        {p.client_name || "—"}
+                      </div>
+                    </div>
+                    <span
+                      className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${
+                        p.is_active
+                          ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                          : "bg-slate-100 text-slate-500 ring-slate-200"
+                      }`}
+                    >
+                      {p.is_active ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 border-t border-line pt-3">
+                    <button
+                      type="button"
+                      onClick={() => openEdit(p)}
+                      className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-black hover:text-ink"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => copyLink(p)}
+                      className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-black hover:text-ink"
+                    >
+                      {copiedId === p.id ? "Copied!" : "Copy link"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirmId(p.id)}
+                      className="rounded-md border border-line p-1.5 text-rose-500 transition hover:bg-rose-50"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Create/Edit modal */}
+      {editingProposal && (
+        <ProposalEditModal
+          proposal={editingProposal}
+          isNew={isNew}
+          contacts={contacts}
+          saving={saving}
+          onChange={(field, value) => setEditingProposal((p) => ({ ...p, [field]: value }))}
+          onSave={handleSave}
+          onClose={() => setEditingProposal(null)}
+        />
+      )}
+
+      {/* Access history modal */}
+      {accessView && (
+        <ModalShell
+          title={accessView.proposal.program_title || "Access History"}
+          subtitle="Everyone who has accessed this proposal"
+          onClose={() => setAccessView(null)}
+        >
+          <div className="px-6 py-6">
+            {accessView.accesses.length === 0 ? (
+              <p className="text-sm text-slate-500">No access records yet.</p>
+            ) : (
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-line text-xs uppercase tracking-[0.14em] text-slate-500">
+                    <th className="pb-3 pr-6">Email</th>
+                    <th className="pb-3 pr-6">Accessed</th>
+                    <th className="pb-3">PDF</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {accessView.accesses.map((a) => (
+                    <tr key={a.id} className="border-t border-line">
+                      <td className="py-3 pr-6 font-medium text-ink">{a.email || "—"}</td>
+                      <td className="py-3 pr-6 text-slate-600">
+                        {a.accessed_at ? new Date(a.accessed_at).toLocaleString("en-GB") : "—"}
+                      </td>
+                      <td className="py-3">
+                        {a.downloaded_pdf ? (
+                          <span className="rounded bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                            Downloaded
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </ModalShell>
+      )}
+
+      {/* Delete confirm */}
+      {deleteConfirmId && (
+        <ModalShell
+          title="Delete proposal?"
+          subtitle="This cannot be undone."
+          onClose={() => setDeleteConfirmId(null)}
+        >
+          <div className="px-6 py-4 text-sm text-slate-600">
+            The proposal and all its access records will be permanently deleted.
+          </div>
+          <div className="flex justify-end gap-3 border-t border-line px-6 py-5">
+            <button
+              type="button"
+              onClick={() => setDeleteConfirmId(null)}
+              className="rounded-md border border-line px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-black hover:text-ink"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDelete(deleteConfirmId)}
+              className="rounded-md bg-black px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-inkSoft"
+            >
+              Delete
+            </button>
+          </div>
+        </ModalShell>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg border border-line bg-white px-4 py-3 shadow-lg">
+          <span className="h-2 w-2 flex-shrink-0 rounded-full bg-brand" />
+          <span className="text-sm font-medium text-ink">{toast}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── App ─────────────────────────────────────────────────────────────────────
+
 export default function App() {
+  const [activeTab, setActiveTab] = useState("crm"); // 'crm' | 'proposals'
   const [contacts, setContacts] = useState([]);
   const [syncStatus, setSyncStatus] = useState("syncing");
   const initialLoadDoneRef = useRef(false);
@@ -929,6 +1558,25 @@ export default function App() {
             </div>
           </div>
 
+          {/* Tab switcher */}
+          <div className="border-b border-line bg-white px-5 sm:px-6">
+            <div className="flex gap-0">
+              {["crm", "proposals"].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-5 py-3 text-sm font-semibold uppercase tracking-[0.15em] border-b-2 transition-colors ${
+                    activeTab === tab
+                      ? "border-brand text-brand"
+                      : "border-transparent text-slate-400 hover:text-slate-600"
+                  }`}
+                >
+                  {tab === "crm" ? "CRM" : "Proposals"}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Blue hero section */}
           <div className="bg-brand px-5 py-7 text-white sm:px-6 sm:py-9">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -973,6 +1621,9 @@ export default function App() {
             />
           </div>
         </header>
+
+        {activeTab === "crm" && (
+          <>
 
         {syncStatus === "error" && (
           <div className="mt-6 border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
@@ -1439,7 +2090,15 @@ export default function App() {
           className="hidden"
           onChange={(event) => handleImportFile(event.target.files?.[0], "Initial CRM load")}
         />
+
+          </>
+        )}
+
+        {activeTab === "proposals" && <ProposalsTab contacts={contacts} />}
       </div>
+
+      {activeTab === "crm" && (
+        <>
 
       {activeContact ? (
         <ModalShell
@@ -1848,6 +2507,9 @@ export default function App() {
           <span className="text-sm font-medium text-ink">{companyToast}</span>
         </div>
       ) : null}
+
+        </>
+      )}
     </div>
   );
 }
