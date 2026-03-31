@@ -735,7 +735,7 @@ function ProposalsTab({ contacts }) {
   }
 
   function copyLink(p) {
-    const text = `${VIEWER_URL}?code=${p.proposal_code}`;
+    const text = VIEWER_URL;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(p.id);
       setTimeout(() => setCopied(null), 2000);
