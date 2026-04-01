@@ -28,8 +28,8 @@ Dev: CC-D (local_44748a84)
 Merged to main via PR (f23b0c5 → 1ee2c1d). Live on crm.diagonalthinking.co.
 Dev: CC
 
-### CRM-004 — Add total_client_value + live_work_value columns 🔵
-SQL migration committed. Awaiting verification that columns are live in Supabase.
+### CRM-004 — Add total_client_value + live_work_value columns 🟢
+Supabase REST API confirmed columns live (HTTP 200 on select, 2 Apr 2026). Migration in setup/schema.sql.
 Dev: CC-D (local_e2445044)
 
 ### CRM-005 — Custom domain 🟢
@@ -55,8 +55,8 @@ Dev: CC
 Live tested 1 Apr 2026 — Edit link works correctly, no 404.
 Dev: CC-D (local_ffaca1f0)
 
-### PROP-005 — Send proposal email to client 🔵
-Resend integration committed. Awaiting live verification (requires RESEND_API_KEY in Vercel env vars).
+### PROP-005 — Send proposal email to client 🔴
+Resend integration committed. Blocked: RESEND_API_KEY not present in dt-proposals Vercel env vars (confirmed 2 Apr 2026). Phil needs to add it in Vercel → Settings → Environment Variables, then redeploy.
 Dev: CC-D (local_49a3fda9)
 
 ### PROP-006 — Custom domain 🟢
@@ -83,38 +83,11 @@ Dev: CC-D (claude/festive-agnesi)
 
 ## Mailchimp Integration
 
-### MAIL-001 — Sync CRM contacts to Mailchimp audience 🔵
-Priority: High
-Dev: CC-D (local_911fc8cb — in progress)
+### MAIL-001 — Sync CRM contacts to Mailchimp audience 🔴
+Deployed. Commit 213c5c6. Blocked: MAILCHIMP_API_KEY and MAILCHIMP_AUDIENCE_ID not yet in CRM Vercel env vars (confirmed 2 Apr 2026). Phil needs to add both in Vercel → diagonal-thinking-crm → Settings → Environment Variables, then the "Sync to Mailchimp" button will work.
+Dev: CC-D (local_911fc8cb)
 
-Sync contacts from the Diagonal Thinking CRM into a Mailchimp audience so that email campaigns can be run directly from Mailchimp against the CRM contact list.
-
-Spec:
-- Add a "Sync to Mailchimp" button in the CRM contacts view (top toolbar)
-- On click: show a progress indicator and sync all contacts to the configured Mailchimp audience
-- Fields to sync:
-  - Email address (required — skip contact if missing)
-  - First name / Last name (from full name field)
-  - Company (COMPANY merge field)
-  - Pipeline stage (PIPELINE merge field)
-  - Service tags (SERVICES merge field, comma-separated)
-- Sync behaviour:
-  - Add new contacts that don't exist in Mailchimp
-  - Update existing contacts (matched by email) with latest CRM data
-  - Do NOT unsubscribe or delete contacts from Mailchimp if removed from CRM
-  - Respect existing Mailchimp unsubscribe status — never re-subscribe an unsubscribed contact
-- On completion: show toast with count of added / updated / skipped
-- Store last_synced_at on each contact record in Supabase
-- Dependencies: MAILCHIMP_API_KEY and MAILCHIMP_AUDIENCE_ID must be set in Vercel env vars
-- Use Mailchimp Marketing API v3 (batch upsert endpoint for efficiency)
-
-### MAIL-002 — Auto-sync on contact save ⬜
-Priority: Medium
-
-After MAIL-001 is live, trigger an incremental sync automatically whenever a contact is saved or updated in the CRM, rather than requiring manual sync.
-
-Spec:
-- On every contact save (create or update), fire a background call to upsert that single contact in Mailchimp
-- Should be non-blocking — CRM save completes immediately, Mailchimp sync happens async
-- Failures should be silent to the user but logged to console
-- Replaces the need for manual full sync except for initial setup or recovery
+### MAIL-002 — Auto-sync on contact save 🔵
+Deployed (f9d2928). On every contact save, fires a background upsert to /api/mailchimp-sync (single contact, non-blocking). Failures logged to console only. Skips if no email. Build passes.
+**Awaiting:** MAIL-001 activation (needs Mailchimp API keys in Vercel) before this can be fully tested.
+Dev: CC-D (local_51144ae2)
