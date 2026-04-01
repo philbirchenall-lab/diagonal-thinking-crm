@@ -108,7 +108,7 @@ Spec:
 - Dependencies: MAILCHIMP_API_KEY and MAILCHIMP_AUDIENCE_ID must be set in Vercel env vars
 - Use Mailchimp Marketing API v3 (batch upsert endpoint for efficiency)
 
-### MAIL-002 — Auto-sync on contact save ⬜
+### MAIL-002 — Auto-sync on contact save 🔵
 Priority: Medium
 
 After MAIL-001 is live, trigger an incremental sync automatically whenever a contact is saved or updated in the CRM, rather than requiring manual sync.
