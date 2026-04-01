@@ -156,7 +156,7 @@ export async function loadContactProposals(contact) {
   if (contact.id) {
     const { data, error } = await supabase
       .from("proposals")
-      .select("id, slug, program_title, date, proposal_code")
+      .select("id, slug, program_title, date, proposal_code, reply_received")
       .eq("contact_id", contact.id)
       .order("created_at", { ascending: false });
     if (error) throw new Error(`Supabase contact proposals load failed: ${error.message}`);
@@ -170,7 +170,7 @@ export async function loadContactProposals(contact) {
   if (name) {
     const { data, error } = await supabase
       .from("proposals")
-      .select("id, slug, program_title, date, proposal_code")
+      .select("id, slug, program_title, date, proposal_code, reply_received")
       .ilike("client_name", name)
       .order("created_at", { ascending: false });
     if (error) throw new Error(`Supabase contact proposals fallback load failed: ${error.message}`);
@@ -197,6 +197,61 @@ async function attachViewCounts(proposals) {
     counts[row.proposal_id] = (counts[row.proposal_id] ?? 0) + 1;
   }
   return proposals.map((p) => ({ ...p, views: counts[p.id] ?? 0 }));
+}
+
+// ─── Contact Activities ───────────────────────────────────────────────────────
+
+// Load activities for a contact (most recent first)
+export async function loadContactActivities(contactId) {
+  if (!USE_SUPABASE) return [];
+  const { data, error } = await supabase
+    .from("contact_activities")
+    .select("*")
+    .eq("contact_id", contactId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`Supabase activities load failed: ${error.message}`);
+  return data ?? [];
+}
+
+// Save a new activity record
+// activity shape: { contactId, proposalId (optional), activityType, activitySubtype, subject, body, status }
+export async function saveContactActivity(activity) {
+  if (!USE_SUPABASE) return null;
+  const { data, error } = await supabase
+    .from("contact_activities")
+    .insert({
+      contact_id: activity.contactId,
+      proposal_id: activity.proposalId ?? null,
+      activity_type: activity.activityType,
+      activity_subtype: activity.activitySubtype ?? null,
+      subject: activity.subject ?? null,
+      body: activity.body ?? null,
+      status: activity.status ?? "sent",
+    })
+    .select()
+    .single();
+  if (error) throw new Error(`Supabase activity save failed: ${error.message}`);
+  return data;
+}
+
+// Mark a proposal as replied (sets reply_received = true)
+export async function markProposalReplied(proposalId) {
+  if (!USE_SUPABASE) return;
+  const { error } = await supabase
+    .from("proposals")
+    .update({ reply_received: true })
+    .eq("id", proposalId);
+  if (error) throw new Error(`Supabase markProposalReplied failed: ${error.message}`);
+}
+
+// Update a contact activity status (e.g. 'pending' -> 'sent')
+export async function updateActivityStatus(activityId, status) {
+  if (!USE_SUPABASE) return;
+  const { error } = await supabase
+    .from("contact_activities")
+    .update({ status })
+    .eq("id", activityId);
+  if (error) throw new Error(`Supabase updateActivityStatus failed: ${error.message}`);
 }
 
 export async function loadProposalAccesses(proposalId) {

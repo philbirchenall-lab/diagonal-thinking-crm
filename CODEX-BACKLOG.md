@@ -91,3 +91,27 @@ Dev: CC-D (local_911fc8cb)
 Deployed (f9d2928). On every contact save, fires a background upsert to /api/mailchimp-sync (single contact, non-blocking). Failures logged to console only. Skips if no email. Build passes.
 **Awaiting:** MAIL-001 activation (needs Mailchimp API keys in Vercel) before this can be fully tested.
 Dev: CC-D (local_51144ae2)
+
+---
+
+## Automated Proposal Follow-up
+
+### CRM-006 — Activity log panel in contact detail modal 🔵
+Adds a "Activity" section below the Proposals panel in the contact detail sidebar. Shows all contact_activities (email_sent, linkedin_draft, etc.) in reverse-chronological order with type icon, subject, date, and status badge. LinkedIn drafts with status=pending show the message body and a "Mark as sent" button. Proposals panel gains a "Mark as replied" button (shown when views > 0 and reply_received=false).
+**Requires:** Run supabase/migrations/20260401000001_contact_activities.sql and 20260401000002_proposals_sent_at.sql in Supabase SQL Editor before testing.
+Dev: CC-D (brave-euclid)
+
+### PROP-011 — Nudge email at 4 working days (no opens) 🔵
+Cron: api/proposal-followup-cron.js, runs daily at 09:00 UTC. If proposal has 0 views and 4+ working days since sent_at, sends a nudge email via Resend and logs to contact_activities (subtype: nudge_4day). Deduped — only one nudge per proposal.
+**Env vars required:** RESEND_API_KEY, SUPABASE_SERVICE_ROLE_KEY (or anon key fallback), CRON_SECRET — all must be added to diagonal-thinking-crm Vercel project settings.
+Dev: CC-D (brave-euclid)
+
+### PROP-012 — LinkedIn draft at 7 working days (no opens) 🔵
+Same cron as PROP-011. If proposal has 0 views and 7+ working days since sent_at, creates a contact_activity record (type: linkedin_draft, status: pending) with a pre-written LinkedIn message. Phil reviews and sends manually via the CRM Activity panel, then clicks "Mark as sent".
+**Env vars required:** Same as PROP-011.
+Dev: CC-D (brave-euclid)
+
+### PROP-013 — Chase email at 5 working days post-open 🔵
+Same cron as PROP-011. If proposal has views > 0, first_opened_at is known, 5+ working days have passed since first open, and reply_received=false, sends a chase email via Resend and logs to contact_activities (subtype: chase_5day). Phil marks proposal as replied via the CRM Proposals panel when a reply arrives.
+**Env vars required:** Same as PROP-011.
+Dev: CC-D (brave-euclid)
