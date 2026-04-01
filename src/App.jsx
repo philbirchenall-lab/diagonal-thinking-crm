@@ -520,18 +520,18 @@ function ProposalAccessPanel({ proposal, onClose }) {
   }, [proposal.id]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-line bg-white px-6 py-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
+      <div className="w-full max-w-lg rounded-t-xl bg-white shadow-xl sm:rounded-xl">
+        <div className="flex items-center justify-between border-b border-line bg-white px-5 py-4">
           <div>
             <div className="font-semibold text-ink">{proposal.program_title}</div>
             <div className="text-xs text-slate-500">Access history · Code: {proposal.proposal_code}</div>
           </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button type="button" onClick={onClose} className="min-h-[44px] min-w-[44px] rounded-md p-2 text-slate-400 hover:text-slate-600">
             <X size={20} />
           </button>
         </div>
-        <div className="max-h-96 overflow-y-auto px-6 py-4">
+        <div className="max-h-96 overflow-y-auto px-5 py-4">
           {loading && <div className="text-sm text-slate-500">Loading...</div>}
           {!loading && accesses.length === 0 && (
             <div className="text-sm text-slate-400 italic">No one has accessed this proposal yet.</div>
@@ -1039,8 +1039,8 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-10">
       <div className="w-full max-w-7xl overflow-hidden rounded-xl border border-line bg-white shadow-2xl">
-        <div className="flex flex-col gap-4 border-b border-line bg-white px-6 py-5 lg:flex-row lg:items-start lg:justify-between">
-          <div>
+        <div className="flex flex-col gap-3 border-b border-line bg-white px-5 py-4 sm:px-6 sm:py-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1">
             <div className="font-semibold text-ink">{isNew ? "New Proposal" : "Edit Proposal"}</div>
             <div className="mt-1 text-sm text-slate-500">
               Write and shape the full client-facing proposal here, then save it back into the CRM.
@@ -1088,7 +1088,7 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
               </button>
             )}
           </div>
-          <button type="button" onClick={closeWithGuard} className="text-slate-400 hover:text-slate-600">
+          <button type="button" onClick={closeWithGuard} className="min-h-[44px] min-w-[44px] self-start rounded-md p-2 text-slate-400 hover:text-slate-600 lg:self-auto">
             <X size={20} />
           </button>
         </div>
@@ -1214,19 +1214,19 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
             {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
           </section>
         </div>
-        <div className="flex flex-col gap-3 border-t border-line px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-t border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div className="text-xs text-slate-400">
             {isDirty ? "Unsaved changes" : "All changes saved in this draft session"}
           </div>
           <div className="flex justify-end gap-2">
-          <button type="button" onClick={closeWithGuard} className="rounded-md border border-line px-4 py-2 text-sm text-slate-500 hover:bg-slate-50">
+          <button type="button" onClick={closeWithGuard} className="min-h-[44px] rounded-md border border-line px-4 py-2 text-sm text-slate-500 hover:bg-slate-50">
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-50"
+            className="min-h-[44px] rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save Proposal"}
           </button>
@@ -1349,7 +1349,7 @@ function ProposalsTab({ contacts }) {
   return (
     <div>
       {/* Proposals header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-editorial text-2xl font-bold text-ink">Proposals</h2>
           <p className="mt-1 text-sm text-slate-500">
@@ -1360,7 +1360,7 @@ function ProposalsTab({ contacts }) {
           <button
             type="button"
             onClick={() => setEditingProposal(null)}
-            className="flex items-center gap-2 bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90"
           >
             <Plus size={16} /> New Proposal
           </button>
@@ -1385,80 +1385,141 @@ function ProposalsTab({ contacts }) {
 
       {isSupabaseMode() && !loading && proposals.length > 0 && (
         <div className="border border-line bg-white">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-line bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                <th className="px-4 py-3">Program</th>
-                <th className="px-4 py-3">Contact</th>
-                <th className="px-4 py-3">Code</th>
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {proposals.map((p) => (
-                <tr key={p.id} className="border-b border-line last:border-0 hover:bg-slate-50">
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-ink">{p.program_title}</div>
-                    {p.subtitle && <div className="text-xs text-slate-400">{p.subtitle}</div>}
-                  </td>
-                  <td className="px-4 py-3">
-                    {p.contacts ? (
-                      <div>
-                        <div className="text-ink">{p.contacts.contact_name}</div>
-                        <div className="text-xs text-slate-400">{p.contacts.company}</div>
-                      </div>
-                    ) : (
-                      <span className="text-slate-300 italic">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <code className="rounded bg-slate-100 px-2 py-0.5 text-xs font-bold text-brand">{p.proposal_code}</code>
-                  </td>
-                  <td className="px-4 py-3 text-slate-500">{p.date}</td>
-                  <td className="px-4 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${p.is_active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-400"}`}>
-                      {p.is_active ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setEditingProposal(p)}
-                        className="text-xs text-brand hover:underline"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => copyLink(p)}
-                        className="text-xs text-slate-500 hover:text-brand"
-                        title={`Copy client link for code ${p.proposal_code}`}
-                      >
-                        {copied === p.id ? "Copied!" : "Copy link"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAccessProposal(p)}
-                        className="text-xs text-slate-500 hover:text-brand"
-                      >
-                        Accesses
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(p)}
-                        className="text-xs text-red-400 hover:text-red-600"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
+          {/* Desktop table — hidden on small screens */}
+          <div className="hidden sm:block">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-line bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <th className="px-4 py-3">Program</th>
+                  <th className="px-4 py-3">Contact</th>
+                  <th className="px-4 py-3">Code</th>
+                  <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {proposals.map((p) => (
+                  <tr key={p.id} className="border-b border-line last:border-0 hover:bg-slate-50">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-ink">{p.program_title}</div>
+                      {p.subtitle && <div className="text-xs text-slate-400">{p.subtitle}</div>}
+                    </td>
+                    <td className="px-4 py-3">
+                      {p.contacts ? (
+                        <div>
+                          <div className="text-ink">{p.contacts.contact_name}</div>
+                          <div className="text-xs text-slate-400">{p.contacts.company}</div>
+                        </div>
+                      ) : (
+                        <span className="text-slate-300 italic">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <code className="rounded bg-slate-100 px-2 py-0.5 text-xs font-bold text-brand">{p.proposal_code}</code>
+                    </td>
+                    <td className="px-4 py-3 text-slate-500">{p.date}</td>
+                    <td className="px-4 py-3">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${p.is_active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-400"}`}>
+                        {p.is_active ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingProposal(p)}
+                          className="text-xs text-brand hover:underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => copyLink(p)}
+                          className="text-xs text-slate-500 hover:text-brand"
+                          title={`Copy client link for code ${p.proposal_code}`}
+                        >
+                          {copied === p.id ? "Copied!" : "Copy link"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAccessProposal(p)}
+                          className="text-xs text-slate-500 hover:text-brand"
+                        >
+                          Accesses
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(p)}
+                          className="text-xs text-red-400 hover:text-red-600"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile card list — visible only on small screens */}
+          <div className="space-y-0 sm:hidden">
+            {proposals.map((p) => (
+              <div key={p.id} className="border-b border-line p-4 last:border-b-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-ink leading-snug">{p.program_title}</div>
+                    {p.subtitle && <div className="mt-0.5 text-xs text-slate-400">{p.subtitle}</div>}
+                  </div>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${p.is_active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-400"}`}>
+                    {p.is_active ? "Active" : "Inactive"}
+                  </span>
+                </div>
+                {p.contacts && (
+                  <div className="mt-1.5 text-sm text-slate-600">
+                    {p.contacts.contact_name}
+                    {p.contacts.company && <span className="text-slate-400"> · {p.contacts.company}</span>}
+                  </div>
+                )}
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                  <code className="rounded bg-slate-100 px-2 py-0.5 font-bold text-brand">{p.proposal_code}</code>
+                  {p.date && <span>{p.date}</span>}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingProposal(p)}
+                    className="min-h-[44px] rounded-md border border-line px-3 py-2 text-xs font-medium text-brand hover:bg-slate-50"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => copyLink(p)}
+                    className="min-h-[44px] rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand"
+                    title={`Copy client link for code ${p.proposal_code}`}
+                  >
+                    {copied === p.id ? "Copied!" : "Copy link"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAccessProposal(p)}
+                    className="min-h-[44px] rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand"
+                  >
+                    Accesses
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(p)}
+                    className="min-h-[44px] rounded-md border border-red-200 px-3 py-2 text-xs font-medium text-red-400 hover:text-red-600"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -2823,7 +2884,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between border-t border-slate-200 px-6 py-5">
+          <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6 sm:py-5">
             <div className="text-sm text-slate-500">
               {"Changes are saved to a local JSON file via the CRM server."}
             </div>
@@ -2834,14 +2895,14 @@ export default function App() {
                   setActiveContact(null);
                   setIsNewContact(false);
                 }}
-                className="min-h-[44px] rounded-md border border-line px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-slate-600 transition hover:border-black hover:text-ink"
+                className="min-h-[44px] flex-1 rounded-md border border-line px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-slate-600 transition hover:border-black hover:text-ink sm:flex-none"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={saveActiveContact}
-                className="min-h-[44px] rounded-md bg-black px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-inkSoft"
+                className="min-h-[44px] flex-1 rounded-md bg-black px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-inkSoft sm:flex-none"
               >
                 Save Contact
               </button>
@@ -3064,7 +3125,7 @@ export default function App() {
 
       {/* Company-wide service sync toast */}
       {companyToast ? (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg border border-line bg-white px-4 py-3 shadow-lg">
+        <div className="fixed bottom-4 left-4 right-4 z-50 flex items-center gap-3 rounded-lg border border-line bg-white px-4 py-3 shadow-lg sm:left-auto sm:right-6 sm:w-auto sm:max-w-sm">
           <span className="h-2 w-2 flex-shrink-0 rounded-full bg-brand" />
           <span className="text-sm font-medium text-ink">{companyToast}</span>
         </div>

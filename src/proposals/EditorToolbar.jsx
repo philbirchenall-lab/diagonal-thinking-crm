@@ -7,7 +7,7 @@ function ToolbarButton({ onClick, isActive, children, title }) {
         onClick();
       }}
       title={title}
-      className={`px-2.5 py-1.5 rounded text-sm font-medium transition-colors ${
+      className={`min-h-[36px] px-2.5 py-1.5 rounded text-sm font-medium transition-colors ${
         isActive
           ? "bg-blue-100 text-blue-700 border border-blue-300"
           : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent"

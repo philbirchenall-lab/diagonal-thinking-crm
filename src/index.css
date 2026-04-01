@@ -40,12 +40,21 @@ textarea {
   line-height: 1.6;
   max-width: 160mm;
   margin: 0 auto;
+  width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .proposal-body {
-  padding: 18mm 18mm 12mm;
+  padding: 6vw 5vw 4vw;
   background: white;
   box-shadow: 0 18px 46px rgba(37, 59, 84, 0.08);
+}
+
+@media (min-width: 640px) {
+  .proposal-body {
+    padding: 18mm 18mm 12mm;
+  }
 }
 
 .proposal-document h2 {
@@ -100,14 +109,24 @@ textarea {
 }
 
 .proposal-editor-wrapper {
-  min-height: 520px;
+  min-height: 320px;
   background: white;
 }
 
 .proposal-editor-wrapper .ProseMirror {
-  min-height: 520px;
-  padding: 20mm 22mm;
+  min-height: 320px;
+  padding: 6vw 5vw;
   outline: none;
+}
+
+@media (min-width: 640px) {
+  .proposal-editor-wrapper {
+    min-height: 520px;
+  }
+  .proposal-editor-wrapper .ProseMirror {
+    min-height: 520px;
+    padding: 20mm 22mm;
+  }
 }
 
 .proposal-editor-wrapper .ProseMirror h2 {

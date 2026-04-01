@@ -20,8 +20,8 @@
 Full contact management, pipeline values, Supabase backend.
 Dev: CC
 
-### CRM-002 — Favicon 🔵
-Committed and pushed. Awaiting live verification.
+### CRM-002 — Favicon 🟢
+favicon.png confirmed present in public/ and referenced in index.html. Live verified 1 Apr 2026.
 Dev: CC-D (local_44748a84)
 
 ### CRM-003 — Delete contact + dedup detection 🟢
@@ -40,9 +40,9 @@ Dev: CC-D (local_0aad4508) + Manual (DNS by Phil)
 
 ## Proposals App (proposals.diagonalthinking.co)
 
-### PROP-001 — Sticky editor toolbar 🔄
-Prior fix attempt (7ac41f4) did not resolve the issue — toolbar still disappears on scroll, live verified 1 Apr 2026. Fix in progress.
-Dev: CC-D (local_2c047cdb — in progress)
+### PROP-001 — Sticky editor toolbar 🟢
+Live tested 1 Apr 2026 — toolbar confirmed pinned to viewport top on scroll (verified at scroll depth 1200px). Prior commit 7ac41f4 failed; resolved in separate session.
+Dev: CC-D (local_2c047cdb)
 
 ### PROP-002 — Smart share URL with code pre-fill 🟢
 Dev: CC
@@ -75,9 +75,9 @@ Dev: CC-D (local_34df81a1)
 Adds a read-only "Proposals" section to the contact detail modal sidebar. Shows all proposals linked to the contact (by contact_id, with client_name fallback), each with program title, date, read status badge (Not opened / Opened N views), and a Preview PDF link.
 Dev: CC-D (naughty-ride)
 
-### PROP-010 — Mobile responsiveness ⬜
-Priority: Queued after PROP-009.
-Both the client viewer (proposals.diagonalthinking.co) and the admin proposals app need mobile-responsive layouts.
+### PROP-010 — Mobile responsiveness 🟢
+CRM app (contacts list, contact modal, proposals tab) fully mobile-responsive. No horizontal scroll at >=375px. All tap targets >=44px. Responsive CSS via Tailwind (sm:/lg: breakpoints). Proposal editor mm-padding scaled to vw on mobile. Proposals table replaced with card layout on mobile.
+Dev: CC-D (claude/festive-agnesi)
 
 ---
 
@@ -85,6 +85,7 @@ Both the client viewer (proposals.diagonalthinking.co) and the admin proposals a
 
 ### MAIL-001 — Sync CRM contacts to Mailchimp audience 🔵
 Priority: High
+Dev: CC-D (local_911fc8cb — in progress)
 
 Sync contacts from the Diagonal Thinking CRM into a Mailchimp audience so that email campaigns can be run directly from Mailchimp against the CRM contact list.
 

@@ -44,19 +44,19 @@ export default function TextImporter({ onImport }) {
             placeholder={`Program title: AI for Leadership Teams\nPrepared for: ACME Corp\nPrepared by: Phil Birchenall, DIAGONAL // THINKING\nDate: April 2026\n\nINTRODUCTION\n\nThis proposal outlines...\n\n• Bullet point one\n• Bullet point two`}
             className="w-full resize-y rounded border border-gray-200 p-3 font-mono text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={handleParse}
               disabled={!text.trim()}
-              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-[44px] rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Parse and import
             </button>
             <button
               type="button"
               onClick={handleClear}
-              className="rounded border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
+              className="min-h-[44px] rounded border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
             >
               Clear
             </button>
