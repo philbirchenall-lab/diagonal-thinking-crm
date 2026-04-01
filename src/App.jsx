@@ -4,7 +4,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import diagonalThinkingLogo from "./assets/diagonal-thinking-logo.png";
 import Papa from "papaparse";
-import { loadContacts, saveAllContacts, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi } from "./db.js";
+import { loadContacts, saveAllContacts, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi, loadContactActivities, updateActivityStatus, markProposalReplied } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
 import ProposalWriterForm from "./proposals/ProposalForm.jsx";
 import {
@@ -1241,10 +1241,11 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
 
 const PROPOSALS_PDF_BASE = "https://proposals.diagonalthinking.co/api/proposals";
 
-function ContactProposalsPanel({ contact }) {
+function ContactProposalsPanel({ contact, onReplied }) {
   const [proposals, setProposals] = useState(null); // null = loading
+  const [markingReplied, setMarkingReplied] = useState(null);
 
-  useEffect(() => {
+  function load() {
     if (!isSupabaseMode()) {
       setProposals([]);
       return;
@@ -1256,7 +1257,22 @@ function ContactProposalsPanel({ contact }) {
         console.error(err);
         setProposals([]);
       });
-  }, [contact.id]);
+  }
+
+  useEffect(() => { load(); }, [contact.id]);
+
+  async function handleMarkReplied(proposalId) {
+    setMarkingReplied(proposalId);
+    try {
+      await markProposalReplied(proposalId);
+      load();
+      if (onReplied) onReplied();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setMarkingReplied(null);
+    }
+  }
 
   return (
     <div className="border border-line bg-white p-5">
@@ -1288,6 +1304,11 @@ function ContactProposalsPanel({ contact }) {
                     Opened ({p.views} {p.views === 1 ? "view" : "views"})
                   </span>
                 )}
+                {p.reply_received && (
+                  <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
+                    Replied
+                  </span>
+                )}
                 {p.slug && (
                   <a
                     href={`${PROPOSALS_PDF_BASE}/${p.slug}/pdf`}
@@ -1299,6 +1320,148 @@ function ContactProposalsPanel({ contact }) {
                   </a>
                 )}
               </div>
+              {p.views > 0 && !p.reply_received && (
+                <button
+                  type="button"
+                  onClick={() => handleMarkReplied(p.id)}
+                  disabled={markingReplied === p.id}
+                  className="mt-2 inline-flex items-center rounded border border-line px-2 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {markingReplied === p.id ? "Saving…" : "Mark as replied"}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── ContactActivitiesPanel ───────────────────────────────────────────────────
+
+const ACTIVITY_TYPE_LABELS = {
+  email_sent: "Email sent",
+  linkedin_draft: "LinkedIn",
+  email_received: "Email received",
+  note: "Note",
+};
+
+const ACTIVITY_TYPE_ICONS = {
+  email_sent: "✉️",
+  linkedin_draft: "🔗",
+  email_received: "📨",
+  note: "📝",
+};
+
+function ActivityStatusBadge({ status }) {
+  if (status === "sent") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+        Sent
+      </span>
+    );
+  }
+  if (status === "pending") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200">
+        Pending
+      </span>
+    );
+  }
+  if (status === "received") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
+        Received
+      </span>
+    );
+  }
+  return null;
+}
+
+function ContactActivitiesPanel({ contact, refreshKey }) {
+  const [activities, setActivities] = useState(null); // null = loading
+  const [markingSent, setMarkingSent] = useState(null);
+
+  function load() {
+    if (!isSupabaseMode()) {
+      setActivities([]);
+      return;
+    }
+    setActivities(null);
+    loadContactActivities(contact.id)
+      .then((data) => setActivities(data))
+      .catch((err) => {
+        console.error(err);
+        setActivities([]);
+      });
+  }
+
+  useEffect(() => { load(); }, [contact.id, refreshKey]);
+
+  async function handleMarkSent(activityId) {
+    setMarkingSent(activityId);
+    try {
+      await updateActivityStatus(activityId, "sent");
+      load();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setMarkingSent(null);
+    }
+  }
+
+  return (
+    <div className="border border-line bg-white p-5">
+      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+        Activity
+      </div>
+
+      {activities === null && (
+        <div className="mt-3 text-xs text-slate-400">Loading…</div>
+      )}
+
+      {activities !== null && activities.length === 0 && (
+        <div className="mt-3 text-xs italic text-slate-400">No activity recorded yet.</div>
+      )}
+
+      {activities !== null && activities.length > 0 && (
+        <div className="mt-3 space-y-3">
+          {activities.map((a) => (
+            <div key={a.id} className="border-t border-line pt-3 first:border-t-0 first:pt-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-sm" aria-hidden="true">
+                    {ACTIVITY_TYPE_ICONS[a.activity_type] ?? "📋"}
+                  </span>
+                  <span className="text-sm font-medium text-ink leading-snug truncate">
+                    {a.subject || ACTIVITY_TYPE_LABELS[a.activity_type] || a.activity_type}
+                  </span>
+                </div>
+                <ActivityStatusBadge status={a.status} />
+              </div>
+              <div className="mt-0.5 text-xs text-slate-400">
+                {new Date(a.created_at).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </div>
+              {a.activity_type === "linkedin_draft" && a.status === "pending" && (
+                <div className="mt-2">
+                  <p className="text-xs text-slate-600 bg-slate-50 border border-line rounded p-2 leading-relaxed">
+                    {a.body}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleMarkSent(a.id)}
+                    disabled={markingSent === a.id}
+                    className="mt-2 inline-flex items-center rounded border border-line px-2 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    {markingSent === a.id ? "Saving…" : "Mark as sent"}
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -1567,6 +1730,7 @@ export default function App() {
   });
   const [activeContact, setActiveContact] = useState(null);
   const [isNewContact, setIsNewContact] = useState(false);
+  const [activityRefreshKey, setActivityRefreshKey] = useState(0);
   const [importState, setImportState] = useState(null);
   const [importSummary, setImportSummary] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -2889,7 +3053,17 @@ export default function App() {
               </div>
 
               {!isNewContact ? (
-                <ContactProposalsPanel contact={activeContact} />
+                <ContactProposalsPanel
+                  contact={activeContact}
+                  onReplied={() => setActivityRefreshKey((k) => k + 1)}
+                />
+              ) : null}
+
+              {!isNewContact ? (
+                <ContactActivitiesPanel
+                  contact={activeContact}
+                  refreshKey={activityRefreshKey}
+                />
               ) : null}
 
               {!isNewContact ? (
