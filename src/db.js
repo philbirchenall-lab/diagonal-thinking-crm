@@ -55,6 +55,8 @@ function toCamel(row) {
     phone: row.phone ?? "",
     type: row.type ?? "Warm Lead",
     services: row.services ?? [],
+    totalClientValue: row.total_client_value ?? 0,
+    liveWorkValue: row.live_work_value ?? 0,
     projectedValue: row.projected_value ?? 0,
     notes: row.notes ?? "",
     source: row.source ?? "",

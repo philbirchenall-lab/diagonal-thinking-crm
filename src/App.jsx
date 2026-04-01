@@ -6,6 +6,7 @@ import diagonalThinkingLogo from "./assets/diagonal-thinking-logo.png";
 import Papa from "papaparse";
 import { loadContacts, saveAllContacts, isSupabaseMode, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, deleteContact as deleteContactApi } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
+import ProposalWriterForm from "./proposals/ProposalForm.jsx";
 import {
   Download,
   FileSpreadsheet,
@@ -123,6 +124,8 @@ const emptyContact = () => ({
   phone: "",
   type: "Warm Lead",
   services: [],
+  totalClientValue: 0,
+  liveWorkValue: 0,
   projectedValue: "",
   notes: "",
   source: "Manual",
@@ -138,6 +141,10 @@ function formatCurrency(value) {
     currency: "GBP",
     maximumFractionDigits: 0,
   }).format(number);
+}
+
+function formatCurrencyOrDash(value) {
+  return Number(value) ? formatCurrency(value) : "—";
 }
 
 function formatDate(value) {
@@ -245,6 +252,8 @@ function createContactRecord(partial) {
     ...partial,
     id: partial.id || crypto.randomUUID(),
     services: [...new Set(parseServices(partial.services))],
+    totalClientValue: Number(partial.totalClientValue) || 0,
+    liveWorkValue: Number(partial.liveWorkValue) || 0,
     projectedValue: Number(partial.projectedValue) || 0,
     dateAdded: partial.dateAdded || now,
     lastUpdated: partial.lastUpdated || now,
@@ -1232,7 +1241,7 @@ function ProposalsTab({ contacts }) {
   const [accessProposal, setAccessProposal] = useState(null);
   const [copied, setCopied] = useState(null);
 
-  const VIEWER_URL = "https://dt-proposals-gilt.vercel.app/view";
+  const VIEWER_URL = "https://proposals.diagonalthinking.co/view";
 
   async function refresh() {
     setLoading(true);
@@ -1379,7 +1388,7 @@ function ProposalsTab({ contacts }) {
       )}
 
       {editingProposal !== undefined && (
-        <ProposalForm
+        <ProposalWriterForm
           proposal={editingProposal}
           contacts={contacts}
           onSave={() => { setEditingProposal(undefined); refresh(); }}
@@ -1493,7 +1502,11 @@ export default function App() {
       const a = left[sortConfig.key];
       const b = right[sortConfig.key];
 
-      if (sortConfig.key === "projectedValue") {
+      if (
+        sortConfig.key === "totalClientValue" ||
+        sortConfig.key === "liveWorkValue" ||
+        sortConfig.key === "projectedValue"
+      ) {
         return (Number(a) - Number(b)) * direction;
       }
 
@@ -2191,33 +2204,49 @@ export default function App() {
                     active={sortConfig.key === "company"}
                     direction={sortConfig.direction}
                     onClick={() => requestSort("company")}
-                    className="w-[20%]"
+                    className="w-[22%]"
                   >
                     Company
                   </SortableHeader>
-                  <th className="px-4 py-4 font-semibold w-[14%]">Contact</th>
                   <SortableHeader
-                    active={sortConfig.key === "type"}
+                    active={sortConfig.key === "totalClientValue"}
                     direction={sortConfig.direction}
-                    onClick={() => requestSort("type")}
-                    className="w-[11%]"
+                    onClick={() => requestSort("totalClientValue")}
+                    className="w-[8%] text-right"
                   >
-                    Type
+                    Invoiced
                   </SortableHeader>
-                  <th className="px-4 py-4 font-semibold w-[22%]">Services</th>
+                  <SortableHeader
+                    active={sortConfig.key === "liveWorkValue"}
+                    direction={sortConfig.direction}
+                    onClick={() => requestSort("liveWorkValue")}
+                    className="w-[8%] text-right"
+                  >
+                    Live work
+                  </SortableHeader>
                   <SortableHeader
                     active={sortConfig.key === "projectedValue"}
                     direction={sortConfig.direction}
                     onClick={() => requestSort("projectedValue")}
+                    className="w-[8%] text-right"
+                  >
+                    Projected
+                  </SortableHeader>
+                  <th className="px-4 py-4 font-semibold w-[13%]">Contact</th>
+                  <SortableHeader
+                    active={sortConfig.key === "type"}
+                    direction={sortConfig.direction}
+                    onClick={() => requestSort("type")}
                     className="w-[10%]"
                   >
-                    Value
+                    Type
                   </SortableHeader>
+                  <th className="px-4 py-4 font-semibold w-[18%]">Services</th>
                   <SortableHeader
                     active={sortConfig.key === "dateAdded"}
                     direction={sortConfig.direction}
                     onClick={() => requestSort("dateAdded")}
-                    className="w-[11%]"
+                    className="w-[9%]"
                   >
                     Date Added
                   </SortableHeader>
@@ -2240,6 +2269,15 @@ export default function App() {
                           <div className="truncate font-semibold text-ink">{contact.company || "Untitled company"}</div>
                           <div className="truncate text-sm text-slate-500">{contact.email || "No email"}</div>
                         </button>
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm font-semibold text-ink">
+                        {formatCurrencyOrDash(contact.totalClientValue)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm font-semibold text-ink">
+                        {formatCurrencyOrDash(contact.liveWorkValue)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm font-semibold text-ink">
+                        {formatCurrencyOrDash(contact.projectedValue)}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600 max-w-0">
                         <div className="truncate">{contact.contactName || "No contact name"}</div>
@@ -2287,9 +2325,6 @@ export default function App() {
                           <span className="text-sm text-slate-400">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm font-semibold text-ink">
-                        {formatCurrency(contact.projectedValue)}
-                      </td>
                       <td className="px-4 py-3 text-sm text-slate-600">
                         {formatDate(contact.dateAdded)}
                       </td>
@@ -2315,7 +2350,7 @@ export default function App() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="px-6 py-16 text-center text-slate-500">
+                    <td colSpan="9" className="px-6 py-16 text-center text-slate-500">
                       No contacts match the current search and filters.
                     </td>
                   </tr>
@@ -2378,15 +2413,23 @@ export default function App() {
                     </div>
                   )}
                   <div className="mt-3 grid gap-3 border-t border-line pt-3">
-                    <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="grid grid-cols-3 gap-3 text-sm">
+                      <div>
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Invoiced</div>
+                        <div className="mt-1 font-semibold text-ink">{formatCurrencyOrDash(contact.totalClientValue)}</div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Live work</div>
+                        <div className="mt-1 font-semibold text-ink">{formatCurrencyOrDash(contact.liveWorkValue)}</div>
+                      </div>
                       <div>
                         <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Projected</div>
-                        <div className="mt-1 font-semibold text-ink">{formatCurrency(contact.projectedValue)}</div>
+                        <div className="mt-1 font-semibold text-ink">{formatCurrencyOrDash(contact.projectedValue)}</div>
                       </div>
-                      <div>
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Date Added</div>
-                        <div className="mt-1 text-slate-600">{formatDate(contact.dateAdded)}</div>
-                      </div>
+                    </div>
+                    <div className="text-sm">
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Date Added</div>
+                      <div className="mt-1 text-slate-600">{formatDate(contact.dateAdded)}</div>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
@@ -2576,9 +2619,25 @@ export default function App() {
                   <div>
                     <span className="font-medium text-ink">Type:</span> {activeContact.type}
                   </div>
-                  <div>
-                    <span className="font-medium text-ink">Projected Value:</span>{" "}
-                    {formatCurrency(activeContact.projectedValue)}
+                  <div className="border-t border-line pt-3">
+                    <div className="flex items-end justify-between gap-4">
+                      <span className="text-sm font-medium text-slate-500">Total invoiced</span>
+                      <span className="font-editorial text-3xl font-semibold leading-none text-ink">
+                        {formatCurrencyOrDash(activeContact.totalClientValue)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-end justify-between gap-4">
+                    <span className="text-sm font-medium text-slate-500">Live work</span>
+                    <span className="text-lg font-semibold text-ink">
+                      {formatCurrencyOrDash(activeContact.liveWorkValue)}
+                    </span>
+                  </div>
+                  <div className="flex items-end justify-between gap-4">
+                    <span className="text-sm font-medium text-slate-500">Projected</span>
+                    <span className="text-base font-medium text-slate-600">
+                      {formatCurrencyOrDash(activeContact.projectedValue)}
+                    </span>
                   </div>
                   <div>
                     <span className="font-medium text-ink">Services:</span>
@@ -2902,12 +2961,13 @@ function ActionButton({ children, onClick, icon, variant = "primary", className 
 }
 
 function SortableHeader({ children, onClick, active, direction, className }) {
+  const isRightAligned = className?.includes("text-right");
   return (
     <th className={`px-4 py-4 font-semibold${className ? ` ${className}` : ""}`}>
       <button
         type="button"
         onClick={onClick}
-        className="inline-flex items-center gap-2"
+        className={`inline-flex items-center gap-2 ${isRightAligned ? "w-full justify-end" : ""}`}
       >
         {children}
         <span className={active ? "text-ink" : "text-slate-300"}>

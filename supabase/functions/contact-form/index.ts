@@ -116,7 +116,7 @@ serve(async (req: Request) => {
           email: email.trim().toLowerCase(),
           company: company ? company.trim() : null,
           type: "Enquiry",
-          source: "Contact Page",
+          source: "Squarespace",
         },
         { onConflict: "email", ignoreDuplicates: false }
       );
@@ -146,6 +146,30 @@ serve(async (req: Request) => {
         company?.trim() ?? "",
         mailchimpKey
       ).catch((err) => console.error("Mailchimp sync error:", err));
+    }
+
+    // Send notification email via Resend (non-blocking)
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    if (resendKey) {
+      fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${resendKey}`,
+        },
+        body: JSON.stringify({
+          from: "Diagonal Thinking <notifications@diagonalthinking.co>",
+          to: ["phil@diagonalthinking.co"],
+          subject: `New enquiry from ${name.trim()}${company ? ` (${company.trim()})` : ""}`,
+          html: `
+            <p><strong>Name:</strong> ${name.trim()}</p>
+            <p><strong>Email:</strong> ${email.trim().toLowerCase()}</p>
+            ${company ? `<p><strong>Company:</strong> ${company.trim()}</p>` : ""}
+            <p><strong>Message:</strong></p>
+            <p>${message.trim().replace(/\n/g, "<br>")}</p>
+          `,
+        }),
+      }).catch((err) => console.error("Resend notification error:", err));
     }
 
     return new Response(
