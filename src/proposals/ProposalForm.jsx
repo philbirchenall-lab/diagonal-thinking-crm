@@ -15,11 +15,9 @@ function generateSlug(programTitle, clientName) {
   return `${value.slice(0, 60)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-function generateCode(programTitle) {
-  const words = programTitle.trim().split(/\s+/);
-  if (words.length >= 4) return words.map((word) => word[0]).join("").toUpperCase().slice(0, 4);
-  if (words.length >= 2) return words.map((word) => word.slice(0, 2)).join("").toUpperCase().slice(0, 4);
-  return (programTitle.slice(0, 4).toUpperCase() || "PROP");
+function generateCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
 }
 
 function todayFormatted() {
@@ -198,7 +196,7 @@ export default function ProposalForm({ proposal, contacts, onSave, onClose }) {
 
     try {
       const slug = proposal?.slug ?? generateSlug(form.programTitle || "proposal", form.clientName);
-      const code = form.proposalCode || generateCode(form.programTitle || form.clientName);
+      const code = form.proposalCode || generateCode();
 
       await saveProposal({
         id: proposal?.id,
