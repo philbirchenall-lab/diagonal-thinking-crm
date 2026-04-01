@@ -149,6 +149,56 @@ export async function deleteContact(id) {
   if (error) throw new Error(`Supabase contact delete failed: ${error.message}`);
 }
 
+export async function loadContactProposals(contact) {
+  if (!USE_SUPABASE) return [];
+
+  // Primary: match by contact_id
+  if (contact.id) {
+    const { data, error } = await supabase
+      .from("proposals")
+      .select("id, slug, program_title, date, proposal_code")
+      .eq("contact_id", contact.id)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(`Supabase contact proposals load failed: ${error.message}`);
+    if (data && data.length > 0) {
+      return await attachViewCounts(data);
+    }
+  }
+
+  // Fallback: match by client_name against contactName or company
+  const name = contact.contactName || contact.company;
+  if (name) {
+    const { data, error } = await supabase
+      .from("proposals")
+      .select("id, slug, program_title, date, proposal_code")
+      .ilike("client_name", name)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(`Supabase contact proposals fallback load failed: ${error.message}`);
+    if (data && data.length > 0) {
+      return await attachViewCounts(data);
+    }
+  }
+
+  return [];
+}
+
+async function attachViewCounts(proposals) {
+  const ids = proposals.map((p) => p.id);
+  const { data: accesses, error } = await supabase
+    .from("proposal_access")
+    .select("proposal_id")
+    .in("proposal_id", ids);
+  if (error) {
+    // Non-fatal: return proposals with 0 views if access table can't be read
+    return proposals.map((p) => ({ ...p, views: 0 }));
+  }
+  const counts = {};
+  for (const row of accesses ?? []) {
+    counts[row.proposal_id] = (counts[row.proposal_id] ?? 0) + 1;
+  }
+  return proposals.map((p) => ({ ...p, views: counts[p.id] ?? 0 }));
+}
+
 export async function loadProposalAccesses(proposalId) {
   if (!USE_SUPABASE) return [];
   const { data, error } = await supabase

@@ -4,7 +4,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import diagonalThinkingLogo from "./assets/diagonal-thinking-logo.png";
 import Papa from "papaparse";
-import { loadContacts, saveAllContacts, isSupabaseMode, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, deleteContact as deleteContactApi } from "./db.js";
+import { loadContacts, saveAllContacts, isSupabaseMode, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
 import ProposalWriterForm from "./proposals/ProposalForm.jsx";
 import {
@@ -1232,6 +1232,76 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── ContactProposalsPanel ────────────────────────────────────────────────────
+
+const PROPOSALS_PDF_BASE = "https://proposals.diagonalthinking.co/api/proposals";
+
+function ContactProposalsPanel({ contact }) {
+  const [proposals, setProposals] = useState(null); // null = loading
+
+  useEffect(() => {
+    if (!isSupabaseMode()) {
+      setProposals([]);
+      return;
+    }
+    setProposals(null);
+    loadContactProposals(contact)
+      .then((data) => setProposals(data))
+      .catch((err) => {
+        console.error(err);
+        setProposals([]);
+      });
+  }, [contact.id]);
+
+  return (
+    <div className="border border-line bg-white p-5">
+      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+        Proposals
+      </div>
+
+      {proposals === null && (
+        <div className="mt-3 text-xs text-slate-400">Loading…</div>
+      )}
+
+      {proposals !== null && proposals.length === 0 && (
+        <div className="mt-3 text-xs italic text-slate-400">No proposals sent yet.</div>
+      )}
+
+      {proposals !== null && proposals.length > 0 && (
+        <div className="mt-3 space-y-3">
+          {proposals.map((p) => (
+            <div key={p.id} className="border-t border-line pt-3 first:border-t-0 first:pt-0">
+              <div className="text-sm font-medium text-ink leading-snug">{p.program_title}</div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="text-xs text-slate-400">{p.date}</span>
+                {p.views === 0 ? (
+                  <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-400 ring-1 ring-inset ring-slate-200">
+                    Not opened
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                    Opened ({p.views} {p.views === 1 ? "view" : "views"})
+                  </span>
+                )}
+                {p.slug && (
+                  <a
+                    href={`${PROPOSALS_PDF_BASE}/${p.slug}/pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-brand hover:underline"
+                  >
+                    Preview PDF
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -2662,6 +2732,10 @@ export default function App() {
                   </div>
                 </div>
               </div>
+
+              {!isNewContact ? (
+                <ContactProposalsPanel contact={activeContact} />
+              ) : null}
 
               {!isNewContact ? (
                 <button
