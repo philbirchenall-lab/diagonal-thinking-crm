@@ -1127,7 +1127,6 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
                 { key: "clientName", label: "Client name", placeholder: "e.g. TACE" },
                 { key: "preparedFor", label: "Prepared for", placeholder: "e.g. Jim Massey, TACE" },
                 { key: "preparedBy", label: "Prepared by", placeholder: "e.g. Phil Birchenall, DIAGONAL // THINKING" },
-                { key: "proposalCode", label: "Proposal code", placeholder: "Auto-generated if left blank" },
                 { key: "date", label: "Date", placeholder: "e.g. 31 March 2026" },
                 { key: "footerLabel", label: "Footer label", placeholder: "e.g. The AI Advantage" },
               ].map(({ key, label, placeholder }) => (
@@ -1142,6 +1141,13 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
                   />
                 </div>
               ))}
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Proposal code</label>
+                <div className="w-full rounded-md border border-line bg-slate-50 px-3 py-2 text-sm font-mono text-slate-500">
+                  {form.proposalCode || <span className="italic">Auto-generated on save</span>}
+                </div>
+              </div>
 
               <label className="flex items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-sm text-ink">
                 <input

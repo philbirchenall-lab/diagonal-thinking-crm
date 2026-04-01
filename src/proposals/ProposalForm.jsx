@@ -358,7 +358,6 @@ export default function ProposalForm({ proposal, contacts, onSave, onClose }) {
                     { key: "subtitle", label: "Subtitle", placeholder: "A tailored programme" },
                     { key: "preparedFor", label: "Prepared for *", placeholder: "Jane Smith, ACME Corp" },
                     { key: "preparedBy", label: "Prepared by", placeholder: "Phil Birchenall, DIAGONAL // THINKING" },
-                    { key: "proposalCode", label: "Proposal code", placeholder: "Auto-generated if blank" },
                     { key: "date", label: "Date *", placeholder: "31 March 2026" },
                     { key: "footerLabel", label: "Footer label", placeholder: "The AI Advantage" },
                   ].map(({ key, label, placeholder }) => (
@@ -375,6 +374,15 @@ export default function ProposalForm({ proposal, contacts, onSave, onClose }) {
                       />
                     </div>
                   ))}
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Proposal code
+                    </label>
+                    <div className="w-full border border-line bg-slate-50 px-3 py-2 text-sm font-mono text-slate-500">
+                      {form.proposalCode || <span className="italic">Auto-generated on save</span>}
+                    </div>
+                  </div>
 
                   <label className="flex items-center gap-2 text-sm text-ink">
                     <input
