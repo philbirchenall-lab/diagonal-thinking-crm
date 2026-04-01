@@ -1812,6 +1812,27 @@ export default function App() {
       companyToastTimerRef.current = setTimeout(() => setCompanyToast(null), 4000);
     }
 
+    // Background Mailchimp sync for the saved contact (fire-and-forget)
+    if (nextRecord.email) {
+      const parts = (nextRecord.contactName || "").trim().split(/\s+/);
+      const mcPayload = {
+        id: nextRecord.id,
+        email: nextRecord.email,
+        fname: parts[0] || "",
+        lname: parts.slice(1).join(" ") || "",
+        company: nextRecord.company || "",
+        pipeline: nextRecord.type || "",
+        services: Array.isArray(nextRecord.services)
+          ? nextRecord.services.join(", ")
+          : nextRecord.services || "",
+      };
+      fetch("/api/mailchimp-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contacts: [mcPayload] }),
+      }).catch((err) => console.error("[Mailchimp bg sync]", err));
+    }
+
     setActiveContact(null);
     setIsNewContact(false);
   }
