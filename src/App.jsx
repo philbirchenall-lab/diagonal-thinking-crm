@@ -4,7 +4,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import diagonalThinkingLogo from "./assets/diagonal-thinking-logo.png";
 import Papa from "papaparse";
-import { loadContacts, saveAllContacts, isSupabaseMode, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi } from "./db.js";
+import { loadContacts, saveAllContacts, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
 import ProposalWriterForm from "./proposals/ProposalForm.jsx";
 import {
@@ -12,6 +12,7 @@ import {
   FileSpreadsheet,
   Filter,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
   Upload,
@@ -1511,6 +1512,9 @@ export default function App() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [companyToast, setCompanyToast] = useState(null);
   const companyToastTimerRef = useRef(null);
+  const [mailchimpSyncing, setMailchimpSyncing] = useState(false);
+  const [mailchimpToast, setMailchimpToast] = useState(null);
+  const mailchimpToastTimerRef = useRef(null);
   const importFileRef = useRef(null);
   const dataLoadRef = useRef(null);
   const contactsListRef = useRef(null);
@@ -1767,6 +1771,67 @@ export default function App() {
     }
     setConfirmDeleteId(null);
     setIsDeleting(false);
+  }
+
+  async function handleMailchimpSync() {
+    setMailchimpSyncing(true);
+
+    function showMailchimpToast(msg) {
+      setMailchimpToast(msg);
+      if (mailchimpToastTimerRef.current) clearTimeout(mailchimpToastTimerRef.current);
+      mailchimpToastTimerRef.current = setTimeout(() => setMailchimpToast(null), 6000);
+    }
+
+    try {
+      const payload = contacts
+        .filter((c) => c.email)
+        .map((c) => {
+          const parts = (c.contactName || "").trim().split(/\s+/);
+          return {
+            id: c.id,
+            email: c.email,
+            fname: parts[0] || "",
+            lname: parts.slice(1).join(" ") || "",
+            company: c.company || "",
+            pipeline: c.type || "",
+            services: Array.isArray(c.services) ? c.services.join(", ") : (c.services || ""),
+          };
+        });
+
+      const res = await fetch("/api/mailchimp-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contacts: payload }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Sync failed");
+      }
+
+      // Best-effort: update last_synced_at on synced contacts in Supabase
+      if (isSupabaseMode() && data.syncedIds?.length) {
+        try {
+          const sb = getSupabaseClient();
+          const now = new Date().toISOString();
+          await sb
+            .from("contacts")
+            .update({ last_synced_at: now })
+            .in("id", data.syncedIds);
+        } catch {
+          // Non-fatal — column may not exist yet
+        }
+      }
+
+      showMailchimpToast(
+        `Mailchimp sync complete — ${data.added} added, ${data.updated} updated, ${data.skipped} skipped`
+      );
+    } catch (err) {
+      showMailchimpToast(`Mailchimp sync failed: ${err.message}`);
+    } finally {
+      setMailchimpSyncing(false);
+    }
   }
 
   function requestSort(key) {
@@ -2197,6 +2262,14 @@ export default function App() {
                 icon={<FileSpreadsheet size={16} />}
               >
                 Export Excel
+              </ActionButton>
+              <ActionButton
+                onClick={handleMailchimpSync}
+                variant="secondary"
+                icon={<RefreshCw size={16} className={mailchimpSyncing ? "animate-spin" : ""} />}
+                className={mailchimpSyncing ? "opacity-60 cursor-not-allowed" : ""}
+              >
+                {mailchimpSyncing ? "Syncing…" : "Sync to Mailchimp"}
               </ActionButton>
             </div>
 
@@ -2994,6 +3067,14 @@ export default function App() {
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg border border-line bg-white px-4 py-3 shadow-lg">
           <span className="h-2 w-2 flex-shrink-0 rounded-full bg-brand" />
           <span className="text-sm font-medium text-ink">{companyToast}</span>
+        </div>
+      ) : null}
+
+      {/* Mailchimp sync toast */}
+      {mailchimpToast ? (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg border border-line bg-white px-4 py-3 shadow-lg">
+          <span className="h-2 w-2 flex-shrink-0 rounded-full bg-brand" />
+          <span className="text-sm font-medium text-ink">{mailchimpToast}</span>
         </div>
       ) : null}
     </div>

@@ -83,7 +83,7 @@ Both the client viewer (proposals.diagonalthinking.co) and the admin proposals a
 
 ## Mailchimp Integration
 
-### MAIL-001 — Sync CRM contacts to Mailchimp audience ⬜
+### MAIL-001 — Sync CRM contacts to Mailchimp audience 🔵
 Priority: High
 
 Sync contacts from the Diagonal Thinking CRM into a Mailchimp audience so that email campaigns can be run directly from Mailchimp against the CRM contact list.
