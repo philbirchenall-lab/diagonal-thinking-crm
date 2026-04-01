@@ -4,7 +4,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import diagonalThinkingLogo from "./assets/diagonal-thinking-logo.png";
 import Papa from "papaparse";
-import { loadContacts, saveAllContacts, isSupabaseMode, loadProposals, saveProposal, deleteProposal, loadProposalAccesses } from "./db.js";
+import { loadContacts, saveAllContacts, isSupabaseMode, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, deleteContact as deleteContactApi } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
 import {
   Download,
@@ -1394,6 +1394,17 @@ function ProposalsTab({ contacts }) {
   );
 }
 
+// ─── Dedup helpers ────────────────────────────────────────────────────────────
+
+function normalizeCompanyName(name) {
+  if (!name) return "";
+  return name
+    .toLowerCase()
+    .replace(/\b(ltd|limited|plc|llp|llc|inc|co|company|group|the)\b/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -1414,6 +1425,7 @@ export default function App() {
   const [importState, setImportState] = useState(null);
   const [importSummary, setImportSummary] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [companyToast, setCompanyToast] = useState(null);
   const companyToastTimerRef = useRef(null);
   const importFileRef = useRef(null);
@@ -1538,6 +1550,21 @@ export default function App() {
     };
   }, [contacts]);
 
+  // Dedup: find another contact with the same email or normalised company name
+  const potentialDuplicate = useMemo(() => {
+    if (!activeContact || isNewContact) return null;
+    const email = activeContact.email?.trim().toLowerCase();
+    const company = normalizeCompanyName(activeContact.company);
+    return (
+      contacts.find((c) => {
+        if (c.id === activeContact.id) return false;
+        if (email && c.email?.trim().toLowerCase() === email) return true;
+        if (company && normalizeCompanyName(c.company) === company) return true;
+        return false;
+      }) ?? null
+    );
+  }, [contacts, activeContact, isNewContact]);
+
 
   function openNewContact() {
     setIsNewContact(true);
@@ -1637,13 +1664,22 @@ export default function App() {
     setIsNewContact(false);
   }
 
-  function deleteContact(id) {
+  async function handleDeleteConfirm(id) {
+    setIsDeleting(true);
+    try {
+      await deleteContactApi(id);
+    } catch (e) {
+      console.error("Delete failed:", e);
+      setIsDeleting(false);
+      return;
+    }
     setContacts((current) => current.filter((contact) => contact.id !== id));
     if (activeContact?.id === id) {
       setActiveContact(null);
       setIsNewContact(false);
     }
     setConfirmDeleteId(null);
+    setIsDeleting(false);
   }
 
   function requestSort(key) {
@@ -2412,6 +2448,22 @@ export default function App() {
             setIsNewContact(false);
           }}
         >
+          {potentialDuplicate && (
+            <div className="mx-5 mt-4 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 sm:mx-6">
+              <span className="flex-shrink-0">⚠</span>
+              <span>
+                Possible duplicate:{" "}
+                <button
+                  type="button"
+                  onClick={() => setActiveContact({ ...potentialDuplicate, services: [...potentialDuplicate.services] })}
+                  className="font-semibold underline hover:no-underline"
+                >
+                  {potentialDuplicate.contactName || potentialDuplicate.company}
+                </button>
+                {potentialDuplicate.company ? ` at ${potentialDuplicate.company}` : ""}{" "}— view
+              </span>
+            </div>
+          )}
           <div className="grid gap-6 px-5 py-5 lg:grid-cols-[1.2fr_0.8fr] sm:px-6 sm:py-6">
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -2769,33 +2821,36 @@ export default function App() {
         </ModalShell>
       ) : null}
 
-      {confirmDeleteId ? (
-        <ModalShell
-          title="Delete contact?"
-          subtitle="This removes the record from local storage."
-          onClose={() => setConfirmDeleteId(null)}
-        >
-          <div className="px-6 py-6 text-sm text-slate-600">
-            This action cannot be undone unless you re-import the record.
-          </div>
-          <div className="flex justify-end gap-3 border-t border-slate-200 px-6 py-5">
-            <button
-              type="button"
-              onClick={() => setConfirmDeleteId(null)}
-              className="rounded-md border border-line px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-black hover:text-ink"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => deleteContact(confirmDeleteId)}
-              className="rounded-md bg-black px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-inkSoft"
-            >
-              Delete
-            </button>
-          </div>
-        </ModalShell>
-      ) : null}
+      {confirmDeleteId ? (() => {
+        const contactToDelete = contacts.find((c) => c.id === confirmDeleteId);
+        const name = contactToDelete?.contactName || contactToDelete?.company || "this contact";
+        return (
+          <ModalShell
+            title={`Delete ${name}?`}
+            subtitle="This cannot be undone. Any proposals linked to this contact will be unlinked."
+            onClose={() => !isDeleting && setConfirmDeleteId(null)}
+          >
+            <div className="flex justify-end gap-3 border-t border-slate-200 px-6 py-5">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(null)}
+                disabled={isDeleting}
+                className="rounded-md border border-line px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-black hover:text-ink disabled:opacity-40"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteConfirm(confirmDeleteId)}
+                disabled={isDeleting}
+                className="rounded-md bg-rose-600 px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-rose-700 disabled:opacity-50"
+              >
+                {isDeleting ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </ModalShell>
+        );
+      })() : null}
 
       {/* Company-wide service sync toast */}
       {companyToast ? (
