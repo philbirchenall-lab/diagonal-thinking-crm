@@ -71,6 +71,14 @@ Dev: CC-D (local_5c8f9a4f) + CC (a3c7548 read-only fix, Direct)
 Live tested 1 Apr 2026 — Copy link generates proposals.diagonalthinking.co/view?code=XXXXXX.
 Dev: CC-D (local_34df81a1)
 
+### PROP-009 — Proposals panel in CRM contact detail 🔵
+Adds a read-only "Proposals" section to the contact detail modal sidebar. Shows all proposals linked to the contact (by contact_id, with client_name fallback), each with program title, date, read status badge (Not opened / Opened N views), and a Preview PDF link.
+Dev: CC-D (naughty-ride)
+
+### PROP-010 — Mobile responsiveness ⬜
+Priority: Queued after PROP-009.
+Both the client viewer (proposals.diagonalthinking.co) and the admin proposals app need mobile-responsive layouts.
+
 ---
 
 ## Mailchimp Integration
