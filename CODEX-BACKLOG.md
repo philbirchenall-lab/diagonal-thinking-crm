@@ -91,3 +91,55 @@ Dev: CC-D (local_911fc8cb)
 Deployed (f9d2928). On every contact save, fires a background upsert to /api/mailchimp-sync (single contact, non-blocking). Failures logged to console only. Skips if no email. Build passes.
 **Awaiting:** MAIL-001 activation (needs Mailchimp API keys in Vercel) before this can be fully tested.
 Dev: CC-D (local_51144ae2)
+
+---
+
+## Client Area Backend (API)
+
+### CA-001 — Sessions table + API ⬜
+Priority: High | Effort: M
+
+### CA-002 — Magic link generation + email ⬜
+Priority: High | Effort: M
+
+### CA-003 — Engagement log ⬜
+Priority: High | Effort: S
+
+---
+
+## Client Area Frontend (client.diagonalthinking.co)
+
+### CA-FE-001 — Client Area app scaffold ⬜
+Priority: High | Effort: M
+
+Build a new Next.js app (or route group) deployed to `client.diagonalthinking.co`. Must match the Diagonal Thinking brand exactly: logo, fonts, colours from the main site. No third-party branding visible to end users at any point. This is the shell that all other CA-FE tickets build on. Deploy to Vercel as a new project.
+
+### CA-FE-002 — Registration gate + magic link request ⬜
+Priority: High | Effort: M
+Depends on: CA-FE-001, CA-001, CA-002, CA-003
+
+`/[slug]` page. Checks for a valid session JWT cookie. If no valid JWT: show a branded registration form (first name, last name, email, company, GDPR consent checkbox — "I agree to Diagonal Thinking storing my details so Phil can follow up with resources and relevant updates. You can unsubscribe at any time."). On submit: calls POST /api/client/register, then shows a "Check your email" confirmation screen. Returning users (already registered from any previous session) see email-only form. Form must not submit without GDPR consent checked.
+
+### CA-FE-003 — Magic link verification + resource page ⬜
+Priority: High | Effort: M
+Depends on: CA-FE-002
+
+`/auth/verify?token=xxx` — calls GET /api/client/auth/verify, receives JWT, sets secure cookie, redirects to `/[slug]`. Resource page (shown after auth): session name and description, list of resources (links open in new tab, file downloads triggered, embeds rendered inline). Each resource click fires a POST /api/client/track event. Clean, readable layout — no navigation chrome, just the resources.
+
+### CA-FE-004 — CRM: Sessions tab ⬜
+Priority: High | Effort: M
+Depends on: CA-001
+
+New Sessions tab in the CRM (alongside Contacts, Companies, Proposals). Lists all sessions in a table: name, slug, linked organisation, date, status (active/inactive toggle), attendee count. "New session" button opens a creation form: name, slug (auto-generated from name, editable), linked Organisation (searchable dropdown), date, status toggle. Save creates the session via Supabase. Clicking a row opens the session detail view.
+
+### CA-FE-005 — CRM: Resource manager + QR code ⬜
+Priority: High | Effort: S
+Depends on: CA-FE-004
+
+Within session detail view: resource manager UI to add/remove/reorder resources. Each resource has: type (link / file / embed), label, URL. Drag to reorder (sort_order). "Generate QR code" button — calls GET /api/admin/sessions/:id/qr, downloads PNG. Shows the live session URL (`client.diagonalthinking.co/:slug`) as a copyable link.
+
+### CA-FE-006 — CRM: Engagement view per session + per contact ⬜
+Priority: Medium | Effort: S
+Depends on: CA-FE-004, CA-003
+
+Per session detail view: table of contacts who registered, showing name, email, company, first access, last access, resources clicked (count + list on hover/expand). Per contact record (in the existing Contacts tab): new section "Sessions attended" showing session name, date, first/last access. All data from the engagement_log and magic_links tables.
