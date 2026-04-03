@@ -434,6 +434,53 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 
 ---
 
+### F-13 — Mailchimp Segmentation Fields (CRM-011)
+
+**What it does:** Extends the Mailchimp sync to push segmentation data from the CRM, enabling audience filtering and targeted campaigns in Mailchimp.
+
+**Status:** Deployed — 3 April 2026.
+
+**Key files:**
+- `api/mailchimp-sync.js` — all changes live here
+
+**Entry point:** `POST /api/mailchimp-sync` (same endpoint as F-03/F-04)
+
+**Dependencies:**
+- `MAILCHIMP_API_KEY`, `MAILCHIMP_AUDIENCE_ID` (Vercel env vars)
+- `MAILCHIMP_SERVER` (optional — derived from API key if absent)
+
+**Behaviour:**
+
+1. **Merge field bootstrap** — on every request, `ensureMergeFields()` fetches the audience's existing merge fields and creates `NETWORK_PARTNER` (text) and `CRM_TYPE` (text) if they are not already present. This is a no-op after the first successful run and never blocks the main sync on failure.
+
+2. **Per-contact merge field values** — each member payload now includes:
+
+| CRM field | Mailchimp merge field tag | Value |
+|---|---|---|
+| `network_partner` (boolean) | `NETWORK_PARTNER` | `"Yes"` or `"No"` |
+| `type` (string) | `CRM_TYPE` | verbatim string e.g. `"Client"`, `"Warm Lead"` |
+
+3. **Per-contact service tags** — after each batch upsert, `applyServiceTags()` fires a `POST /lists/{id}/members/{hash}/tags` call for every contact that has a non-empty `services` array. Each service string becomes a Mailchimp tag set to `status: "active"`. Tags already on the contact that are not in the current `services` list are **not** removed — this preserves any tags applied manually or from other sources.
+
+**Field mapping summary (full set after CRM-011):**
+
+| CRM field | Mailchimp destination | Notes |
+|---|---|---|
+| `fname` | `FNAME` merge field | |
+| `lname` | `LNAME` merge field | |
+| `company` | `COMPANY` merge field | |
+| `pipeline` | `PIPELINE` merge field | |
+| `services` (array) | `SERVICES` merge field (comma string) + individual tags | Both written |
+| `network_partner` (bool) | `NETWORK_PARTNER` merge field | `"Yes"` / `"No"` |
+| `type` (string) | `CRM_TYPE` merge field | |
+
+**Known issues / notes:**
+- `applyServiceTags()` makes one API call per contact with services, sequentially within each batch. For a typical CRM of <500 contacts this is acceptable.
+- Services removed from a CRM contact are not removed as Mailchimp tags in this version. Only additions are synced.
+- The `SERVICES` merge field (comma-separated string) is retained alongside the tag-based approach for backwards compatibility with any existing Mailchimp segments or automations that use it.
+
+---
+
 ### F-12 — Nightly Log / Backlog Automation
 
 **What it does:** Automated nightly status summaries and backlog updates.

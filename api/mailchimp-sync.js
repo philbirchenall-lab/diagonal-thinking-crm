@@ -1,3 +1,5 @@
+import { createHash } from "crypto";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -25,6 +27,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "No contacts provided" });
   }
 
+  // CRM-011: Ensure NETWORK_PARTNER and CRM_TYPE merge fields exist in the audience.
+  // Runs once per request (before batching) so new deployments self-configure on first sync.
+  await ensureMergeFields(baseUrl, audienceId, authHeader);
+
   const BATCH_SIZE = 500;
   let totalAdded = 0;
   let totalUpdated = 0;
@@ -42,7 +48,10 @@ export default async function handler(req, res) {
         LNAME: c.lname || "",
         COMPANY: c.company || "",
         PIPELINE: c.pipeline || "",
-        SERVICES: c.services || "",
+        SERVICES: Array.isArray(c.services) ? c.services.join(", ") : (c.services || ""),
+        // CRM-011: segmentation fields
+        NETWORK_PARTNER: c.network_partner ? "Yes" : "No",
+        CRM_TYPE: c.type || "",
       },
     }));
 
@@ -77,6 +86,10 @@ export default async function handler(req, res) {
     for (const c of batch) {
       syncedIds.push(c.id);
     }
+
+    // CRM-011: Apply services as Mailchimp tags (one tag per service).
+    // Existing non-service tags on each contact are preserved — we only add, never wipe.
+    await applyServiceTags(batch, baseUrl, audienceId, authHeader);
   }
 
   return res.status(200).json({
@@ -85,4 +98,84 @@ export default async function handler(req, res) {
     skipped: totalSkipped,
     syncedIds,
   });
+}
+
+/**
+ * CRM-011: Ensure NETWORK_PARTNER (text) and CRM_TYPE (text) merge fields exist
+ * in the Mailchimp audience. Creates them via the API if absent.
+ * Failures are swallowed so they never block the main sync.
+ */
+async function ensureMergeFields(baseUrl, audienceId, authHeader) {
+  try {
+    const res = await fetch(
+      `${baseUrl}/lists/${audienceId}/merge-fields?count=100`,
+      { headers: { Authorization: authHeader } }
+    );
+    if (!res.ok) return;
+
+    const data = await res.json();
+    const existingTags = new Set(
+      (data.merge_fields || []).map((f) => f.tag)
+    );
+
+    const required = [
+      { tag: "NETWORK_PARTNER", name: "Network Partner", type: "text" },
+      { tag: "CRM_TYPE", name: "CRM Type", type: "text" },
+    ];
+
+    for (const field of required) {
+      if (!existingTags.has(field.tag)) {
+        await fetch(`${baseUrl}/lists/${audienceId}/merge-fields`, {
+          method: "POST",
+          headers: {
+            Authorization: authHeader,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            tag: field.tag,
+            name: field.name,
+            type: field.type,
+          }),
+        });
+      }
+    }
+  } catch (_) {
+    // Non-fatal — merge field creation failure should not block contact sync
+  }
+}
+
+/**
+ * CRM-011: Apply each contact's services array as Mailchimp tags.
+ * Only contacts with a non-empty services array are processed.
+ * Existing tags on the Mailchimp contact that are not in this services list
+ * are left untouched — we never strip tags added outside the CRM.
+ */
+async function applyServiceTags(batch, baseUrl, audienceId, authHeader) {
+  for (const c of batch) {
+    if (!c.email) continue;
+    const services = Array.isArray(c.services) ? c.services : [];
+    if (services.length === 0) continue;
+
+    const subscriberHash = createHash("md5")
+      .update(c.email.toLowerCase())
+      .digest("hex");
+
+    const tags = services.map((s) => ({ name: String(s), status: "active" }));
+
+    try {
+      await fetch(
+        `${baseUrl}/lists/${audienceId}/members/${subscriberHash}/tags`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: authHeader,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ tags }),
+        }
+      );
+    } catch (_) {
+      // Non-fatal — tag sync failure should not abort the broader contact sync
+    }
+  }
 }
