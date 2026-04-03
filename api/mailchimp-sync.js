@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const apiKey = process.env.MAILCHIMP_API_KEY;
+  const apiKey = (process.env.MAILCHIMP_API_KEY || "").trim();
   const audienceId = process.env.MAILCHIMP_AUDIENCE_ID;
 
   if (!apiKey || !audienceId) {
