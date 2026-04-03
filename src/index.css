@@ -7,19 +7,28 @@
 :root {
   font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
   color: #111111;
-  background: #f3f4f7;
+  background: #f5f7fb;
+  color-scheme: light;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
   background:
-    linear-gradient(180deg, #eef2ff 0, #eef2ff 132px, #f3f4f7 132px, #f3f4f7 100%);
+    linear-gradient(180deg, #183a73 0, #183a73 88px, #edf2fa 88px, #f5f7fb 220px, #f5f7fb 100%);
+  -webkit-tap-highlight-color: rgba(59, 92, 181, 0.16);
 }
 
 * {
   box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
 }
 
 button,
@@ -27,6 +36,11 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+button,
+a {
+  touch-action: manipulation;
 }
 
 #root {

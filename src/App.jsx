@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
-import diagonalThinkingLogo from "./assets/diagonal-thinking-logo.png";
 import Papa from "papaparse";
 import { loadContacts, saveAllContacts, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi, loadContactActivities, updateActivityStatus, markProposalReplied } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
 import ProposalWriterForm from "./proposals/ProposalForm.jsx";
+import { ClientAreaTab, ContactSessionsPanel } from "./clientArea.jsx";
 import {
   Download,
   FileSpreadsheet,
@@ -527,12 +527,17 @@ function ProposalAccessPanel({ proposal, onClose }) {
             <div className="font-semibold text-ink">{proposal.program_title}</div>
             <div className="text-xs text-slate-500">Access history · Code: {proposal.proposal_code}</div>
           </div>
-          <button type="button" onClick={onClose} className="min-h-[44px] min-w-[44px] rounded-md p-2 text-slate-400 hover:text-slate-600">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close access history"
+            className="min-h-[44px] min-w-[44px] rounded-md p-2 text-slate-400 hover:text-slate-600"
+          >
             <X size={20} />
           </button>
         </div>
         <div className="max-h-96 overflow-y-auto px-5 py-4">
-          {loading && <div className="text-sm text-slate-500">Loading...</div>}
+          {loading && <div className="text-sm text-slate-500">Loading…</div>}
           {!loading && accesses.length === 0 && (
             <div className="text-sm text-slate-400 italic">No one has accessed this proposal yet.</div>
           )}
@@ -1735,6 +1740,7 @@ export default function App() {
   const [importSummary, setImportSummary] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [clientAreaLaunchContact, setClientAreaLaunchContact] = useState(null);
   const [companyToast, setCompanyToast] = useState(null);
   const companyToastTimerRef = useRef(null);
   const [mailchimpSyncing, setMailchimpSyncing] = useState(false);
@@ -2266,20 +2272,28 @@ export default function App() {
       <div className="mx-auto max-w-7xl px-0 py-0 sm:px-4 sm:py-6 lg:px-8">
         <header className="overflow-hidden rounded-none border-y border-black bg-white shadow-panel sm:rounded-xl sm:border sm:border-line">
           {/* Top brand bar */}
-          <div className="border-b border-line bg-white px-5 py-3 sm:px-6">
+          <div className="border-b border-[#183a73] bg-[#183a73] px-5 py-3 sm:px-6">
             <div className="flex items-center justify-between">
-              <img
-                src={diagonalThinkingLogo}
-                alt="Diagonal Thinking"
-                className="h-10 w-auto"
-              />
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white">
+                  <img src="/favicon.png" alt="Diagonal Thinking mark" className="h-full w-full object-cover" />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/55">
+                    Phil Birchenall
+                  </div>
+                  <div className="truncate text-sm font-semibold uppercase tracking-[0.28em] text-white sm:text-base">
+                    Diagonal // Thinking
+                  </div>
+                </div>
+              </div>
               <div className="flex items-center gap-3">
                 <SyncDot status={syncStatus} />
                 {isSupabaseMode() && (
                   <button
                     type="button"
                     onClick={signOut}
-                    className="text-xs text-slate-400 hover:text-slate-600 transition"
+                    className="text-xs text-white/55 transition hover:text-white"
                     title="Sign out"
                   >
                     Sign out
@@ -2290,20 +2304,24 @@ export default function App() {
           </div>
 
           {/* Tab nav */}
-          <div className="border-b border-line bg-white px-5 sm:px-6">
-            <div className="flex">
-              {["crm", "proposals"].map((tab) => (
+          <div className="border-b border-line bg-white px-4 sm:px-6">
+            <div className="-mx-1 flex gap-1 overflow-x-auto py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {[
+                { key: "crm", label: "CRM" },
+                { key: "proposals", label: "Proposals" },
+                { key: "client-area", label: "Client Area" },
+              ].map((tab) => (
                 <button
-                  key={tab}
+                  key={tab.key}
                   type="button"
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-5 py-3 text-xs font-semibold uppercase tracking-[0.18em] border-b-2 transition-colors ${
-                    activeTab === tab
-                      ? "border-brand text-brand"
-                      : "border-transparent text-slate-400 hover:text-slate-600"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`shrink-0 rounded-md px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] transition-colors ${
+                    activeTab === tab.key
+                      ? "bg-brand text-white"
+                      : "text-slate-400 hover:bg-mist hover:text-slate-600"
                   }`}
                 >
-                  {tab === "crm" ? "CRM" : "Proposals"}
+                  {tab.label}
                 </button>
               ))}
             </div>
@@ -2311,25 +2329,21 @@ export default function App() {
 
           {/* Blue hero section — CRM tab only */}
           {activeTab === "crm" && (<>
-          <div className="bg-brand px-5 py-7 text-white sm:px-6 sm:py-9">
+          <div className="bg-brand px-5 py-6 text-white sm:px-6 sm:py-9">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h1 className="font-editorial text-4xl font-bold leading-none sm:text-5xl">
+                <h1 className="font-editorial text-3xl font-bold leading-none text-balance sm:text-5xl">
                   Diagonal Thinking CRM
                 </h1>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-white/84">
-                  Consultancy pipeline, relationship notes, and import/export tools
-                  for Phil Birchenall&apos;s AI consultancy.
-                </p>
               </div>
               <div className="border border-white/25 bg-black px-4 py-3 sm:shrink-0">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
                   Pipeline Summary
                 </div>
-                <div className="mt-1 text-xl font-bold text-white">
+                <div className="mt-1 text-xl font-bold tabular-nums text-white">
                   {stats.counts["Warm Lead"]} Warm Leads
                 </div>
-                <div className="mt-0.5 text-sm text-white/70">
+                <div className="mt-0.5 text-sm tabular-nums text-white/70">
                   {formatCurrency(stats.warmLeadValue)} projected
                 </div>
               </div>
@@ -2362,6 +2376,14 @@ export default function App() {
           </div>
         )}
 
+        {activeTab === "client-area" && (
+          <ClientAreaTab
+            contacts={contacts}
+            launchContact={clientAreaLaunchContact}
+            onLaunchConsumed={() => setClientAreaLaunchContact(null)}
+          />
+        )}
+
         {activeTab === "crm" && syncStatus === "error" && (
           <div className="mt-6 border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
             <span className="font-semibold">Could not connect to the local CRM server.</span>{" "}
@@ -2385,7 +2407,7 @@ export default function App() {
           <div className="border border-line bg-white p-5 shadow-panel sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-editorial text-3xl font-semibold text-ink">Dashboard</h2>
+                <h2 className="font-editorial text-2xl font-semibold text-ink sm:text-3xl">Dashboard</h2>
                 <p className="mt-1 text-sm text-slate-500">
                   Live overview of pipeline health and recent additions.
                 </p>
@@ -2393,12 +2415,12 @@ export default function App() {
             </div>
 
             <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_1fr]">
-              <div className="border border-line bg-mist p-4">
+              <div className="min-w-0 border border-line bg-mist p-4">
                 <div className="text-sm font-medium text-slate-600">
                   Contacts by Type
                 </div>
-                <div className="mt-4 h-64">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="mt-4 h-64 min-w-0">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
                     <PieChart>
                       <Pie
                         data={stats.chart}
@@ -2483,7 +2505,10 @@ export default function App() {
             </div>
           </div>
 
-          <div className="border border-line bg-white p-5 shadow-panel sm:p-6">
+          <div className="border border-line bg-white p-4 shadow-panel sm:p-6">
+            <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 sm:hidden">
+              Quick Actions & Filters
+            </div>
             <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
               <ActionButton onClick={openNewContact} icon={<Plus size={16} />} className="col-span-2 sm:col-span-1">
                 Add Contact
@@ -2519,7 +2544,7 @@ export default function App() {
               </ActionButton>
             </div>
 
-            <div className="mt-6 space-y-4">
+            <div className="mt-5 space-y-4">
               <div className="relative">
                 <Search
                   size={18}
@@ -2579,9 +2604,9 @@ export default function App() {
         </section>}
 
         {activeTab === "crm" && <section ref={contactsListRef} className="mt-6 border border-line bg-white shadow-panel">
-          <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
             <div>
-              <h2 className="font-editorial text-3xl font-semibold text-ink">Contact List</h2>
+              <h2 className="font-editorial text-2xl font-semibold text-ink sm:text-3xl">Contact List</h2>
               <p className="mt-1 text-sm text-slate-500">
                 {filteredContacts.length} contacts in the current view.
               </p>
@@ -3067,6 +3092,19 @@ export default function App() {
               ) : null}
 
               {!isNewContact ? (
+                <ContactSessionsPanel
+                  contact={activeContact}
+                  contacts={contacts}
+                  onNewSession={(contact) => {
+                    setClientAreaLaunchContact(contact);
+                    setActiveContact(null);
+                    setIsNewContact(false);
+                    setActiveTab("client-area");
+                  }}
+                />
+              ) : null}
+
+              {!isNewContact ? (
                 <button
                   type="button"
                   onClick={() => setConfirmDeleteId(activeContact.id)}
@@ -3415,7 +3453,7 @@ function SyncDot({ status }) {
   };
   const labelMap = {
     local: "Local only",
-    syncing: "Saving...",
+    syncing: "Saving…",
     synced: "Saved to local file",
     error: "Save error — is the CRM server running?",
   };

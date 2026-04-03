@@ -12,6 +12,7 @@
 
 const USE_SUPABASE = Boolean(import.meta.env.VITE_SUPABASE_URL);
 const LOCAL_API = "http://localhost:3001/api/contacts";
+const LOCAL_CLIENT_SESSIONS_KEY = "diagonal-thinking-crm:client-sessions";
 
 // ─── Supabase client (only initialised when env vars present) ───────────────
 
@@ -75,6 +76,54 @@ export function getSupabaseClient() {
 
 export function isSupabaseMode() {
   return USE_SUPABASE;
+}
+
+async function readJson(response, fallbackMessage) {
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.error || fallbackMessage || `Request failed: ${response.status}`);
+  }
+  return data;
+}
+
+function canUseLocalStorage() {
+  return typeof window !== "undefined" && Boolean(window.localStorage);
+}
+
+function normaliseSessionRecord(session, index = 0) {
+  const resources = Array.isArray(session.resources) ? session.resources : [];
+  return {
+    id: session.id || `local-session-${index + 1}`,
+    slug: session.slug || `local-session-${index + 1}`,
+    name: session.name || "Untitled session",
+    organisationId: session.organisationId || "",
+    organisationName: session.organisationName || "",
+    date: session.date || "",
+    status: session.status || "active",
+    sessionType: session.sessionType || "in_house",
+    resources,
+    registrations: Array.isArray(session.registrations) ? session.registrations : [],
+    engagementLog: Array.isArray(session.engagementLog) ? session.engagementLog : [],
+    resourceCount: resources.length,
+  };
+}
+
+function readLocalClientSessions() {
+  if (!canUseLocalStorage()) return [];
+  try {
+    const raw = window.localStorage.getItem(LOCAL_CLIENT_SESSIONS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((session, index) => normaliseSessionRecord(session, index));
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalClientSessions(sessions) {
+  if (!canUseLocalStorage()) return;
+  window.localStorage.setItem(LOCAL_CLIENT_SESSIONS_KEY, JSON.stringify(sessions));
 }
 
 // ─── Data operations ─────────────────────────────────────────────────────────
@@ -298,4 +347,64 @@ export async function saveAllContacts(contacts) {
     });
     if (!res.ok) throw new Error(`Local API save failed: ${res.status}`);
   }
+}
+
+// ─── Client Area sessions ────────────────────────────────────────────────────
+
+export async function loadClientSessions() {
+  if (!USE_SUPABASE) {
+    return readLocalClientSessions();
+  }
+  const response = await fetch("/api/client/sessions");
+  const data = await readJson(response, "Failed to load client sessions.");
+  return data.sessions ?? [];
+}
+
+export async function saveClientSession(session) {
+  if (!USE_SUPABASE) {
+    const existing = readLocalClientSessions();
+    const nextSession = normaliseSessionRecord(
+      {
+        ...session,
+        id: session.id || crypto.randomUUID(),
+        slug: session.slug || `session-${Date.now()}`,
+      },
+      0,
+    );
+    const next = session.id
+      ? existing.map((item) => (item.id === session.id ? nextSession : item))
+      : [nextSession, ...existing];
+    writeLocalClientSessions(next);
+    return nextSession;
+  }
+
+  const method = session.id ? "PATCH" : "POST";
+  const response = await fetch("/api/client/sessions", {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(session),
+  });
+  const data = await readJson(response, "Failed to save client session.");
+  return data.session;
+}
+
+export async function requestClientMagicLink(payload) {
+  if (!USE_SUPABASE) {
+    return {
+      ok: true,
+      mode: "local",
+      message: `Local preview only — a real magic link would be sent to ${payload.email}.`,
+    };
+  }
+
+  const response = await fetch("/api/client/auth/request", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  return readJson(response, "Failed to send magic link.");
 }

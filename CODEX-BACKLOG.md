@@ -55,8 +55,8 @@ Dev: CC
 Live tested 1 Apr 2026 — Edit link works correctly, no 404.
 Dev: CC-D (local_ffaca1f0)
 
-### PROP-005 — Send proposal email to client 🔴
-Resend integration committed. Blocked: RESEND_API_KEY not present in dt-proposals Vercel env vars (confirmed 2 Apr 2026). Phil needs to add it in Vercel → Settings → Environment Variables, then redeploy.
+### PROP-005 — Send proposal email to client 🔵
+Resend integration committed. RESEND_API_KEY added to diagonal-thinking-crm and client-area Vercel projects (2 Apr 2026). **Needs live test:** send a real proposal to confirm Resend is delivering. Note: if dt-proposals is a separate Vercel project, the key may still need adding there too.
 Dev: CC-D (local_49a3fda9)
 
 ### PROP-006 — Custom domain 🟢
@@ -115,3 +115,66 @@ Dev: CC-D (brave-euclid)
 Same cron as PROP-011. If proposal has views > 0, first_opened_at is known, 5+ working days have passed since first open, and reply_received=false, sends a chase email via Resend and logs to contact_activities (subtype: chase_5day). Phil marks proposal as replied via the CRM Proposals panel when a reply arrives.
 Awaiting live verification.
 Dev: CC-D (brave-euclid)
+
+---
+
+## Client Area (client.diagonalthinking.co)
+
+### CA-FE-001 — Client Area app scaffold 🔵
+**Priority: High | Effort: M**
+New Next.js app deployed to `client.diagonalthinking.co`. DT logo, brand colours applied. Vercel SSO gate disabled. Custom domain live. Both /api/client/sessions endpoints smoke-tested and returning 200 (confirmed 2 Apr 2026).
+Dev: CC (Build Diagonal Thinking CRM thread)
+
+### CA-FE-002 — Registration gate + magic link request 🔵
+**Priority: High | Effort: M | Depends on: CA-FE-001**
+`/[slug]` page with session JWT cookie check implemented. Registration form live (first name, last name, email, job title). Auth fix deployed 2 Apr 2026: session page now checks `dt_client_session` cookie server-side, unauthenticated users redirected to `/?session=[slug]`. Registration logging patched to use schema-compatible `resource_click` with null resource_id (was 500ing with `event_type="registered"`). Awaiting full E2E live test.
+Dev: CC (Build Diagonal Thinking CRM thread)
+
+### CA-FE-003 — Magic link verification + resource page 🔵
+**Priority: High | Effort: M | Depends on: CA-FE-002**
+`/auth/verify?token=xxx` implemented. Session resource page live. Route guard moved to `proxy.ts` (Next 16 convention). Deployed and responding. Awaiting full E2E live test (register → magic link email → verify → resource page).
+Dev: CC (Build Diagonal Thinking CRM thread)
+
+### CA-FE-004 — CRM: Sessions tab 🔵
+**Priority: High | Effort: M**
+Client Area tab added to CRM nav. Sessions list view and create/edit session form implemented. API routes in `src/clientArea.jsx` and `api/client/sessions.js`. Sessions API confirmed live on both crm and client-area domains (2 Apr 2026). Awaiting full live test with real session creation.
+Dev: CC (Build Diagonal Thinking CRM thread)
+
+### CA-FE-005 — CRM: Resource manager + QR code 🔵
+**Priority: High | Effort: S | Depends on: CA-FE-004**
+Resource manager implemented within session detail view (add/remove/reorder resources, type/label/URL). QR code generation and session URL copy link included. Deployed. Awaiting live test.
+Dev: CC (Build Diagonal Thinking CRM thread)
+
+### CA-FE-006 — CRM: Engagement view per session + per contact ⬜
+**Priority: Medium | Effort: S | Depends on: CA-FE-004**
+Per session: table of contacts who registered — name, email, company, first access, last access, resources clicked. Per contact record: new "Sessions attended" section showing session name, date, first/last access. Data from engagement_log and magic_links tables.
+Note: engagement_log is now live and accepting data after the 2 Apr registration logging fix.
+
+---
+
+## Bugs
+
+> This section is maintained as a living log. All bugs should be added here with date raised, steps to reproduce, and expected vs actual behaviour. Resolve with a commit reference and mark 🟢 when live-verified.
+
+### CA-BUG-001 — "Open Resource" button does nothing 🔴
+**Raised:** 3 Apr 2026 | **Priority: High**
+**Where:** Client Area — Private Session view (tested with session "Test", org "Diagonal Thinking TEST 2")
+**Symptom:** Clicking "Open Resource" on a resource within a session has no effect.
+**Expected:** Should open/navigate to the resource URL.
+**Steps to reproduce:** Log in to client area → open a session → click "Open Resource" on any listed resource.
+**Likely cause:** Click handler missing, href not bound, or URL field not being passed through to the rendered button/link.
+Dev: CC-D
+
+### CA-BUG-002 — Client login page copy is unclear ⬜
+**Raised:** 3 Apr 2026 | **Priority: Medium**
+**Where:** Client Area — login / registration page (`/[slug]` or `/?session=[slug]`)
+**Symptom:** It is not clear to clients what they are supposed to do on the page — users don't know whether to log in, register, or what the page is for.
+**Action required:** Write and implement clear copy for the login page. Should explain: what the Client Area is, what to do if first visit (register), and what to do if returning (enter email to receive magic link). Keep it concise and client-appropriate.
+Dev: CC-D
+
+### CA-BUG-003 — Client-facing form placeholders use personal name ⬜
+**Raised:** 3 Apr 2026 | **Priority: Medium**
+**Where:** Any client-facing form fields in the Client Area
+**Symptom:** Placeholder text on form fields uses a personal name (e.g. "Phil") instead of a generic label.
+**Fix:** All client-facing form field placeholders must use the field label itself as the placeholder (e.g. First name field → placeholder "First name", Email field → placeholder "Email address"). No personal names, no example data.
+Dev: CC-D

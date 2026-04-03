@@ -233,21 +233,26 @@ export default function ProposalForm({ proposal, contacts, onSave, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-8">
-      <div className="w-full max-w-6xl rounded-xl bg-white shadow-xl">
-        <div className="flex items-start justify-between border-b border-line bg-white px-5 py-4 sm:px-6">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-0 sm:p-4 sm:pt-8">
+      <div className="w-full max-w-6xl rounded-none bg-white shadow-xl sm:rounded-xl">
+        <div className="sticky top-0 z-10 flex items-start justify-between border-b border-line bg-white px-5 py-4 sm:px-6">
           <div>
             <div className="font-semibold text-ink">{isNew ? "New Proposal" : "Edit Proposal"}</div>
             <div className="mt-1 text-xs text-slate-500">
               Build the cover details and full proposal body from one place.
             </div>
           </div>
-          <button type="button" onClick={handleClose} className="min-h-[44px] min-w-[44px] rounded-md p-2 text-slate-400 hover:text-slate-600">
+          <button
+            type="button"
+            onClick={handleClose}
+            aria-label="Close proposal editor"
+            className="min-h-[44px] min-w-[44px] rounded-md p-2 text-slate-400 hover:text-slate-600"
+          >
             ✕
           </button>
         </div>
 
-        <div className="max-h-[calc(100vh-120px)] overflow-y-auto px-5 py-5 sm:px-6">
+        <div className="max-h-[calc(100vh-132px)] overflow-y-auto px-4 py-5 sm:px-6">
           {draftRestored && (
             <div className="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
               Restored your last local draft for this proposal.
@@ -274,8 +279,8 @@ export default function ProposalForm({ proposal, contacts, onSave, onClose }) {
             </div>
           )}
 
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <div className="flex rounded-lg border border-line bg-white p-1">
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+            <div className="grid grid-cols-2 rounded-lg border border-line bg-white p-1">
               {[
                 { key: "write", label: "Write" },
                 { key: "preview", label: "Preview" },
@@ -298,14 +303,14 @@ export default function ProposalForm({ proposal, contacts, onSave, onClose }) {
               <button
                 type="button"
                 onClick={() => applyTemplate("generic")}
-                className="rounded border border-line px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                className="min-h-[44px] rounded border border-line px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
               >
                 Generic template
               </button>
               <button
                 type="button"
                 onClick={() => applyTemplate("workshop")}
-                className="rounded border border-line px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                className="min-h-[44px] rounded border border-line px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
               >
                 Workshop template
               </button>
@@ -329,6 +334,7 @@ export default function ProposalForm({ proposal, contacts, onSave, onClose }) {
                     }}
                     onFocus={() => setShowContactDropdown(true)}
                     placeholder="Search by name, company, or email…"
+                    aria-label="Search linked contact"
                     className="w-full border border-line px-3 py-2 text-sm focus:border-brand focus:outline-none"
                   />
                   {showContactDropdown && filteredContacts.length > 0 && (
@@ -437,7 +443,7 @@ export default function ProposalForm({ proposal, contacts, onSave, onClose }) {
           )}
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-line px-5 py-4 sm:px-6">
+        <div className="sticky bottom-0 flex flex-col-reverse gap-2 border-t border-line bg-white/95 px-4 py-4 backdrop-blur sm:flex-row sm:justify-end sm:px-6" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
           <button
             type="button"
             onClick={handleClose}
