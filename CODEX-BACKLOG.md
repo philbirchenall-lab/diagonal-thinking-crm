@@ -91,3 +91,27 @@ Dev: CC-D (local_911fc8cb)
 Deployed (f9d2928). On every contact save, fires a background upsert to /api/mailchimp-sync (single contact, non-blocking). Failures logged to console only. Skips if no email. Build passes.
 **Awaiting:** MAIL-001 activation (needs Mailchimp API keys in Vercel) before this can be fully tested.
 Dev: CC-D (local_51144ae2)
+
+---
+
+## Bugs
+
+### MAIL-BUG-001 — Mailchimp sync fails: sessions_slug_key constraint violation 🟢 Fixed
+**Symptom:** Clicking "Sync to Mailchimp" (or saving a contact) raised:
+`duplicate key value violates unique constraint 'sessions_slug_key'`
+
+**Root cause:** The `client_area_schema` migration (applied directly to Supabase from an unmerged worktree — `infallible-goldwasser` / `lucid-jemison`) created a `sessions` table with `slug UNIQUE NOT NULL`. A database trigger on the `contacts` table fires on INSERT/UPDATE and generates session slugs derived from contact data (e.g. company name). When multiple contacts share the same company — or when a bulk operation touches many rows at once — the trigger fires for each row and tries to insert duplicate session slugs, causing the constraint violation.
+
+The Mailchimp sync was the trigger because `handleMailchimpSync` previously called `sb.from("contacts").update({ last_synced_at: now }).in("id", data.syncedIds)` after each sync — a mass UPDATE across all synced contacts that reliably reproduced the duplicate.
+
+**Fix (code):**
+- Removed the `last_synced_at` bulk UPDATE from `handleMailchimpSync` in `src/App.jsx` — the `last_synced_at` column does not exist in the schema and the update was speculative/dead code. Removing it eliminates the bulk contacts UPDATE that triggered the conflict.
+- Removed orphaned `getSupabaseClient` import from `src/App.jsx`.
+
+**Fix (database — Phil must run in Supabase SQL Editor):**
+- Migration: `supabase/migrations/20260403000000_fix_sessions_slug_conflicts.sql`
+- Deduplicates existing duplicate slugs in the `sessions` table (keeps oldest per slug).
+- Drops all plausible contacts→sessions triggers and their functions with `IF EXISTS`.
+- Run verification queries documented in the migration to confirm clean state.
+
+Dev: CC-D (xenodochial-panini)

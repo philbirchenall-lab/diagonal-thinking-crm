@@ -4,7 +4,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import diagonalThinkingLogo from "./assets/diagonal-thinking-logo.png";
 import Papa from "papaparse";
-import { loadContacts, saveAllContacts, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi } from "./db.js";
+import { loadContacts, saveAllContacts, isSupabaseMode, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
 import ProposalWriterForm from "./proposals/ProposalForm.jsx";
 import {
@@ -1890,20 +1890,6 @@ export default function App() {
 
       if (!res.ok) {
         throw new Error(data.error || "Sync failed");
-      }
-
-      // Best-effort: update last_synced_at on synced contacts in Supabase
-      if (isSupabaseMode() && data.syncedIds?.length) {
-        try {
-          const sb = getSupabaseClient();
-          const now = new Date().toISOString();
-          await sb
-            .from("contacts")
-            .update({ last_synced_at: now })
-            .in("id", data.syncedIds);
-        } catch {
-          // Non-fatal — column may not exist yet
-        }
       }
 
       showMailchimpToast(
