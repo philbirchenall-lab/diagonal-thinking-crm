@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 
   // Extract datacenter: prefer MAILCHIMP_SERVER env var, strip any trailing domain content
   // e.g. "us21.api.mailchimp.com" → "us21", or fall back to parsing the API key
-  const server = (process.env.MAILCHIMP_SERVER || apiKey.split("-").pop() || "").split(".")[0];
+  const server = (process.env.MAILCHIMP_SERVER || apiKey.split("-").pop() || "").trim().split(".")[0];
   const baseUrl = `https://${server}.api.mailchimp.com/3.0`;
   const authHeader =
     "Basic " + Buffer.from(`anystring:${apiKey}`).toString("base64");
