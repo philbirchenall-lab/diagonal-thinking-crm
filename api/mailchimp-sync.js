@@ -13,9 +13,10 @@ export default async function handler(req, res) {
     });
   }
 
-  // Extract datacenter from API key (e.g. "abc123-us21" → "us21")
-  const dc = apiKey.split("-").pop();
-  const baseUrl = `https://${dc}.api.mailchimp.com/3.0`;
+  // Extract datacenter: prefer MAILCHIMP_SERVER env var, strip any trailing domain content
+  // e.g. "us21.api.mailchimp.com" → "us21", or fall back to parsing the API key
+  const server = (process.env.MAILCHIMP_SERVER || apiKey.split("-").pop() || "").split(".")[0];
+  const baseUrl = `https://${server}.api.mailchimp.com/3.0`;
   const authHeader =
     "Basic " + Buffer.from(`anystring:${apiKey}`).toString("base64");
 
@@ -45,23 +46,30 @@ export default async function handler(req, res) {
       },
     }));
 
-    const mcRes = await fetch(`${baseUrl}/lists/${audienceId}`, {
-      method: "POST",
-      headers: {
-        Authorization: authHeader,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ members, update_existing: true }),
-    });
+    let mcRes, data;
+    try {
+      mcRes = await fetch(`${baseUrl}/lists/${audienceId}`, {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ members, update_existing: true }),
+      });
 
-    if (!mcRes.ok) {
-      const errData = await mcRes.json().catch(() => ({}));
-      return res.status(mcRes.status).json({
-        error: errData.detail || errData.title || "Mailchimp API error",
+      if (!mcRes.ok) {
+        const errData = await mcRes.json().catch(() => ({}));
+        return res.status(mcRes.status).json({
+          error: errData.detail || errData.title || "Mailchimp API error",
+        });
+      }
+
+      data = await mcRes.json();
+    } catch (err) {
+      return res.status(500).json({
+        error: `Mailchimp request failed: ${err.message}`,
       });
     }
-
-    const data = await mcRes.json();
     totalAdded += data.total_created ?? 0;
     totalUpdated += data.total_updated ?? 0;
     totalSkipped += data.error_count ?? 0;
