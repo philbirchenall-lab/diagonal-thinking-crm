@@ -92,6 +92,10 @@ Deployed (f9d2928). On every contact save, fires a background upsert to /api/mai
 **Awaiting:** MAIL-001 activation (needs Mailchimp API keys in Vercel) before this can be fully tested.
 Dev: CC-D (local_51144ae2)
 
+### MAIL-003 — SOURCE merge field + segment builder 🔵
+Adds SOURCE merge field to mailchimp-sync (ensureMergeFields + members batch map). New api/mailchimp-build-segments.js endpoint (POST, Bearer token auth) creates 17 saved Mailchimp segments across CRM_TYPE, NETWORK_PARTNER, SOURCE, and service tags. Skips segments that already exist. Requires MAILCHIMP_SEGMENT_SECRET env var.
+Dev: CC-D (confident-einstein)
+
 ---
 
 ## Automated Proposal Follow-up
