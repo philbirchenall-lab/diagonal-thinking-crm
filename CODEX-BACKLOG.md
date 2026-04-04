@@ -48,7 +48,11 @@ Dev: CC-D (local_2c047cdb)
 Dev: CC
 
 ### PROP-003 — Proposals tab in CRM 🔵
-Committed. Awaiting live verification.
+Committed and on main. Code audit 4 Apr 2026 (CC-D/angry-meitner):
+- `contact_id` column confirmed live in Supabase (REST API returns 200 on select).
+- No wrong URL found — `proposals.diagonalthinking.co` used throughout.
+- Proposals tab in nav, ProposalForm contact picker sets `contact_id` on save, `loadProposals()` joins to contacts table.
+**Awaiting Phil's live verification:** open Proposals tab → link a proposal to a contact → confirm contact name shows in table and proposal appears in contact detail modal.
 Dev: CC
 
 ### PROP-004 — Fix /admin/proposals/{uuid}/edit 404 🟢
