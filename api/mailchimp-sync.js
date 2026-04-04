@@ -52,6 +52,7 @@ export default async function handler(req, res) {
         // CRM-011: segmentation fields
         NETWORK_PARTNER: c.network_partner ? "Yes" : "No",
         CRM_TYPE: c.type || "",
+        SOURCE: c.source || "",
       },
     }));
 
@@ -121,6 +122,7 @@ async function ensureMergeFields(baseUrl, audienceId, authHeader) {
     const required = [
       { tag: "NETWORK_PARTNER", name: "Network Partner", type: "text" },
       { tag: "CRM_TYPE", name: "CRM Type", type: "text" },
+      { tag: "SOURCE", name: "Source", type: "text" },
     ];
 
     for (const field of required) {
