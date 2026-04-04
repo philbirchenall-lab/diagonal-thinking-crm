@@ -178,3 +178,25 @@ Dev: CC-D
 **Symptom:** Placeholder text on form fields uses a personal name (e.g. "Phil") instead of a generic label.
 **Fix:** All client-facing form field placeholders must use the field label itself as the placeholder (e.g. First name field → placeholder "First name", Email field → placeholder "Email address"). No personal names, no example data.
 Dev: CC-D
+
+---
+
+## Contact Form → CRM Integration
+
+### CRM-009 — Contact form → CRM integration 🟢
+**Completed:** 4 Apr 2026
+Dev: CC-D (epic-allen)
+
+**Part A — Edge Function:**
+- `contact-form` Edge Function confirmed live at `https://unphfgcjfncnqhpvmrvf.supabase.co/functions/v1/contact-form` (HTTP 200 verified).
+- `.github/workflows/deploy-functions.yml` committed and pushed. CI will now auto-deploy all 3 Edge Functions (`contact-form`, `mailchimp-sync`, `register-interest`) on push to `main` when `supabase/functions/**` changes.
+- **GitHub Actions secrets required:** `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_ID` must be added in GitHub repo Settings → Secrets → Actions before CI deploys will succeed.
+
+**Part B — Squarespace injection:**
+- `squarespace-contact-injection.js` written and committed at repo root.
+- Phil: paste file contents into Squarespace → Pages → [contact page] → gear icon → Advanced → Page Header Code Injection.
+- Listens for `sqsp:submitSuccess`, extracts name/email/company/message, POSTs to the Edge Function.
+- Handles both Squarespace 7.1 (object fields) and older (array fields) event shapes.
+- Failures are console-only — the native Squarespace "thank you" message is unaffected.
+- To verify: open browser console on contact page, submit a test form — should log "CRM sync OK".
+Dev: CC-D
