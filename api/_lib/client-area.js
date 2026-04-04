@@ -469,11 +469,15 @@ export async function listSessionDetails(supabase) {
       const resource = resourceMap.get(entry.resource_id);
       return {
         id: entry.id,
+        contactId: entry.contact_id || "",
         eventType: entry.event_type || "activity",
         occurredAt: formatTimestamp(entry.occurred_at),
+        occurredAtRaw: entry.occurred_at || "",
         contactName: contact?.contact_name || "",
         email: contact?.email || "",
+        company: contact?.company || "",
         resourceLabel: resource?.label || "",
+        resourceId: entry.resource_id || "",
       };
     });
 

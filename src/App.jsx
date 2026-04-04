@@ -1994,7 +1994,7 @@ export default function App() {
         pipeline: nextRecord.type || "",
         type: nextRecord.type || "",
         services: Array.isArray(nextRecord.services)
-          ? nextRecord.services.join(", ")
+          ? nextRecord.services
           : nextRecord.services || "",
         network_partner: nextRecord.networkPartner ?? false,
       };
@@ -2049,8 +2049,8 @@ export default function App() {
             company: c.company || "",
             pipeline: c.type || "",
             type: c.type || "",
-            services: Array.isArray(c.services) ? c.services.join(", ") : (c.services || ""),
             network_partner: c.networkPartner ?? false,
+            services: Array.isArray(c.services) ? c.services : (c.services || ""),
           };
         });
 

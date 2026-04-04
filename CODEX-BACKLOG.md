@@ -145,9 +145,12 @@ Dev: CC (Build Diagonal Thinking CRM thread)
 Resource manager implemented within session detail view (add/remove/reorder resources, type/label/URL). QR code generation and session URL copy link included. Deployed. Awaiting live test.
 Dev: CC (Build Diagonal Thinking CRM thread)
 
-### CA-FE-006 — CRM: Engagement view per session + per contact ⬜
+### CA-FE-006 — CRM: Engagement view per session + per contact 🔵
 **Priority: Medium | Effort: S | Depends on: CA-FE-004**
-Per session: table of contacts who registered — name, email, company, first access, last access, resources clicked. Per contact record: new "Sessions attended" section showing session name, date, first/last access. Data from engagement_log and magic_links tables.
+Per session: combined "Attendees" panel in SessionEditorModal — shows each attendee's name, email, company, registered timestamp, first open, last open, and resources opened (as pills). Replaces the separate Registrations + Engagement log panels.
+Per contact record: ContactSessionsPanel now shows first open, last open, and resources opened per session for that contact.
+Data computed from engagementLog entries returned with each session. `api/_lib/client-area.js` updated to include `contactId`, `occurredAtRaw`, `company`, and `resourceId` in all activity entries (needed for reliable per-contact matching).
+Deployed 3 Apr 2026 via CC-D (nightly-autonomous-backlog-run). Awaiting live verification.
 Note: engagement_log is now live and accepting data after the 2 Apr registration logging fix.
 
 ---
@@ -163,6 +166,7 @@ Note: engagement_log is now live and accepting data after the 2 Apr registration
 **Expected:** Should open/navigate to the resource URL.
 **Steps to reproduce:** Log in to client area → open a session → click "Open Resource" on any listed resource.
 **Likely cause:** Click handler missing, href not bound, or URL field not being passed through to the rendered button/link.
+**Blocker (3 Apr 2026):** The Next.js `client.diagonalthinking.co` source is NOT in this repo or iCloud-synced Codex folder. Dispatch cannot access or edit it. Phil needs to open a Codex session directly against the client-area repo and fix the resource link/button there.
 Dev: CC-D
 
 ### CA-BUG-002 — Client login page copy is unclear ⬜
@@ -170,6 +174,7 @@ Dev: CC-D
 **Where:** Client Area — login / registration page (`/[slug]` or `/?session=[slug]`)
 **Symptom:** It is not clear to clients what they are supposed to do on the page — users don't know whether to log in, register, or what the page is for.
 **Action required:** Write and implement clear copy for the login page. Should explain: what the Client Area is, what to do if first visit (register), and what to do if returning (enter email to receive magic link). Keep it concise and client-appropriate.
+**Blocker (3 Apr 2026):** Same as CA-BUG-001 — client-area Next.js source not accessible to Dispatch. Needs direct Codex session against that repo.
 Dev: CC-D
 
 ### CA-BUG-003 — Client-facing form placeholders use personal name ⬜
@@ -177,4 +182,5 @@ Dev: CC-D
 **Where:** Any client-facing form fields in the Client Area
 **Symptom:** Placeholder text on form fields uses a personal name (e.g. "Phil") instead of a generic label.
 **Fix:** All client-facing form field placeholders must use the field label itself as the placeholder (e.g. First name field → placeholder "First name", Email field → placeholder "Email address"). No personal names, no example data.
+**Blocker (3 Apr 2026):** Same as CA-BUG-001 — client-area Next.js source not accessible to Dispatch. Needs direct Codex session against that repo.
 Dev: CC-D

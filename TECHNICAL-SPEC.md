@@ -393,13 +393,47 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 
 ---
 
-### F-09 — Client Area (CA-001 through CA-004)
+### F-09 — Client Area
 
-**What it does:** Client-facing area with magic link authentication, registration, and session management.
+**What it does:** Client-facing area with magic link authentication, registration, and session management. Admin side lives in `src/clientArea.jsx` (CRM tab). Client-facing side is a **separate Next.js app** deployed to `client.diagonalthinking.co`.
 
-**Status:** Not yet deployed / in separate repo — ⚠️ verify. Referenced in project planning but no implementation files found in this repository.
+**Status (CRM admin side):** Live — `ClientAreaTab`, `SessionEditorModal`, `ContactSessionsPanel` all deployed.
+**Status (client-facing Next.js app):** Deployed to `client.diagonalthinking.co` — separate repo, NOT in this repository.
 
-**Known issues / notes:** CA-001 (schema), CA-002 (magic link), CA-003 (registration), CA-004 (session) are tracked in the backlog but may belong to a separate `dt-client-area` project.
+**Key files (CRM admin side — this repo):**
+- `src/clientArea.jsx` — CRM admin UI (session list, session editor, contact sessions panel)
+- `api/client/sessions.js` — Vercel serverless: GET/POST/PATCH client sessions
+- `api/client/auth/` — Magic link request and verification endpoints
+- `api/_lib/client-area.js` — Shared logic: DB queries, email sending, slug generation
+
+**Data model (Supabase tables used by Client Area):**
+
+| Table | Purpose |
+|---|---|
+| `sessions` | Session records (name, slug, org, date, status) |
+| `resources` | Resources per session (label, type, url, sort_order) |
+| `engagement_log` | Event log — registrations (`event_type=resource_click, resource_id=null`) and resource opens |
+| `magic_links` | One-time auth tokens (contact_id, session_slug, token, expires_at) |
+| `contacts` | Linked organisation and registrant data |
+
+**Engagement log entry shape (as returned to the UI in session.engagementLog):**
+
+| Field | Notes |
+|---|---|
+| `id` | UUID |
+| `contactId` | contact_id from DB — added 3 Apr 2026 (CC-D, CA-FE-006) |
+| `eventType` | e.g. `resource_click` |
+| `occurredAt` | Formatted datetime string (en-GB) |
+| `occurredAtRaw` | ISO timestamp — added 3 Apr 2026 for future sorting use |
+| `contactName` | Resolved contact name |
+| `email` | Resolved contact email |
+| `company` | Resolved contact company — added 3 Apr 2026 |
+| `resourceLabel` | Resolved resource label |
+| `resourceId` | resource_id from DB — added 3 Apr 2026 |
+
+**Known issues / notes:**
+- The client-facing Next.js app is NOT in this repo. CA-BUG-001/002/003 require a direct Codex session against the client-area repo.
+- CA-BUG-001 (Open Resource button) is high priority and likely a missing href/click handler in the resource list component.
 
 ---
 
