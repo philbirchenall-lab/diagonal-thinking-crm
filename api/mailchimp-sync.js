@@ -50,7 +50,8 @@ export default async function handler(req, res) {
         PIPELINE: c.pipeline || "",
         SERVICES: Array.isArray(c.services) ? c.services.join(", ") : (c.services || ""),
         // CRM-011: segmentation fields
-        NETWORK_PARTNER: c.network_partner ? "Yes" : "No",
+        // Note: Mailchimp truncates tags to 10 chars — NETWORK_PARTNER was stored as NETWORK_PA
+        NETWORK_PA: c.network_partner ? "Yes" : "No",
         CRM_TYPE: c.type || "",
       },
     }));
@@ -118,8 +119,9 @@ async function ensureMergeFields(baseUrl, audienceId, authHeader) {
       (data.merge_fields || []).map((f) => f.tag)
     );
 
+    // Mailchimp truncates tags to 10 chars — use NETWORK_PA (10 chars), not NETWORK_PARTNER (14)
     const required = [
-      { tag: "NETWORK_PARTNER", name: "Network Partner", type: "text" },
+      { tag: "NETWORK_PA", name: "Network Partner", type: "text" },
       { tag: "CRM_TYPE", name: "CRM Type", type: "text" },
     ];
 
