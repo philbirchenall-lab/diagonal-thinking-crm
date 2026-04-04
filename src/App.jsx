@@ -1992,8 +1992,10 @@ export default function App() {
         lname: parts.slice(1).join(" ") || "",
         company: nextRecord.company || "",
         pipeline: nextRecord.type || "",
+        type: nextRecord.type || "",
+        network_partner: nextRecord.networkPartner ?? false,
         services: Array.isArray(nextRecord.services)
-          ? nextRecord.services.join(", ")
+          ? nextRecord.services
           : nextRecord.services || "",
       };
       fetch("/api/mailchimp-sync", {
@@ -2046,7 +2048,9 @@ export default function App() {
             lname: parts.slice(1).join(" ") || "",
             company: c.company || "",
             pipeline: c.type || "",
-            services: Array.isArray(c.services) ? c.services.join(", ") : (c.services || ""),
+            type: c.type || "",
+            network_partner: c.networkPartner ?? false,
+            services: Array.isArray(c.services) ? c.services : (c.services || ""),
           };
         });
 
