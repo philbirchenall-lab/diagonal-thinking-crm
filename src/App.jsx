@@ -1993,10 +1993,10 @@ export default function App() {
         company: nextRecord.company || "",
         pipeline: nextRecord.type || "",
         type: nextRecord.type || "",
-        network_partner: nextRecord.networkPartner ?? false,
         services: Array.isArray(nextRecord.services)
           ? nextRecord.services
           : nextRecord.services || "",
+        network_partner: nextRecord.networkPartner ?? false,
       };
       fetch("/api/mailchimp-sync", {
         method: "POST",
