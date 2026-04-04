@@ -49,8 +49,8 @@ export default async function handler(req, res) {
         COMPANY: c.company || "",
         PIPELINE: c.pipeline || "",
         SERVICES: Array.isArray(c.services) ? c.services.join(", ") : (c.services || ""),
-        // CRM-011: segmentation fields
-        NETWORK_PARTNER: c.network_partner ? "Yes" : "No",
+        // CRM-011: segmentation fields — tag must be ≤10 chars (Mailchimp limit)
+        NETPARTNER: c.network_partner ? "Yes" : "No",
         CRM_TYPE: c.type || "",
       },
     }));
@@ -119,7 +119,7 @@ async function ensureMergeFields(baseUrl, audienceId, authHeader) {
     );
 
     const required = [
-      { tag: "NETWORK_PARTNER", name: "Network Partner", type: "text" },
+      { tag: "NETPARTNER", name: "Network Partner", type: "text" },
       { tag: "CRM_TYPE", name: "CRM Type", type: "text" },
     ];
 
