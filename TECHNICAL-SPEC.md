@@ -77,7 +77,7 @@ diagonal-thinking-crm/
 | Variable | Service | Required | Notes |
 |---|---|---|---|
 | `VITE_SUPABASE_URL` | Supabase | Required | Enables Supabase mode; without it the app falls back to local Express API |
-| `VITE_SUPABASE_ANON_KEY` | Supabase | Required | Public anon key used by the frontend client |
+| `VITE_SUPABASE_ANON_KEY` | Supabase | Required | Public anon key used by the frontend client; also used as fallback service key in `api/_lib/client-area.js` when `SUPABASE_SERVICE_ROLE_KEY` is absent |
 | `MAILCHIMP_API_KEY` | Mailchimp | Required for MAIL-001/002 | Used by `api/mailchimp-sync.js` · **NOT YET SET** as of 2 Apr 2026 |
 | `MAILCHIMP_AUDIENCE_ID` | Mailchimp | Required for MAIL-001/002 | Used by `api/mailchimp-sync.js` · **NOT YET SET** as of 2 Apr 2026 |
 
@@ -318,9 +318,14 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 | `linkedin_url` | TEXT | |
 | `network_partner` | BOOLEAN | ⚠️ verify — not in schema.sql |
 | `created_at` | TIMESTAMPTZ | Auto |
+| `research_notes` | TEXT | Call prep / prospect intel (freeform markdown) — added CRM-007 |
+| `research_updated_at` | TIMESTAMPTZ | Auto-set when research saved — added CRM-007 |
+| `research_source` | TEXT | e.g. "Sol call prep — 9 Apr 2026" — added CRM-007 |
+| `research_updated_by` | TEXT | e.g. "Sol" — added CRM-007 |
 
 **Known issues / notes:**
-- `setup/schema.sql` reflects the initial schema. `network_partner`, `total_client_value`, and `live_work_value` columns were added via CRM-004 and are not captured in the SQL file.
+- `setup/schema.sql` reflects the initial schema. `network_partner`, `total_client_value`, `live_work_value`, and the four `research_*` columns were added via later migrations and are not in the SQL file.
+- Research fields are intentionally excluded from `toSnake()` in `db.js` — standard contact saves never overwrite them. Use `saveContactResearch()` for targeted updates.
 - RLS requires authenticated session — all reads/writes must go through an authenticated Supabase client.
 - In local mode (no `VITE_SUPABASE_URL`), the app falls back to a local Express API on `http://localhost:3001/api/contacts`.
 

@@ -3,7 +3,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import Papa from "papaparse";
-import { loadContacts, saveAllContacts, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi, loadContactActivities, updateActivityStatus, markProposalReplied } from "./db.js";
+import { loadContacts, saveAllContacts, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi, loadContactActivities, updateActivityStatus, markProposalReplied, saveContactResearch } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
 import ProposalWriterForm from "./proposals/ProposalForm.jsx";
 import { ClientAreaTab, ContactSessionsPanel } from "./clientArea.jsx";
@@ -1469,6 +1469,144 @@ function ContactActivitiesPanel({ contact, refreshKey }) {
               )}
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── ContactResearchIntelPanel ────────────────────────────────────────────────
+
+function ContactResearchIntelPanel({ contact, onResearchSaved }) {
+  const [editing, setEditing] = useState(false);
+  const [notes, setNotes] = useState(contact.researchNotes ?? "");
+  const [source, setSource] = useState(contact.researchSource ?? "");
+  const [updatedBy, setUpdatedBy] = useState(contact.researchUpdatedBy || "Sol");
+  const [saving, setSaving] = useState(false);
+
+  // Reset local state when the contact changes (e.g. user opens a different record)
+  useEffect(() => {
+    setNotes(contact.researchNotes ?? "");
+    setSource(contact.researchSource ?? "");
+    setUpdatedBy(contact.researchUpdatedBy || "Sol");
+    setEditing(false);
+  }, [contact.id]);
+
+  const hasContent = Boolean(notes || source || contact.researchUpdatedAt);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await saveContactResearch(contact.id, { notes, source, updatedBy });
+      const now = new Date().toISOString();
+      if (onResearchSaved) {
+        onResearchSaved({
+          researchNotes: notes,
+          researchSource: source,
+          researchUpdatedBy: updatedBy,
+          researchUpdatedAt: now,
+        });
+      }
+      setEditing(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleCancel() {
+    setNotes(contact.researchNotes ?? "");
+    setSource(contact.researchSource ?? "");
+    setUpdatedBy(contact.researchUpdatedBy || "Sol");
+    setEditing(false);
+  }
+
+  return (
+    <div className="border border-line bg-white p-5">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+          Research &amp; Intel
+        </div>
+        {!editing && isSupabaseMode() && (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="text-xs text-brand hover:underline"
+          >
+            {hasContent ? "Edit" : "Add"}
+          </button>
+        )}
+      </div>
+
+      {!editing && !hasContent && (
+        <div className="mt-3 text-xs italic text-slate-400">No research intel recorded yet.</div>
+      )}
+
+      {!editing && hasContent && (
+        <div className="mt-3 space-y-2">
+          {notes && (
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink">{notes}</p>
+          )}
+          {(source || contact.researchUpdatedAt) && (
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
+              {source && <span>Source: {source}</span>}
+              {contact.researchUpdatedBy && contact.researchUpdatedAt && (
+                <span>
+                  Updated by {contact.researchUpdatedBy} &middot;{" "}
+                  {new Date(contact.researchUpdatedAt).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {editing && (
+        <div className="mt-3 space-y-3">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Company background, key people, relevant news, AI readiness signals…"
+            rows={6}
+            className="w-full resize-y rounded border border-line bg-white px-3 py-2 text-sm text-ink placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand"
+          />
+          <input
+            type="text"
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+            placeholder="Source (e.g. Sol call prep — 9 Apr 2026)"
+            className="w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand"
+          />
+          <input
+            type="text"
+            value={updatedBy}
+            onChange={(e) => setUpdatedBy(e.target.value)}
+            placeholder="Updated by (e.g. Sol)"
+            className="w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand"
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="inline-flex items-center rounded border border-black bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-inkSoft disabled:opacity-50"
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={saving}
+              className="inline-flex items-center rounded border border-line px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -3096,6 +3234,15 @@ export default function App() {
                   </div>
                 </div>
               </div>
+
+              {!isNewContact ? (
+                <ContactResearchIntelPanel
+                  contact={activeContact}
+                  onResearchSaved={(fields) =>
+                    setActiveContact((prev) => ({ ...prev, ...fields }))
+                  }
+                />
+              ) : null}
 
               {!isNewContact ? (
                 <ContactProposalsPanel

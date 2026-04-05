@@ -79,6 +79,12 @@ Dev: CC-D (naughty-ride)
 CRM app (contacts list, contact modal, proposals tab) fully mobile-responsive. No horizontal scroll at >=375px. All tap targets >=44px. Responsive CSS via Tailwind (sm:/lg: breakpoints). Proposal editor mm-padding scaled to vw on mobile. Proposals table replaced with card layout on mobile.
 Dev: CC-D (claude/festive-agnesi)
 
+### CRM-007 — Research & Intel panel on contact record 🔵
+Adds a "Research & Intel" collapsible panel to the contact detail modal sidebar (above Proposals). Stores Sol's call prep briefs and prospect research directly on the contact record. Fields: `research_notes` (freeform markdown/text), `research_source` (e.g. "Sol call prep — 9 Apr 2026"), `research_updated_by` (e.g. "Sol"), `research_updated_at` (auto-set on save).
+Panel is read-only by default; click "Add" or "Edit" to enter inline edit mode; "Save" writes only the 4 research fields (targeted update — standard contact save never overwrites them).
+Migration: `supabase/migrations/20260405000001_contact_research_intel.sql` — apply via Supabase Management API or SQL Editor.
+Dev: CC-D (elegant-bassi)
+
 ---
 
 ## Mailchimp Integration
@@ -148,6 +154,7 @@ Dev: CC (Build Diagonal Thinking CRM thread)
 ### CA-FE-005 — CRM: Resource manager + QR code 🔵
 **Priority: High | Effort: S | Depends on: CA-FE-004**
 Resource manager implemented within session detail view (add/remove/reorder resources, type/label/URL). QR code generation and session URL copy link included. Deployed. Awaiting live test.
+**Bug fix (5 Apr 2026):** Client Area page was showing "Supabase admin env vars are missing" because `api/_lib/client-area.js` required `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_SERVICE_KEY` but neither is set in Vercel — only `VITE_SUPABASE_ANON_KEY` is present. Fixed by adding `VITE_SUPABASE_ANON_KEY` as a final fallback in `getSupabaseServiceKey()`. No new Vercel env vars needed.
 Dev: CC (Build Diagonal Thinking CRM thread)
 
 ### CA-FE-006 — CRM: Engagement view per session + per contact 🔵
