@@ -50,10 +50,8 @@ export default async function handler(req, res) {
         PIPELINE: c.pipeline || "",
         SERVICES: Array.isArray(c.services) ? c.services.join(", ") : (c.services || ""),
         // CRM-011: segmentation fields
-        // NOTE: Mailchimp merge field tags are capped at 10 chars. NET_PART is the
-        // canonical tag for Network Partner (NETWORK_PARTNER exceeds the limit and
-        // would be silently rejected on field creation, leaving the column blank).
-        NET_PART: c.network_partner ? "Yes" : "No",
+        // NOTE: Mailchimp merge field tags max 10 chars — NETPARTNER (10) not NETWORK_PARTNER (15)
+        NETPARTNER: c.network_partner ? "Yes" : "No",
         CRM_TYPE: c.type || "",
       },
     }));
@@ -122,15 +120,15 @@ async function ensureMergeFields(baseUrl, audienceId, authHeader) {
     );
 
     const required = [
-      // NET_PART (8 chars) is the canonical tag — NETWORK_PARTNER (15 chars) exceeds
-      // Mailchimp's 10-char tag limit and would be silently rejected on creation.
-      { tag: "NET_PART", name: "Network Partner", type: "text" },
+      // NOTE: Mailchimp merge field tags are limited to 10 characters.
+      // NETPARTNER (10 chars) is correct; NETWORK_PARTNER (15 chars) would be rejected silently.
+      { tag: "NETPARTNER", name: "Network Partner", type: "text" },
       { tag: "CRM_TYPE", name: "CRM Type", type: "text" },
     ];
 
     for (const field of required) {
       if (!existingTags.has(field.tag)) {
-        await fetch(`${baseUrl}/lists/${audienceId}/merge-fields`, {
+        const createRes = await fetch(`${baseUrl}/lists/${audienceId}/merge-fields`, {
           method: "POST",
           headers: {
             Authorization: authHeader,
@@ -142,6 +140,12 @@ async function ensureMergeFields(baseUrl, audienceId, authHeader) {
             type: field.type,
           }),
         });
+        if (!createRes.ok) {
+          const errBody = await createRes.text().catch(() => "(unreadable)");
+          console.error(`[ensureMergeFields] Failed to create ${field.tag} (${createRes.status}): ${errBody}`);
+        } else {
+          console.log(`[ensureMergeFields] Created merge field: ${field.tag}`);
+        }
       }
     }
   } catch (_) {

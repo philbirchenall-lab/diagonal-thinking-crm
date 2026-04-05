@@ -99,9 +99,8 @@ async function upsertMember(
       PHONE: contact.phone ?? "",
       CRM_TYPE: contact.type ?? "",
       SERVICES: servicesStr,
-      // NET_PART (8 chars) — Mailchimp tags are capped at 10 chars; NETWORK_PARTNER
-      // (15 chars) exceeded the limit and was silently rejected on field creation.
-      NET_PART: networkStr,
+      // NOTE: Mailchimp merge field tags max 10 chars — NETPARTNER not NETWORK_PARTNER
+      NETPARTNER: networkStr,
       SOURCE: contact.source ?? "",
     },
   };

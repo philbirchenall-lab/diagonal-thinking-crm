@@ -92,14 +92,14 @@ Dev: CC-D (elegant-bassi)
 ## Mailchimp Integration
 
 ### MAIL-001 — Sync CRM contacts to Mailchimp audience 🟡
-Deployed. Commit 213c5c6. Sync is running (346 contacts confirmed in Mailchimp 4 Apr 2026). API keys added to Vercel (ENV-002 resolved).
-**Bug fixed (5 Apr 2026):** NETWORK_PARTNER was blank in Mailchimp CSV because the merge field tag `NETWORK_PARTNER` (15 chars) exceeds Mailchimp's 10-char tag limit. The `ensureMergeFields()` call was silently failing, so the field never existed in Mailchimp and the value was ignored on upload. Fixed by renaming the tag to `NET_PART` (8 chars) in both `api/mailchimp-sync.js` and `supabase/functions/mailchimp-sync/index.ts`. CRM_TYPE (8 chars) was unaffected. SERVICES was also unaffected (8 chars).
-**Action required:** Phil must re-run "Sync to Mailchimp" from the CRM to: (1) create the NET_PART merge field in Mailchimp, and (2) populate it for all existing contacts. Also re-deploy the edge function: `npx supabase functions deploy mailchimp-sync --project-ref unphfgcjfncnqhpvmrvf`
+Deployed. Commit 213c5c6. Sync is running (358 contacts confirmed in Mailchimp 5 Apr 2026). API keys added to Vercel (ENV-002 resolved).
+**Root cause found & fixed (MAIL-BUG-003, 5 Apr 2026):** NETWORK_PARTNER merge field was blank in Mailchimp because the tag `NETWORK_PARTNER` (15 chars) exceeds Mailchimp's **10-character tag limit**. The `ensureMergeFields()` function received a silent 400 from the Mailchimp API (error was swallowed), so the field was never created. The sync sent the tag but Mailchimp ignored it. Fix: renamed tag to `NETPARTNER` (10 chars) in both `api/mailchimp-sync.js` and the Edge Function. Also added response logging to `ensureMergeFields` so future failures surface in logs. CRM_TYPE (8 chars) and SERVICES (8 chars) were unaffected.
+**Action required:** Phil to run "Sync to Mailchimp" again after deploying the Edge Function fix (`npx supabase functions deploy mailchimp-sync --project-ref unphfgcjfncnqhpvmrvf`). If Mailchimp had an old NETWORK_PARTNER field (blank), it can be deleted from the Mailchimp audience merge fields UI — the NETPARTNER field will be auto-created on next sync.
 Dev: CC-D (local_911fc8cb)
 
 ### MAIL-002 — Auto-sync on contact save 🔵
 Deployed (f9d2928). On every contact save, fires a background upsert to /api/mailchimp-sync (single contact, non-blocking). Failures logged to console only. Skips if no email. Build passes.
-**Unverified:** Cannot confirm working until MAIL-001 merge fields are visible. Do NOT mark as 🟢 until Phil verifies.
+**Unverified:** Cannot confirm working until MAIL-001 merge fields are visible. Do NOT mark as 🟢 until Phil verifies NETPARTNER field populates after a contact save.
 Dev: CC-D (local_51144ae2)
 
 ### MAIL-003 — SOURCE merge field + Mailchimp segment builder 🔴
