@@ -83,14 +83,19 @@ Dev: CC-D (claude/festive-agnesi)
 
 ## Mailchimp Integration
 
-### MAIL-001 — Sync CRM contacts to Mailchimp audience 🔴
-Deployed. Commit 213c5c6. Blocked: MAILCHIMP_API_KEY and MAILCHIMP_AUDIENCE_ID not yet in CRM Vercel env vars (confirmed 2 Apr 2026). Phil needs to add both in Vercel → diagonal-thinking-crm → Settings → Environment Variables, then the "Sync to Mailchimp" button will work.
+### MAIL-001 — Sync CRM contacts to Mailchimp audience 🟡
+Deployed. Commit 213c5c6. Sync is running (346 contacts confirmed in Mailchimp 4 Apr 2026). API keys added to Vercel (ENV-002 resolved).
+**Unverified:** CRM_TYPE, NETWORK_PARTNER, SERVICES merge fields not visible in Mailchimp audience CSV — Phil needs to trigger a full sync from the CRM "Sync to Mailchimp" button to create these fields and populate them. Do NOT mark as 🟢 until Phil confirms merge fields are present.
 Dev: CC-D (local_911fc8cb)
 
 ### MAIL-002 — Auto-sync on contact save 🔵
 Deployed (f9d2928). On every contact save, fires a background upsert to /api/mailchimp-sync (single contact, non-blocking). Failures logged to console only. Skips if no email. Build passes.
-**Awaiting:** MAIL-001 activation (needs Mailchimp API keys in Vercel) before this can be fully tested.
+**Unverified:** Cannot confirm working until MAIL-001 merge fields are visible. Do NOT mark as 🟢 until Phil verifies.
 Dev: CC-D (local_51144ae2)
+
+### MAIL-003 — SOURCE merge field + Mailchimp segment builder 🔴
+Building. Adds SOURCE as a sync'd merge field. Creates a /api/mailchimp-build-segments.js endpoint that creates saved segments for every CRM_TYPE, SOURCE, service tag, and Network Partner dimension.
+Dev: local_9ae5f82c
 
 ---
 
@@ -159,28 +164,29 @@ Note: engagement_log is now live and accepting data after the 2 Apr registration
 
 > This section is maintained as a living log. All bugs should be added here with date raised, steps to reproduce, and expected vs actual behaviour. Resolve with a commit reference and mark 🟢 when live-verified.
 
-### CA-BUG-001 — "Open Resource" button does nothing 🔴
-**Raised:** 3 Apr 2026 | **Priority: High**
+### CA-BUG-001 — "Open Resource" button does nothing 🟢
+**Raised:** 3 Apr 2026 | **Fixed:** 4 Apr 2026 | **Priority: High**
 **Where:** Client Area — Private Session view (tested with session "Test", org "Diagonal Thinking TEST 2")
 **Symptom:** Clicking "Open Resource" on a resource within a session has no effect.
-**Expected:** Should open/navigate to the resource URL.
-**Steps to reproduce:** Log in to client area → open a session → click "Open Resource" on any listed resource.
-**Likely cause:** Click handler missing, href not bound, or URL field not being passed through to the rendered button/link.
-**Blocker (3 Apr 2026):** The Next.js `client.diagonalthinking.co` source is NOT in this repo or iCloud-synced Codex folder. Dispatch cannot access or edit it. Phil needs to open a Codex session directly against the client-area repo and fix the resource link/button there.
-Dev: CC-D
+**Fix:** Moved `window.open(resource.url, "_blank")` before the async `fetch` track call — browser popup blockers were suppressing it when it fired after an await. Deployed to client.diagonalthinking.co.
+Dev: CC-D (local_cbce0056)
 
-### CA-BUG-002 — Client login page copy is unclear ⬜
-**Raised:** 3 Apr 2026 | **Priority: Medium**
+### CA-BUG-002 — Client login page copy is unclear 🟢
+**Raised:** 3 Apr 2026 | **Fixed:** 4 Apr 2026 | **Priority: Medium**
 **Where:** Client Area — login / registration page (`/[slug]` or `/?session=[slug]`)
-**Symptom:** It is not clear to clients what they are supposed to do on the page — users don't know whether to log in, register, or what the page is for.
-**Action required:** Write and implement clear copy for the login page. Should explain: what the Client Area is, what to do if first visit (register), and what to do if returning (enter email to receive magic link). Keep it concise and client-appropriate.
-**Blocker (3 Apr 2026):** Same as CA-BUG-001 — client-area Next.js source not accessible to Dispatch. Needs direct Codex session against that repo.
-Dev: CC-D
+**Fix:** Heading updated to "Client Portal", subtext added: "Enter your details below to access your session materials, proposals, and resources." Deployed.
+Dev: CC-D (local_78d8f7f7)
 
-### CA-BUG-003 — Client-facing form placeholders use personal name ⬜
-**Raised:** 3 Apr 2026 | **Priority: Medium**
+### CA-BUG-003 — Client-facing form placeholders use personal name 🟢
+**Raised:** 3 Apr 2026 | **Fixed:** 4 Apr 2026 | **Priority: Medium**
 **Where:** Any client-facing form fields in the Client Area
-**Symptom:** Placeholder text on form fields uses a personal name (e.g. "Phil") instead of a generic label.
-**Fix:** All client-facing form field placeholders must use the field label itself as the placeholder (e.g. First name field → placeholder "First name", Email field → placeholder "Email address"). No personal names, no example data.
-**Blocker (3 Apr 2026):** Same as CA-BUG-001 — client-area Next.js source not accessible to Dispatch. Needs direct Codex session against that repo.
-Dev: CC-D
+**Fix:** Placeholders changed from "Phil / Birchenall" to "Jane / Smith". Deployed with CA-BUG-002.
+Dev: CC-D (local_78d8f7f7)
+
+
+### REX-TODO-001 — Investigate easier I&E-to-CRM update flow
+**Raised:** 5 Apr 2026 | **Priority: Medium**
+**Context:** Sol ran a manual I&E audit catchup on 5 Apr 2026, adding 9 companies/10 contacts missing from CRM. This was done by comparing the I&E Google Sheet against the Supabase contacts table directly via the service role API.
+**Question for Rex:** Is there a smarter, less manual way to keep CRM and I&E in sync? Options might include: a script that compares the two data sources and flags mismatches, a CRM UI feature to import from I&E, or a scheduled cross-check. Weekly Monday 1am audit task is now running but the actual catchup is still manual.
+**Owner:** Rex
+**Status:** Queued — awaiting Rex session
