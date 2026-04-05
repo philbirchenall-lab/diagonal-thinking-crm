@@ -3,7 +3,7 @@
 > **Purpose:** Any agent (Codex sub-task, diagnostic session, or Dispatch) should be able to read this document cold and immediately understand the full system architecture without needing to grep the codebase.
 >
 > **Maintained by:** Claude Code (Dispatch) — update after every significant feature or architecture change.
-> **Last updated:** 2 April 2026
+> **Last updated:** 5 April 2026
 
 ---
 
@@ -136,7 +136,7 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 - **Key identifiers:**
   - Audience ID: `d89fc8d69c`
   - Server prefix: `us8`
-  - Required custom merge fields: `COMPANY` (Text), `TYPE` (Text), `PHONE`, `SERVICES`, `NETWORK`, `SOURCE`
+  - Required custom merge fields: `COMPANY` (Text), `CRM_TYPE` (Text), `PHONE`, `SERVICES`, `NETWORK_PARTNER`, `SOURCE`
 
 ### Resend
 - **What it does:** Transactional email. Currently used for two purposes:
@@ -271,9 +271,9 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 | `contact_name` (remainder) | `LNAME` |
 | `company` | `COMPANY` |
 | `phone` | `PHONE` |
-| `type` | `TYPE` |
+| `type` | `CRM_TYPE` |
 | `services` (array → comma string) | `SERVICES` |
-| `network_partner` (bool → Yes/No) | `NETWORK` |
+| `network_partner` (bool → Yes/No) | `NETWORK_PARTNER` |
 | `source` | `SOURCE` |
 
 **Known issues / notes:** JWT verification is disabled (`verify_jwt = false` in `supabase/config.toml`) — the webhook does not send a JWT so this is intentional.
