@@ -65,6 +65,10 @@ function toCamel(row) {
     lastUpdated: row.last_updated ?? "",
     linkedinUrl: row.linkedin_url ?? "",
     networkPartner: row.network_partner ?? false,
+    researchNotes: row.research_notes ?? "",
+    researchUpdatedAt: row.research_updated_at ?? "",
+    researchSource: row.research_source ?? "",
+    researchUpdatedBy: row.research_updated_by ?? "",
   };
 }
 
@@ -301,6 +305,24 @@ export async function updateActivityStatus(activityId, status) {
     .update({ status })
     .eq("id", activityId);
   if (error) throw new Error(`Supabase updateActivityStatus failed: ${error.message}`);
+}
+
+// ─── Research & Intel ─────────────────────────────────────────────────────────
+
+// Targeted update for research intel fields only — never overwrites other contact data.
+// research shape: { notes, source, updatedBy }
+export async function saveContactResearch(contactId, research) {
+  if (!USE_SUPABASE) return;
+  const { error } = await supabase
+    .from("contacts")
+    .update({
+      research_notes: research.notes ?? null,
+      research_source: research.source ?? null,
+      research_updated_by: research.updatedBy ?? null,
+      research_updated_at: new Date().toISOString(),
+    })
+    .eq("id", contactId);
+  if (error) throw new Error(`Supabase saveContactResearch failed: ${error.message}`);
 }
 
 export async function loadProposalAccesses(proposalId) {
