@@ -1724,7 +1724,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("crm");
   const [contacts, setContacts] = useState([]);
   const [syncStatus, setSyncStatus] = useState("syncing");
+  const [syncError, setSyncError] = useState("");
   const initialLoadDoneRef = useRef(false);
+  const skipNextSaveRef = useRef(false); // prevents redundant save immediately after DB load
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
   const [serviceFilter, setServiceFilter] = useState("All");
@@ -1760,10 +1762,12 @@ export default function App() {
   // Save contacts whenever they change (but not during initial load)
   useEffect(() => {
     if (!initialLoadDoneRef.current) return;
+    // Skip the save that fires immediately after loading from DB (nothing has changed)
+    if (skipNextSaveRef.current) { skipNextSaveRef.current = false; return; }
     setSyncStatus("syncing");
     saveAllContacts(contacts)
       .then(() => setSyncStatus("synced"))
-      .catch(() => setSyncStatus("error"));
+      .catch((err) => { setSyncError(err?.message || "Unknown sync error"); setSyncStatus("error"); });
   }, [contacts]);
 
   // Load contacts on mount
@@ -1771,12 +1775,14 @@ export default function App() {
     loadContacts()
       .then((data) => {
         if (Array.isArray(data)) {
+          skipNextSaveRef.current = true; // don't re-save what we just loaded
           setContacts(data.map(createContactRecord));
           setSyncStatus("synced");
         }
         initialLoadDoneRef.current = true;
       })
-      .catch(() => {
+      .catch((err) => {
+        setSyncError(err?.message || "Could not load contacts");
         setSyncStatus("error");
         initialLoadDoneRef.current = true;
       });
@@ -2390,10 +2396,20 @@ export default function App() {
 
         {activeTab === "crm" && syncStatus === "error" && (
           <div className="mt-6 border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
-            <span className="font-semibold">Could not connect to the local CRM server.</span>{" "}
-            Make sure the Express server is running:{" "}
-            <code className="font-mono">node server.js</code> in the project folder, then refresh.
-            Double-clicking <code className="font-mono">Open CRM.command</code> starts both servers automatically.
+            {isSupabaseMode() ? (
+              <>
+                <span className="font-semibold">Could not sync with the database.</span>{" "}
+                Check your network connection and try refreshing.
+                {syncError && <div className="mt-1 font-mono text-xs opacity-75">{syncError}</div>}
+              </>
+            ) : (
+              <>
+                <span className="font-semibold">Could not connect to the local CRM server.</span>{" "}
+                Make sure the Express server is running:{" "}
+                <code className="font-mono">node server.js</code> in the project folder, then refresh.
+                Double-clicking <code className="font-mono">Open CRM.command</code> starts both servers automatically.
+              </>
+            )}
           </div>
         )}
 
