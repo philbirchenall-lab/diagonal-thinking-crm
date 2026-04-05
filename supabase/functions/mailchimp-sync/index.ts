@@ -99,7 +99,8 @@ async function upsertMember(
       PHONE: contact.phone ?? "",
       CRM_TYPE: contact.type ?? "",
       SERVICES: servicesStr,
-      NETWORK_PARTNER: networkStr,
+      // NOTE: Mailchimp merge field tags max 10 chars — NETPARTNER not NETWORK_PARTNER
+      NETPARTNER: networkStr,
       SOURCE: contact.source ?? "",
     },
   };

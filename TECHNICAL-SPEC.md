@@ -136,7 +136,8 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 - **Key identifiers:**
   - Audience ID: `d89fc8d69c`
   - Server prefix: `us8`
-  - Required custom merge fields: `COMPANY` (Text), `CRM_TYPE` (Text), `PHONE`, `SERVICES`, `NETWORK_PARTNER`, `SOURCE`
+  - Required custom merge fields: `COMPANY` (Text), `CRM_TYPE` (Text), `PHONE`, `SERVICES`, `NETPARTNER` (Text), `SOURCE`
+  - ⚠️ Mailchimp merge field tags max 10 chars — tag is `NETPARTNER` not `NETWORK_PARTNER`
 
 ### Resend
 - **What it does:** Transactional email. Currently used for two purposes:
@@ -273,7 +274,7 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 | `phone` | `PHONE` |
 | `type` | `CRM_TYPE` |
 | `services` (array → comma string) | `SERVICES` |
-| `network_partner` (bool → Yes/No) | `NETWORK_PARTNER` |
+| `network_partner` (bool → Yes/No) | `NETPARTNER` |
 | `source` | `SOURCE` |
 
 **Known issues / notes:** JWT verification is disabled (`verify_jwt = false` in `supabase/config.toml`) — the webhook does not send a JWT so this is intentional.
@@ -485,14 +486,16 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 
 **Behaviour:**
 
-1. **Merge field bootstrap** — on every request, `ensureMergeFields()` fetches the audience's existing merge fields and creates `NETWORK_PARTNER` (text) and `CRM_TYPE` (text) if they are not already present. This is a no-op after the first successful run and never blocks the main sync on failure.
+1. **Merge field bootstrap** — on every request, `ensureMergeFields()` fetches the audience's existing merge fields and creates `NETPARTNER` (text) and `CRM_TYPE` (text) if they are not already present. This is a no-op after the first successful run. Failures are now logged (not silently swallowed) to aid diagnosis.
 
 2. **Per-contact merge field values** — each member payload now includes:
 
 | CRM field | Mailchimp merge field tag | Value |
 |---|---|---|
-| `network_partner` (boolean) | `NETWORK_PARTNER` | `"Yes"` or `"No"` |
+| `network_partner` (boolean) | `NETPARTNER` | `"Yes"` or `"No"` |
 | `type` (string) | `CRM_TYPE` | verbatim string e.g. `"Client"`, `"Warm Lead"` |
+
+> ⚠️ **Important**: Mailchimp merge field tags are limited to **10 characters**. The tag is `NETPARTNER` (10 chars), not `NETWORK_PARTNER` (15 chars). Using the longer form causes silent rejection by the Mailchimp API — this was the root cause of MAIL-BUG-003.
 
 3. **Per-contact service tags** — after each batch upsert, `applyServiceTags()` fires a `POST /lists/{id}/members/{hash}/tags` call for every contact that has a non-empty `services` array. Each service string becomes a Mailchimp tag set to `status: "active"`. Tags already on the contact that are not in the current `services` list are **not** removed — this preserves any tags applied manually or from other sources.
 
@@ -505,7 +508,7 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 | `company` | `COMPANY` merge field | |
 | `pipeline` | `PIPELINE` merge field | |
 | `services` (array) | `SERVICES` merge field (comma string) + individual tags | Both written |
-| `network_partner` (bool) | `NETWORK_PARTNER` merge field | `"Yes"` / `"No"` |
+| `network_partner` (bool) | `NETPARTNER` merge field | `"Yes"` / `"No"` — tag is 10 chars max |
 | `type` (string) | `CRM_TYPE` merge field | |
 
 **Known issues / notes:**
