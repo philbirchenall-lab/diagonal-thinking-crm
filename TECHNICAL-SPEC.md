@@ -273,7 +273,7 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 | `phone` | `PHONE` |
 | `type` | `CRM_TYPE` |
 | `services` (array → comma string) | `SERVICES` |
-| `network_partner` (bool → Yes/No) | `NETWORK_PARTNER` |
+| `network_partner` (bool → Yes/No) | `NET_PART` (renamed from `NETWORK_PARTNER` — Mailchimp tag limit is 10 chars) |
 | `source` | `SOURCE` |
 
 **Known issues / notes:** JWT verification is disabled (`verify_jwt = false` in `supabase/config.toml`) — the webhook does not send a JWT so this is intentional.

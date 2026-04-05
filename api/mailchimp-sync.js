@@ -50,7 +50,10 @@ export default async function handler(req, res) {
         PIPELINE: c.pipeline || "",
         SERVICES: Array.isArray(c.services) ? c.services.join(", ") : (c.services || ""),
         // CRM-011: segmentation fields
-        NETWORK_PARTNER: c.network_partner ? "Yes" : "No",
+        // NOTE: Mailchimp merge field tags are capped at 10 chars. NET_PART is the
+        // canonical tag for Network Partner (NETWORK_PARTNER exceeds the limit and
+        // would be silently rejected on field creation, leaving the column blank).
+        NET_PART: c.network_partner ? "Yes" : "No",
         CRM_TYPE: c.type || "",
       },
     }));
@@ -119,7 +122,9 @@ async function ensureMergeFields(baseUrl, audienceId, authHeader) {
     );
 
     const required = [
-      { tag: "NETWORK_PARTNER", name: "Network Partner", type: "text" },
+      // NET_PART (8 chars) is the canonical tag — NETWORK_PARTNER (15 chars) exceeds
+      // Mailchimp's 10-char tag limit and would be silently rejected on creation.
+      { tag: "NET_PART", name: "Network Partner", type: "text" },
       { tag: "CRM_TYPE", name: "CRM Type", type: "text" },
     ];
 

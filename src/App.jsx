@@ -1621,6 +1621,7 @@ function ProposalsTab({ contacts }) {
   const [editingProposal, setEditingProposal] = useState(undefined); // undefined=closed, null=new, obj=edit
   const [accessProposal, setAccessProposal] = useState(null);
   const [copied, setCopied] = useState(null);
+  const [sendingProposal, setSendingProposal] = useState(null); // proposal id being sent
 
   const VIEWER_URL = "https://proposals.diagonalthinking.co/view";
 
@@ -1650,6 +1651,30 @@ function ProposalsTab({ contacts }) {
       setCopied(p.id);
       setTimeout(() => setCopied(null), 2000);
     });
+  }
+
+  async function handleSendProposal(p) {
+    if (!p.contacts?.email) {
+      alert("No email address on the linked contact. Link this proposal to a contact with an email first.");
+      return;
+    }
+    if (!confirm(`Send "${p.program_title}" to ${p.contacts.email}?`)) return;
+    setSendingProposal(p.id);
+    try {
+      const res = await fetch("/api/send-proposal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ proposalId: p.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Send failed");
+      await refresh();
+      alert(`Proposal sent to ${data.to}`);
+    } catch (err) {
+      alert(`Send failed: ${err.message}`);
+    } finally {
+      setSendingProposal(null);
+    }
   }
 
   return (
@@ -1749,6 +1774,15 @@ function ProposalsTab({ contacts }) {
                         </button>
                         <button
                           type="button"
+                          onClick={() => handleSendProposal(p)}
+                          disabled={sendingProposal === p.id}
+                          className="text-xs text-emerald-600 hover:text-emerald-800 disabled:opacity-50"
+                          title={p.contacts?.email ? `Send to ${p.contacts.email}` : "Link a contact with an email to enable sending"}
+                        >
+                          {sendingProposal === p.id ? "Sending…" : "Send"}
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => setAccessProposal(p)}
                           className="text-xs text-slate-500 hover:text-brand"
                         >
@@ -1807,6 +1841,15 @@ function ProposalsTab({ contacts }) {
                     title={`Copy client link for code ${p.proposal_code}`}
                   >
                     {copied === p.id ? "Copied!" : "Copy link"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSendProposal(p)}
+                    disabled={sendingProposal === p.id}
+                    className="min-h-[44px] rounded-md border border-emerald-200 px-3 py-2 text-xs font-medium text-emerald-600 hover:text-emerald-800 disabled:opacity-50"
+                    title={p.contacts?.email ? `Send to ${p.contacts.email}` : "Link a contact with an email to enable sending"}
+                  >
+                    {sendingProposal === p.id ? "Sending…" : "Send"}
                   </button>
                   <button
                     type="button"

@@ -56,8 +56,10 @@ Live tested 1 Apr 2026 — Edit link works correctly, no 404.
 Dev: CC-D (local_ffaca1f0)
 
 ### PROP-005 — Send proposal email to client 🔵
-Resend integration committed. RESEND_API_KEY added to diagonal-thinking-crm and client-area Vercel projects (2 Apr 2026). **Needs live test:** send a real proposal to confirm Resend is delivering. Note: if dt-proposals is a separate Vercel project, the key may still need adding there too.
-Dev: CC-D (local_49a3fda9)
+Send button re-added to Proposals tab (was accidentally removed in commit 89d0720 when Client Area tab was restored). New endpoint `api/send-proposal.js` — sends via Resend, sets `sent_at` on proposals row (used by follow-up cron), logs to `contact_activities`.
+RESEND_API_KEY confirmed in Vercel env vars. **Needs live test:** open a proposal linked to a contact with an email and click Send.
+Note: proposal must be linked to a contact with an email address — the Send button shows a tooltip if no email is found.
+Dev: CC-D (elegant-bassi)
 
 ### PROP-006 — Custom domain 🟢
 proposals.diagonalthinking.co — live tested and verified. Client share links confirmed using custom domain.
@@ -91,7 +93,8 @@ Dev: CC-D (elegant-bassi)
 
 ### MAIL-001 — Sync CRM contacts to Mailchimp audience 🟡
 Deployed. Commit 213c5c6. Sync is running (346 contacts confirmed in Mailchimp 4 Apr 2026). API keys added to Vercel (ENV-002 resolved).
-**Unverified:** CRM_TYPE, NETWORK_PARTNER, SERVICES merge fields not visible in Mailchimp audience CSV — Phil needs to trigger a full sync from the CRM "Sync to Mailchimp" button to create these fields and populate them. Do NOT mark as 🟢 until Phil confirms merge fields are present.
+**Bug fixed (5 Apr 2026):** NETWORK_PARTNER was blank in Mailchimp CSV because the merge field tag `NETWORK_PARTNER` (15 chars) exceeds Mailchimp's 10-char tag limit. The `ensureMergeFields()` call was silently failing, so the field never existed in Mailchimp and the value was ignored on upload. Fixed by renaming the tag to `NET_PART` (8 chars) in both `api/mailchimp-sync.js` and `supabase/functions/mailchimp-sync/index.ts`. CRM_TYPE (8 chars) was unaffected. SERVICES was also unaffected (8 chars).
+**Action required:** Phil must re-run "Sync to Mailchimp" from the CRM to: (1) create the NET_PART merge field in Mailchimp, and (2) populate it for all existing contacts. Also re-deploy the edge function: `npx supabase functions deploy mailchimp-sync --project-ref unphfgcjfncnqhpvmrvf`
 Dev: CC-D (local_911fc8cb)
 
 ### MAIL-002 — Auto-sync on contact save 🔵
