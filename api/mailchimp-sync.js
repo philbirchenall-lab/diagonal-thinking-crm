@@ -53,6 +53,8 @@ export default async function handler(req, res) {
         // NOTE: Mailchimp merge field tags max 10 chars — NETPARTNER (10) not NETWORK_PARTNER (15)
         NETPARTNER: c.network_partner ? "Yes" : "No",
         CRM_TYPE: c.type || "",
+        // MAIL-003: acquisition source field
+        SOURCE: c.source || "",
       },
     }));
 
@@ -124,6 +126,8 @@ async function ensureMergeFields(baseUrl, audienceId, authHeader) {
       // NETPARTNER (10 chars) is correct; NETWORK_PARTNER (15 chars) would be rejected silently.
       { tag: "NETPARTNER", name: "Network Partner", type: "text" },
       { tag: "CRM_TYPE", name: "CRM Type", type: "text" },
+      // MAIL-003: SOURCE (6 chars) — contact acquisition source
+      { tag: "SOURCE", name: "Source", type: "text" },
     ];
 
     for (const field of required) {
