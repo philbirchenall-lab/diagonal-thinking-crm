@@ -97,9 +97,9 @@ async function upsertMember(
       LNAME: lname,
       COMPANY: contact.company ?? "",
       PHONE: contact.phone ?? "",
-      TYPE: contact.type ?? "",
+      CRM_TYPE: contact.type ?? "",
       SERVICES: servicesStr,
-      NETWORK: networkStr,
+      NETWORK_PARTNER: networkStr,
       SOURCE: contact.source ?? "",
     },
   };
