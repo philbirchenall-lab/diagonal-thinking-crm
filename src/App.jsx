@@ -1522,94 +1522,136 @@ function ContactResearchIntelPanel({ contact, onResearchSaved }) {
     setEditing(false);
   }
 
+  const wordCount = notes.trim() ? notes.trim().split(/\s+/).length : 0;
+
   return (
-    <div className="border border-line bg-white p-5">
-      <div className="flex items-center justify-between">
-        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-          Research &amp; Intel
+    <>
+      {/* Read panel — fixed layout, never grows with content */}
+      <div className="border border-line bg-white p-5">
+        <div className="flex items-center justify-between">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Research &amp; Intel
+          </div>
+          {isSupabaseMode() && (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="text-xs text-brand hover:underline"
+            >
+              {hasContent ? "Edit" : "Add"}
+            </button>
+          )}
         </div>
-        {!editing && isSupabaseMode() && (
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="text-xs text-brand hover:underline"
-          >
-            {hasContent ? "Edit" : "Add"}
-          </button>
+
+        {!hasContent && (
+          <div className="mt-3 text-xs italic text-slate-400">No research intel recorded yet.</div>
+        )}
+
+        {hasContent && (
+          <div className="mt-3 space-y-2">
+            {notes && (
+              <div className="max-h-64 overflow-y-auto pr-1">
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink">{notes}</p>
+              </div>
+            )}
+            {(source || contact.researchUpdatedAt) && (
+              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
+                {source && <span>Source: {source}</span>}
+                {contact.researchUpdatedBy && contact.researchUpdatedAt && (
+                  <span>
+                    Updated by {contact.researchUpdatedBy} &middot;{" "}
+                    {new Date(contact.researchUpdatedAt).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {!editing && !hasContent && (
-        <div className="mt-3 text-xs italic text-slate-400">No research intel recorded yet.</div>
-      )}
-
-      {!editing && hasContent && (
-        <div className="mt-3 space-y-2">
-          {notes && (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink">{notes}</p>
-          )}
-          {(source || contact.researchUpdatedAt) && (
-            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
-              {source && <span>Source: {source}</span>}
-              {contact.researchUpdatedBy && contact.researchUpdatedAt && (
-                <span>
-                  Updated by {contact.researchUpdatedBy} &middot;{" "}
-                  {new Date(contact.researchUpdatedAt).toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
+      {/* Edit modal — opens as an overlay so the panel layout never shifts */}
       {editing && (
-        <div className="mt-3 space-y-3">
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Company background, key people, relevant news, AI readiness signals…"
-            rows={6}
-            className="w-full resize-y rounded border border-line bg-white px-3 py-2 text-sm text-ink placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand"
-          />
-          <input
-            type="text"
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            placeholder="Source (e.g. Sol call prep — 9 Apr 2026)"
-            className="w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand"
-          />
-          <input
-            type="text"
-            value={updatedBy}
-            onChange={(e) => setUpdatedBy(e.target.value)}
-            placeholder="Updated by (e.g. Sol)"
-            className="w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand"
-          />
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              className="inline-flex items-center rounded border border-black bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-inkSoft disabled:opacity-50"
-            >
-              {saving ? "Saving…" : "Save"}
-            </button>
-            <button
-              type="button"
-              onClick={handleCancel}
-              disabled={saving}
-              className="inline-flex items-center rounded border border-line px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-            >
-              Cancel
-            </button>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !saving) handleCancel();
+          }}
+        >
+          <div className="w-full max-w-2xl rounded-lg border border-line bg-white shadow-xl">
+            {/* Modal header */}
+            <div className="flex items-center justify-between border-b border-line px-5 py-4">
+              <div className="text-sm font-semibold text-ink">
+                Research &amp; Intel — {contact.name || "Contact"}
+              </div>
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={saving}
+                className="text-slate-400 hover:text-ink disabled:opacity-50"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal body */}
+            <div className="space-y-3 px-5 py-4">
+              <div>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Company background, key people, relevant news, AI readiness signals…"
+                  className="w-full min-h-[300px] resize-y rounded border border-line bg-white px-3 py-2 text-sm leading-relaxed text-ink placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand"
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
+                  autoFocus
+                />
+                <div className="mt-1 text-right text-xs text-slate-400">
+                  {wordCount} {wordCount === 1 ? "word" : "words"}
+                </div>
+              </div>
+              <input
+                type="text"
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                placeholder="Source (e.g. Sol call prep — 9 Apr 2026)"
+                className="w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand"
+              />
+              <input
+                type="text"
+                value={updatedBy}
+                onChange={(e) => setUpdatedBy(e.target.value)}
+                placeholder="Updated by (e.g. Sol)"
+                className="w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand"
+              />
+            </div>
+
+            {/* Modal footer */}
+            <div className="flex justify-end gap-2 border-t border-line px-5 py-4">
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={saving}
+                className="inline-flex items-center rounded border border-line px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="inline-flex items-center rounded border border-black bg-black px-4 py-2 text-sm font-medium text-white hover:bg-inkSoft disabled:opacity-50"
+              >
+                {saving ? "Saving…" : "Save"}
+              </button>
+            </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
