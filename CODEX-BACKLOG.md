@@ -194,9 +194,12 @@ Dev: CC-D (local_78d8f7f7)
 Dev: CC-D (local_78d8f7f7)
 
 
-### REX-TODO-001 — Investigate easier I&E-to-CRM update flow
-**Raised:** 5 Apr 2026 | **Priority: Medium**
-**Context:** Sol ran a manual I&E audit catchup on 5 Apr 2026, adding 9 companies/10 contacts missing from CRM. This was done by comparing the I&E Google Sheet against the Supabase contacts table directly via the service role API.
-**Question for Rex:** Is there a smarter, less manual way to keep CRM and I&E in sync? Options might include: a script that compares the two data sources and flags mismatches, a CRM UI feature to import from I&E, or a scheduled cross-check. Weekly Monday 1am audit task is now running but the actual catchup is still manual.
-**Owner:** Rex
-**Status:** Queued — awaiting Rex session
+### REX-TODO-001 — I&E-to-CRM gap detection (Phase 1) 🔵
+**Raised:** 5 Apr 2026 | **Implemented:** 5 Apr 2026 | **Priority: Medium**
+**Context:** Sol ran a manual I&E audit catchup on 5 Apr 2026, adding 9 companies/10 contacts missing from CRM. Phase 1 automates gap detection.
+**Implementation:** New endpoint `api/ie-crm-gap-check.js` — reads I&E Income tab (26-27 Income), fetches all CRM contacts, fuzzy-matches each I&E client against CRM (normalised: strip legal suffixes/punctuation, substring check, parenthetical extraction). Logs gaps. With `?auto_add=true` param, auto-creates missing contacts (type=Warm Lead, source=Income & Expenditure).
+Vercel cron: Monday 09:00 UTC (`vercel.json`). Also called from `weekly-invoice-prefix-check` SKILL.md (Step 4 — dry run by default).
+Required env var: `GOOGLE_SHEETS_API_KEY` — add to Vercel dashboard.
+**PR:** #TBD (rex/rex-todo-001-ie-crm-gap-detection → main, 5 Apr 2026)
+**Next:** Phase 2 = "Import from I&E" preview button in CRM UI (Option B from rex-brief).
+Dev: CC-D (rex/rex-todo-001-ie-crm-gap-detection)
