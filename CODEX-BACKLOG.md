@@ -200,6 +200,6 @@ Dev: CC-D (local_78d8f7f7)
 **Implementation:** New endpoint `api/ie-crm-gap-check.js` — reads I&E Income tab (26-27 Income), fetches all CRM contacts, fuzzy-matches each I&E client against CRM (normalised: strip legal suffixes/punctuation, substring check, parenthetical extraction). Logs gaps. With `?auto_add=true` param, auto-creates missing contacts (type=Warm Lead, source=Income & Expenditure).
 Vercel cron: Monday 09:00 UTC (`vercel.json`). Also called from `weekly-invoice-prefix-check` SKILL.md (Step 4 — dry run by default).
 Required env var: `GOOGLE_SHEETS_API_KEY` — add to Vercel dashboard.
-**PR:** #TBD (rex/rex-todo-001-ie-crm-gap-detection → main, 5 Apr 2026)
+**PR:** #10 (rex/rex-todo-001-ie-crm-gap-detection → main, 5 Apr 2026)
 **Next:** Phase 2 = "Import from I&E" preview button in CRM UI (Option B from rex-brief).
 Dev: CC-D (rex/rex-todo-001-ie-crm-gap-detection)
