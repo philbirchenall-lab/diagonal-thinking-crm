@@ -1,4 +1,5 @@
 # Diagonal Thinking CRM — Codex Backlog
+_Last updated: 8 Apr 2026 (ca-ux-p1-metadata-cleanup — Rex)_
 
 ## Status Key
 - 🟢 Done — live tested and verified
@@ -134,6 +135,16 @@ Dev: CC-D (brave-euclid)
 
 ## Client Area (client.diagonalthinking.co)
 
+### CA-UX-P1 — Metadata cleanup: remove CRM labels from client view 🔄
+**Priority: High | Effort: S**
+PR open: `ca-ux-p1-metadata-cleanup`. Fixes:
+- Removed "PRIVATE SESSION", "ORGANISATION", "SESSION TYPE" labels and metadata boxes from session page
+- Removed "SESSION RESOURCES" nav label from header (logo only)
+- Removed "LINK" resource kind label from resource cards
+- Removed hardcoded fallback description ("Open the resource in a new tab.") — not shown when no real description
+- Gated `/session/test` slug: returns 404/redirect so clients cannot access internal test data
+Dev: CC-D (gracious-lalande / Rex, 8 Apr 2026)
+
 ### CA-FE-001 — Client Area app scaffold 🔵
 **Priority: High | Effort: M**
 New Next.js app deployed to `client.diagonalthinking.co`. DT logo, brand colours applied. Vercel SSO gate disabled. Custom domain live. Both /api/client/sessions endpoints smoke-tested and returning 200 (confirmed 2 Apr 2026).
@@ -193,6 +204,10 @@ Dev: CC-D (local_78d8f7f7)
 **Fix:** Placeholders changed from "Phil / Birchenall" to "Jane / Smith". Deployed with CA-BUG-002.
 Dev: CC-D (local_78d8f7f7)
 
+
+### DATA-003 — total_client_value weekly sync 🟢
+**Completed:** 7 Apr 2026 (nightly-autonomous-backlog-run, Dot)
+`total_client_value` and `live_work_value` sync block appended to `~/Documents/Claude/Scheduled/weekly-invoice-prefix-check/SKILL.md` as Step 5. Block reads paid rows from I&E Income tab (col K=TRUE), sums Invoice Amounts (col I) per client, fuzzy-matches to CRM contacts, PATCHes `total_client_value` and `live_work_value` via Supabase REST API. Stalled since 31 Mar — resolved tonight.
 
 ### REX-TODO-001 — Investigate easier I&E-to-CRM update flow
 **Raised:** 5 Apr 2026 | **Priority: Medium**
