@@ -2180,6 +2180,7 @@ export default function App() {
         company: nextRecord.company || "",
         pipeline: nextRecord.type || "",
         type: nextRecord.type || "",
+        source: nextRecord.source || "",
         network_partner: nextRecord.networkPartner ?? false,
         services: Array.isArray(nextRecord.services)
           ? nextRecord.services
@@ -2236,6 +2237,7 @@ export default function App() {
             company: c.company || "",
             pipeline: c.type || "",
             type: c.type || "",
+            source: c.source || "",
             network_partner: c.networkPartner ?? false,
             services: Array.isArray(c.services) ? c.services : (c.services || ""),
           };

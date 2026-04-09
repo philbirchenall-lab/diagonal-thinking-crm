@@ -41,7 +41,12 @@ export default async function handler(req, res) {
   const existRes = await fetch(`${baseUrl}/lists/${audienceId}/segments?count=200`, {
     headers: { Authorization: mcAuth },
   });
-  const existData = await existRes.json();
+  const existData = await existRes.json().catch(() => ({}));
+  if (!existRes.ok) {
+    return res.status(existRes.status).json({
+      error: existData.detail || existData.title || "Could not fetch existing Mailchimp segments",
+    });
+  }
   const existingNames = new Set((existData.segments || []).map((s) => s.name));
 
   const results = [];
