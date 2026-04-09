@@ -72,12 +72,25 @@ function isDisposableEmail(email: string): boolean {
 }
 
 function isGibberishName(name: string): boolean {
-  if (/[A-Z]{4,}/.test(name)) return true;
-  for (const word of name.trim().split(/\s+/)) {
+  // Split on spaces, hyphens, and apostrophes to handle compound names
+  const words = name.trim().split(/[\s\-']+/).filter((w) => w.length > 0);
+
+  for (const word of words) {
     if (word.length < 2) continue;
-    const nonLeadingUpperCount = (word.slice(1).match(/[A-Z]/g) ?? []).length;
+
+    // Skip words with common surname prefixes (Mc, Mac, De, Von, Le, La, O')
+    if (/^(mc|mac|de|von|le|la|o'?)/i.test(word)) continue;
+
+    const nonLeading = word.slice(1);
+
+    // 4+ consecutive uppercase in the non-leading portion = gibberish
+    if (/[A-Z]{4,}/.test(nonLeading)) return true;
+
+    // 3+ scattered uppercase in non-leading portion = random casing
+    const nonLeadingUpperCount = (nonLeading.match(/[A-Z]/g) ?? []).length;
     if (nonLeadingUpperCount >= 3) return true;
   }
+
   return false;
 }
 
@@ -86,6 +99,17 @@ function isSpamMessage(message: string): boolean {
   if (trimmed.length < 10) return true;
   if (trimmed.length > 15 && !trimmed.includes(" ")) return true;
   return false;
+}
+
+// HTML Escaping (for Resend email template)
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, '&#x27;');
 }
 
 // ??? Mailchimp Helper ?????????????????????????????????????????????????????????
@@ -288,11 +312,11 @@ serve(async (req: Request) => {
           to: ["phil@diagonalthinking.co"],
           subject: `New enquiry from ${name.trim()}${company ? ` (${company.trim()})` : ""}`,
           html: `
-            <p><strong>Name:</strong> ${name.trim()}</p>
-            <p><strong>Email:</strong> ${email.trim().toLowerCase()}</p>
-            ${company ? `<p><strong>Company:</strong> ${company.trim()}</p>` : ""}
+            <p><strong>Name:</strong> ${escapeHtml(name.trim())}</p>
+            <p><strong>Email:</strong> ${escapeHtml(email.trim().toLowerCase())}</p>
+            ${company ? `<p><strong>Company:</strong> ${escapeHtml(company.trim())}</p>` : ""}
             <p><strong>Message:</strong></p>
-            <p>${message.trim().replace(/\n/g, "<br>")}</p>
+            <p>${escapeHtml(message.trim()).replace(/\n/g, "<br>")}</p>
           `,
         }),
       }).catch((err) => console.error("Resend notification error:", err));
