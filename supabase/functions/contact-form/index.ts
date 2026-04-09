@@ -10,6 +10,86 @@ const corsHeaders = {
 const MAILCHIMP_AUDIENCE_ID = "d89fc8d69c";
 const MAILCHIMP_SERVER = "us8";
 
+// ??? Layer 3: IP-based Rate Limiting ?????????????????????????????????????????
+// In-memory map � no external state needed at this scale.
+
+interface RateLimitEntry {
+  count: number;
+  resetAt: number;
+}
+const rateLimitMap = new Map<string, RateLimitEntry>();
+const RATE_LIMIT_MAX = 3;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
+function getClientIp(req: Request): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown"
+  );
+}
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+
+  // Probabilistic cleanup of expired entries (~10% of requests)
+  if (Math.random() < 0.1) {
+    for (const [key, entry] of rateLimitMap.entries()) {
+      if (now > entry.resetAt) rateLimitMap.delete(key);
+    }
+  }
+
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count++;
+  return true;
+}
+
+// ??? Layer 2: Content Validation ?????????????????????????????????????????????
+
+const DISPOSABLE_DOMAINS = new Set([
+  "mailinator.com",
+  "guerrillamail.com", "guerrillamail.net", "guerrillamail.org",
+  "guerrillamail.biz", "guerrillamail.de", "guerrillamailblock.com",
+  "grr.la", "sharklasers.com", "spam4.me",
+  "trashmail.com", "trashmail.at", "trashmail.io", "trashmail.me",
+  "maildrop.cc", "dispostable.com", "fakeinbox.com", "tempinbox.com",
+  "10minutemail.com", "minutemail.com", "spamgourmet.com",
+  "getairmail.com", "throwaway.email", "tempr.email", "discard.email",
+  "mailnesia.com", "mailnull.com", "crap.email", "yopmail.com",
+  "tempmail.com", "temp-mail.org", "throwam.com", "spamex.com",
+  "spamfree24.org", "binkmail.com", "mailexpire.com", "filzmail.com",
+  "mytrashmail.com", "getonemail.com", "mt2015.com",
+]);
+
+function isDisposableEmail(email: string): boolean {
+  const domain = email.split("@")[1]?.toLowerCase() ?? "";
+  return DISPOSABLE_DOMAINS.has(domain);
+}
+
+function isGibberishName(name: string): boolean {
+  if (/[A-Z]{4,}/.test(name)) return true;
+  for (const word of name.trim().split(/\s+/)) {
+    if (word.length < 2) continue;
+    const nonLeadingUpperCount = (word.slice(1).match(/[A-Z]/g) ?? []).length;
+    if (nonLeadingUpperCount >= 3) return true;
+  }
+  return false;
+}
+
+function isSpamMessage(message: string): boolean {
+  const trimmed = message.trim();
+  if (trimmed.length < 10) return true;
+  if (trimmed.length > 15 && !trimmed.includes(" ")) return true;
+  return false;
+}
+
+// ??? Mailchimp Helper ?????????????????????????????????????????????????????????
+
 async function subscriberHash(email: string): Promise<string> {
   const normalized = email.toLowerCase().trim();
   const msgBuffer = new TextEncoder().encode(normalized);
@@ -57,6 +137,8 @@ async function syncToMailchimp(
   }
 }
 
+// ??? Main Handler ?????????????????????????????????????????????????????????????
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders, status: 204 });
@@ -69,12 +151,23 @@ serve(async (req: Request) => {
     );
   }
 
+  // Layer 3: Rate limit check (before parsing body to keep it cheap)
+  const clientIp = getClientIp(req);
+  if (!checkRateLimit(clientIp)) {
+    console.log(`[spam] Rate limit exceeded for IP ${clientIp}`);
+    return new Response(
+      JSON.stringify({ error: "Too many requests. Please try again later." }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 429 }
+    );
+  }
+
   try {
     let body: {
       name?: string;
       email?: string;
       company?: string;
       message?: string;
+      _gotcha?: string;
     };
 
     try {
@@ -83,6 +176,15 @@ serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ error: "Invalid JSON body" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    // Layer 1: Honeypot check
+    if (body._gotcha) {
+      console.log(`[spam] Honeypot triggered � silent block (IP: ${clientIp})`);
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
@@ -103,6 +205,32 @@ serve(async (req: Request) => {
       );
     }
 
+    // Layer 2: Content validation
+    if (isGibberishName(name)) {
+      console.log(`[spam] Gibberish name rejected: "${name}" (IP: ${clientIp})`);
+      return new Response(
+        JSON.stringify({ error: "Please enter your real name." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    if (isDisposableEmail(email)) {
+      console.log(`[spam] Disposable email rejected: ${email} (IP: ${clientIp})`);
+      return new Response(
+        JSON.stringify({ error: "Please use a real email address." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    if (isSpamMessage(message)) {
+      console.log(`[spam] Spam message rejected (IP: ${clientIp})`);
+      return new Response(
+        JSON.stringify({ error: "Please enter a meaningful message (at least 10 characters)." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    // All spam checks passed � proceed with normal flow
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -129,7 +257,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // Log to enquiries table
     await supabase.from("enquiries").insert({
       email: email.trim().toLowerCase(),
       name: name.trim(),
@@ -137,7 +264,6 @@ serve(async (req: Request) => {
       message: message.trim(),
     }).then(() => {}).catch(() => {});
 
-    // Sync to Mailchimp (non-blocking)
     const mailchimpKey = Deno.env.get("MAILCHIMP_API_KEY");
     if (mailchimpKey) {
       syncToMailchimp(
