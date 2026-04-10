@@ -54,10 +54,21 @@ function slugify(value) {
 }
 
 function matchesSessionToContact(session, contact) {
-  return (
+  // Host organisation match
+  if (
     session.organisationId === contact.id ||
     session.organisationId === contact.company ||
     session.organisationName === contact.company
+  ) {
+    return true;
+  }
+
+  // Attendee match — contact registered for this session
+  const regs = session.registrations ?? [];
+  return regs.some(
+    (reg) =>
+      (reg.contactId && contact.id && reg.contactId === contact.id) ||
+      (reg.email && contact.email && reg.email.toLowerCase() === contact.email.toLowerCase()),
   );
 }
 
@@ -934,6 +945,7 @@ export function ClientAreaTab({ contacts, launchContact, onLaunchConsumed }) {
 
       {editingSession ? (
         <SessionEditorModal
+          key={editingSession.id || "new"}
           contacts={contacts}
           initialSession={editingSession}
           onClose={() => setEditingSession(null)}

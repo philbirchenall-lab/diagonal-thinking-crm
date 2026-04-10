@@ -181,51 +181,71 @@ Note: engagement_log is now live and accepting data after the 2 Apr registration
 **Fix:** Moved `window.open(resource.url, "_blank")` before the async `fetch` track call — browser popup blockers were suppressing it when it fired after an await. Deployed to client.diagonalthinking.co.
 Dev: CC-D (local_cbce0056)
 
-### CA-BUG-002 — Client login page copy is unclear 🔴
-**Raised:** 3 Apr 2026 | **Fixed in code:** 4 Apr 2026 | **Priority: Medium**
-**Where:** Client Area — login / registration page (`/[slug]` or `/?session=[slug]`)
-**Fix (in code):** Heading updated to "Client Portal", subtext added. Code committed by CC-D (local_78d8f7f7).
-**Status:** Live verification failed 9 Apr 2026 (Tes confirmed old copy still showing on site). Root cause: client-area Vercel deployment is stale — code fix was never deployed. **Action: Phil to redeploy client-area to Vercel from latest main.**
+### CA-BUG-002 — Client login page copy is unclear 🔵
+**Raised:** 3 Apr 2026 | **Fixed:** 9 Apr 2026 | **Priority: Medium**
+**Where:** Client Area — login / registration page (`/?session=[slug]`)
+**Fix:** Heading changed to "Client Portal", subtext "Enter your details below and we'll send you a secure access link." added to `registration-form.tsx`. Placeholders changed to "First name" / "Last name". Client-area source fully rebuilt from compiled .next output. Deploy this PR to fix.
+Dev: CC-D (vibrant-curran)
 
-### CA-BUG-003 — Client-facing form placeholders use personal name 🔴
-**Raised:** 3 Apr 2026 | **Fixed in code:** 4 Apr 2026 | **Priority: Medium**
-**Where:** Any client-facing form fields in the Client Area
-**Fix (in code):** Placeholders changed from "Phil / Birchenall" to "Jane / Smith". Code committed with CA-BUG-002.
-**Status:** Same stale deployment issue as CA-BUG-002. Will be resolved by same redeployment. **Action: Phil to redeploy client-area.**
+### CA-BUG-003 — Client-facing form placeholders use personal name 🔵
+**Raised:** 3 Apr 2026 | **Fixed:** 9 Apr 2026 | **Priority: Medium**
+**Where:** `registration-form.tsx` First name / Last name inputs
+**Fix:** Placeholders changed to "First name" / "Last name". Included in CA-BUG-002 fix above.
+Dev: CC-D (vibrant-curran)
 
 
-### CA-BUG-005 — Magic link registration not writing new contacts to CRM 🔴
-**Raised:** 9 Apr 2026 | **Priority: High**
-**Where:** Client Area — registration form on any session slug (tested: Livin client area)
-**Symptom:** Registering as a new user (e.g. "Barry Test") does not create a new contact in the CRM, and the contact does not appear linked to the host organisation.
+### CA-BUG-005 — Magic link registration not writing new contacts to CRM 🔵
+**Raised:** 9 Apr 2026 | **Fixed:** 9 Apr 2026 | **Priority: High**
+**Where:** Client Area — registration flow + CRM Client Sessions panel
 
-**Investigation findings (Rex, 9 Apr 2026):**
-The write-back code **was built** and is correct in git. The registration flow calls TWO sequential endpoints:
-1. `POST /api/client/register` → calls `ensureContactForSessionRegistration()` → upserts contact in `contacts` table → logs to `engagement_log`
-2. `POST /api/client/auth/request` → calls `ensureContactForSessionRegistration()` again → creates magic link → sends email
+**Fixes applied (vibrant-curran):**
+1. **`organisation_id` column added to `contacts`** — migration `20260409000001_contacts_organisation_id.sql`. Apply via Supabase SQL Editor.
+2. **`ensureContactForSessionRegistration()` updated** in `client-area/src/lib/client-server.ts` to write `organisation_id` from `session.organisationId` when creating or updating a contact.
+3. **CRM Client Sessions panel fixed** — `matchesSessionToContact()` in `src/clientArea.jsx` now also matches contacts who appear in `session.registrations` (by `contactId` or email). Previously only matched the host organisation.
+4. **Full client-area source rebuilt** from compiled `.next` output — all prior commits were stale. This PR deploys the correct code.
 
-Both use `createServiceClient()` from `client-area/src/lib/supabase.ts` which requires two env vars:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-
-**Root cause (primary): Stale Vercel deployment**
-CA-BUG-002 and CA-BUG-003 fixes are confirmed not live despite being committed. This proves the client-area Vercel deployment is behind the current codebase. The contact write-back logic exists in git but has never been deployed to production. Barry Test's registration ran stale server code that did not perform the write-back.
-
-**Root cause (secondary risk): Env var mismatch**
-The client-area Next.js app uses `NEXT_PUBLIC_SUPABASE_URL` (not `VITE_SUPABASE_URL`). If this env var is not set in the client-area's Vercel project, `createServiceClient()` throws on every call and all registration attempts would return a 500.
-
-**Schema note:** The `contacts` table has no `organisation_id` FK. "Linking" to an organisation is done via the `company` name string (derived from `session.organisationName`). This is by design; no schema change needed for this bug. A new contact registered via an in-house session (e.g. Livin) will have `company: "Livin Housing"` (or whatever the org contact's `company` field contains).
-
-**Fix required:**
-1. **Phil to redeploy client-area to Vercel from latest main branch commit.** This will also fix CA-BUG-002 and CA-BUG-003.
-2. **Phil to verify env vars** in the client-area Vercel project: `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` must both be set.
-3. After redeployment, re-test: register a new test user on the Livin client area, then search for them in the CRM contacts list (type filter = "All") and in Supabase directly.
-
-**No code changes needed** — the logic is correct in git. This is purely a deployment/env var issue.
-
-**Squarespace note:** This bug has no Squarespace component. All fixes are in the client-area Next.js app (Vercel).
+**Action required:**
+1. Deploy this PR to Vercel (client-area project).
+2. Apply migration `20260409000001_contacts_organisation_id.sql` in Supabase SQL Editor.
+3. Verify env vars in client-area Vercel project: `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+4. Re-test: register a new test user on the Livin client area → confirm contact appears in CRM with correct `company` and `organisation_id`.
+Dev: CC-D (vibrant-curran)
 
 ---
+
+### CA-BUG-006 — Slug uniqueness constraint crash 🔵
+**Raised:** 9 Apr 2026 | **Fixed:** 9 Apr 2026 | **Priority: High**
+**Where:** CRM — creating a new session with a name whose slug already exists (e.g. "Livin Test 9 April" → `livin-test-9-april`)
+**Symptom:** `duplicate key value violates unique constraint 'sessions_slug_key'`
+**Fix:** `saveSessionDetails()` in `api/_lib/client-area.js` now calls `uniqueSlug()` before insert. Checks for existing slug in DB; appends `-2`, `-3` etc. until a free slot is found. Edits to existing sessions keep their slug unchanged.
+Dev: CC-D (vibrant-curran)
+
+### CA-BUG-007 — Public Page link always shows livin-copilot URL 🔵
+**Raised:** 9 Apr 2026 | **Fixed:** 9 Apr 2026 | **Priority: Medium**
+**Where:** CRM Admin — Sessions tab → any session → "Public page" sidebar link
+**Symptom:** "View page" / "Copy link" always shows `client.diagonalthinking.co/?session=livin-copilot-m365-short-session` regardless of which session is open.
+**Root cause:** `SessionEditorModal` was rendered without a `key` prop, so React reused the component instance when switching sessions, keeping the stale `landingUrl` from the first session opened.
+**Fix:** Added `key={editingSession.id || "new"}` to `<SessionEditorModal>` in `src/clientArea.jsx`. React now unmounts and remounts the modal for each session, computing the correct `landingUrl`.
+Dev: CC-D (vibrant-curran)
+
+---
+
+### CA-FE-007 — Client Area full source rebuild 🔵
+**Raised:** 9 Apr 2026 | **Priority: High**
+**Context:** The client-area Vercel project had no committed source — only a compiled `.next` build directory and a handful of renamed files with ` 2` suffixes. All source files were recovered from `.next` source maps and fully rebuilt in `client-area/src/`.
+**Changes vs compiled version:**
+- P1: Removed "Private session", "Organisation", "Session type" labels from session page
+- P1: Resource description no longer shows hardcoded fallback text when empty
+- P2: Header/page background changed from `#1a1a2e` to `#3B5CB5` (brand blue)
+- P2: Session page: removed metadata grid, shows session name + date + "Here are your session materials."
+- P2: Footer added: link back to diagonalthinking.co
+- P2: Login/registration form: heading "Client Portal", subtext added
+- P2: Button colours updated to `#3B5CB5`
+- P3: "Send magic link" → "Send access link"
+- P3: Form placeholders: "First name" / "Last name" (not Phil's name)
+- CA-BUG-005: `organisation_id` now written on contact create/update
+- proxy.ts updated to match recovered source
+Dev: CC-D (vibrant-curran)
 
 ### REX-TODO-001 — Investigate easier I&E-to-CRM update flow
 **Raised:** 5 Apr 2026 | **Priority: Medium**
