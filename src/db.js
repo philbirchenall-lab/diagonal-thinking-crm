@@ -441,19 +441,29 @@ export async function loadAllOpportunities() {
 // opportunity shape: { id (optional), title, description, value, stage, services, close_date, contact_id, proposal_id, notes }
 export async function saveOpportunity(opportunity) {
   if (!USE_SUPABASE) return null;
+  const stage = opportunity.stage ?? "Identified";
   if (opportunity.id) {
-    // Update
+    // Fetch existing to preserve won_at if already set
+    const { data: current } = await supabase
+      .from("opportunities")
+      .select("won_at")
+      .eq("id", opportunity.id)
+      .single();
+    const wonAt = stage === "Won" && current && !current.won_at
+      ? new Date().toISOString()
+      : (current?.won_at ?? null);
     const { data, error } = await supabase
       .from("opportunities")
       .update({
         title: opportunity.title,
         description: opportunity.description ?? null,
         value: opportunity.value ?? 0,
-        stage: opportunity.stage ?? "Identified",
+        stage,
         services: opportunity.services ?? [],
         close_date: opportunity.closeDate ?? null,
         proposal_id: opportunity.proposalId ?? null,
         notes: opportunity.notes ?? null,
+        won_at: wonAt,
       })
       .eq("id", opportunity.id)
       .select()
@@ -461,7 +471,6 @@ export async function saveOpportunity(opportunity) {
     if (error) throw new Error(`Supabase opportunity update failed: ${error.message}`);
     return data;
   } else {
-    // Insert
     const { data, error } = await supabase
       .from("opportunities")
       .insert({
@@ -469,11 +478,12 @@ export async function saveOpportunity(opportunity) {
         title: opportunity.title,
         description: opportunity.description ?? null,
         value: opportunity.value ?? 0,
-        stage: opportunity.stage ?? "Identified",
+        stage,
         services: opportunity.services ?? [],
         close_date: opportunity.closeDate ?? null,
         proposal_id: opportunity.proposalId ?? null,
         notes: opportunity.notes ?? null,
+        won_at: stage === "Won" ? new Date().toISOString() : null,
       })
       .select()
       .single();
@@ -482,12 +492,25 @@ export async function saveOpportunity(opportunity) {
   }
 }
 
-// Update just the stage of an opportunity (used for quick stage-change in the panel)
+// Update just the stage of an opportunity (used for quick stage-change in the panel).
+// Sets won_at when transitioning to Won (only on first transition — won_at is not overwritten once set).
 export async function updateOpportunityStage(opportunityId, stage) {
   if (!USE_SUPABASE) return;
+  const updates = { stage };
+  if (stage === "Won") {
+    // Only stamp won_at if not already set — fetch current value first
+    const { data: current } = await supabase
+      .from("opportunities")
+      .select("won_at")
+      .eq("id", opportunityId)
+      .single();
+    if (current && !current.won_at) {
+      updates.won_at = new Date().toISOString();
+    }
+  }
   const { error } = await supabase
     .from("opportunities")
-    .update({ stage })
+    .update(updates)
     .eq("id", opportunityId);
   if (error) throw new Error(`Supabase opportunity stage update failed: ${error.message}`);
 }

@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS opportunities (
   close_date date,
   proposal_id uuid REFERENCES proposals(id) ON DELETE SET NULL,
   notes text,
+  won_at timestamptz,           -- Set when stage transitions to Won; not overwritten on subsequent edits
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -23,8 +24,9 @@ CREATE TABLE IF NOT EXISTS opportunities (
 CREATE INDEX IF NOT EXISTS idx_opportunities_contact_id ON opportunities(contact_id);
 CREATE INDEX IF NOT EXISTS idx_opportunities_stage ON opportunities(stage);
 
--- Auto-update updated_at on row modification
-CREATE OR REPLACE FUNCTION set_updated_at()
+-- Auto-update updated_at on row modification.
+-- Using CREATE OR REPLACE so re-running this migration is safe.
+CREATE OR REPLACE FUNCTION set_opportunities_updated_at()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   NEW.updated_at = now();
@@ -32,13 +34,16 @@ BEGIN
 END;
 $$;
 
+-- Drop trigger first so re-runs are idempotent
+DROP TRIGGER IF EXISTS opportunities_updated_at ON opportunities;
 CREATE TRIGGER opportunities_updated_at
   BEFORE UPDATE ON opportunities
-  FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+  FOR EACH ROW EXECUTE PROCEDURE set_opportunities_updated_at();
 
 -- RLS: authenticated users have full access (same pattern as contacts table)
 ALTER TABLE opportunities ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Authenticated users have full access to opportunities" ON opportunities;
 CREATE POLICY "Authenticated users have full access to opportunities"
   ON opportunities
   FOR ALL

@@ -35,7 +35,7 @@ export default async function handler(req, res) {
   const supabase = getSupabase();
 
   if (req.method === "PATCH") {
-    const allowed = ["title", "description", "value", "stage", "services", "close_date", "contact_id", "proposal_id", "notes"];
+    const allowed = ["title", "description", "value", "stage", "services", "close_date", "contact_id", "proposal_id", "notes", "won_at"];
     const updates = {};
     for (const field of allowed) {
       if (Object.prototype.hasOwnProperty.call(req.body ?? {}, field)) {

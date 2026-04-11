@@ -87,12 +87,12 @@ export default async function handler(req, res) {
   // Enforce: cannot change type to/from Client
   if (body.type !== undefined) {
     if (existing.type === "Client") {
-      return res.status(403).json({
+      return res.status(400).json({
         error: "Cannot change type of a Client contact — Client status is permanent.",
       });
     }
     if (body.type === "Client") {
-      return res.status(403).json({
+      return res.status(400).json({
         error: "Sol cannot set type to 'Client'. Client designation is Flo's domain.",
       });
     }
