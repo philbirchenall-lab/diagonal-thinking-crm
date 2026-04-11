@@ -412,6 +412,93 @@ export async function saveClientSession(session) {
   return data.session;
 }
 
+// ─── Opportunities ────────────────────────────────────────────────────────────
+
+// Load all opportunities for a specific contact
+export async function loadContactOpportunities(contactId) {
+  if (!USE_SUPABASE) return [];
+  const { data, error } = await supabase
+    .from("opportunities")
+    .select("*")
+    .eq("contact_id", contactId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`Supabase opportunities load failed: ${error.message}`);
+  return data ?? [];
+}
+
+// Load all opportunities across all contacts (for the pipeline tab), joined with contact info
+export async function loadAllOpportunities() {
+  if (!USE_SUPABASE) return [];
+  const { data, error } = await supabase
+    .from("opportunities")
+    .select("*, contacts(id, company, contact_name, email)")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`Supabase all opportunities load failed: ${error.message}`);
+  return data ?? [];
+}
+
+// Create or update an opportunity.
+// opportunity shape: { id (optional), title, description, value, stage, services, close_date, contact_id, proposal_id, notes }
+export async function saveOpportunity(opportunity) {
+  if (!USE_SUPABASE) return null;
+  if (opportunity.id) {
+    // Update
+    const { data, error } = await supabase
+      .from("opportunities")
+      .update({
+        title: opportunity.title,
+        description: opportunity.description ?? null,
+        value: opportunity.value ?? 0,
+        stage: opportunity.stage ?? "Identified",
+        services: opportunity.services ?? [],
+        close_date: opportunity.closeDate ?? null,
+        proposal_id: opportunity.proposalId ?? null,
+        notes: opportunity.notes ?? null,
+      })
+      .eq("id", opportunity.id)
+      .select()
+      .single();
+    if (error) throw new Error(`Supabase opportunity update failed: ${error.message}`);
+    return data;
+  } else {
+    // Insert
+    const { data, error } = await supabase
+      .from("opportunities")
+      .insert({
+        contact_id: opportunity.contactId ?? null,
+        title: opportunity.title,
+        description: opportunity.description ?? null,
+        value: opportunity.value ?? 0,
+        stage: opportunity.stage ?? "Identified",
+        services: opportunity.services ?? [],
+        close_date: opportunity.closeDate ?? null,
+        proposal_id: opportunity.proposalId ?? null,
+        notes: opportunity.notes ?? null,
+      })
+      .select()
+      .single();
+    if (error) throw new Error(`Supabase opportunity insert failed: ${error.message}`);
+    return data;
+  }
+}
+
+// Update just the stage of an opportunity (used for quick stage-change in the panel)
+export async function updateOpportunityStage(opportunityId, stage) {
+  if (!USE_SUPABASE) return;
+  const { error } = await supabase
+    .from("opportunities")
+    .update({ stage })
+    .eq("id", opportunityId);
+  if (error) throw new Error(`Supabase opportunity stage update failed: ${error.message}`);
+}
+
+// Delete an opportunity by id
+export async function deleteOpportunity(opportunityId) {
+  if (!USE_SUPABASE) return;
+  const { error } = await supabase.from("opportunities").delete().eq("id", opportunityId);
+  if (error) throw new Error(`Supabase opportunity delete failed: ${error.message}`);
+}
+
 export async function requestClientMagicLink(payload) {
   if (!USE_SUPABASE) {
     return {
