@@ -1504,12 +1504,23 @@ const emptyOppForm = () => ({
   services: [],
   closeDate: "",
   notes: "",
+  proposalId: null,
 });
 
 function OpportunityForm({ initial = null, contactId, onSave, onCancel }) {
   const [form, setForm] = useState(initial ?? emptyOppForm());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [proposals, setProposals] = useState([]);
+
+  useEffect(() => {
+    if (!isSupabaseMode()) return;
+    loadProposals().then((all) => {
+      // Prefer proposals linked to this contact; fall back to all if none match
+      const forContact = contactId ? all.filter((p) => p.contact_id === contactId) : [];
+      setProposals(forContact.length > 0 ? forContact : all);
+    }).catch(() => setProposals([]));
+  }, [contactId]);
 
   function update(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -1601,6 +1612,23 @@ function OpportunityForm({ initial = null, contactId, onSave, onCancel }) {
           className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand"
         />
       </div>
+      {proposals.length > 0 && (
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1">Linked Proposal</label>
+          <select
+            value={form.proposalId ?? ""}
+            onChange={(e) => update("proposalId", e.target.value || null)}
+            className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand"
+          >
+            <option value="">None</option>
+            {proposals.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.proposal_code ? `${p.proposal_code} — ${p.program_title}` : p.program_title}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div>
         <label className="block text-xs font-semibold text-slate-500 mb-1">Services in scope</label>
         <div className="flex flex-wrap gap-1.5">
@@ -1777,6 +1805,7 @@ function ContactOpportunitiesPanel({ contact }) {
                     closeDate: opp.close_date ?? "",
                     notes: opp.notes ?? "",
                     contact_id: opp.contact_id,
+                    proposalId: opp.proposal_id ?? null,
                   }}
                   contactId={contact.id}
                   onSave={handleUpdated}
