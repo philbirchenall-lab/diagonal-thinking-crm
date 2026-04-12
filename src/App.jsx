@@ -28,6 +28,14 @@ import {
 
 // LOCAL_API_URL is managed by db.js — use loadContacts/saveAllContacts instead
 const TYPE_OPTIONS = ["Client", "Warm Lead", "Cold Lead", "Mailing List"];
+const PLATFORM_OPTIONS = [
+  "ChatGPT",
+  "Anthropic Claude",
+  "Microsoft Copilot",
+  "Google Gemini",
+  "Other",
+];
+
 const SERVICE_OPTIONS = [
   "AI Advantage Course",
   "AI Agent Course",
@@ -144,6 +152,7 @@ const emptyContact = () => ({
   dateAdded: "",
   lastUpdated: "",
   networkPartner: false,
+  platforms: [],
 });
 
 function formatCurrency(value) {
@@ -2668,6 +2677,20 @@ export default function App() {
     });
   }
 
+  function toggleActivePlatform(platform) {
+    setActiveContact((current) => {
+      const platforms = current.platforms.includes(platform)
+        ? current.platforms.filter((item) => item !== platform)
+        : [...current.platforms, platform];
+
+      return {
+        ...current,
+        platforms,
+        lastUpdated: todayStamp(),
+      };
+    });
+  }
+
   function saveActiveContact() {
     if (!activeContact) return;
 
@@ -3793,6 +3816,27 @@ export default function App() {
                           }`}
                         >
                           {service}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </DetailField>
+                <DetailField label="Platforms">
+                  <div className="flex flex-wrap gap-2">
+                    {PLATFORM_OPTIONS.map((platform) => {
+                      const active = activeContact.platforms.includes(platform);
+                      return (
+                        <button
+                          key={platform}
+                          type="button"
+                          onClick={() => toggleActivePlatform(platform)}
+                          className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
+                            active
+                              ? "border-brand bg-brand text-white"
+                              : "border-line bg-white text-slate-600 hover:border-black hover:bg-mist"
+                          }`}
+                        >
+                          {platform}
                         </button>
                       );
                     })}
