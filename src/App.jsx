@@ -3,7 +3,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import Papa from "papaparse";
-import { loadContacts, saveAllContacts, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi, loadContactActivities, updateActivityStatus, markProposalReplied, saveContactResearch } from "./db.js";
+import { loadContacts, saveAllContacts, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi, loadContactActivities, updateActivityStatus, markProposalReplied, saveContactResearch, loadContactOpportunities, loadAllOpportunities, saveOpportunity, updateOpportunityStage, deleteOpportunity } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
 import ProposalWriterForm from "./proposals/ProposalForm.jsx";
 import { ClientAreaTab, ContactSessionsPanel } from "./clientArea.jsx";
@@ -96,6 +96,17 @@ const TYPE_COLORS = {
   "Warm Lead": "#3B5CB5",
   "Cold Lead": "#0ea5e9",
   "Mailing List": "#94a3b8",
+};
+
+const STAGES = ["Identified", "Qualifying", "Proposal", "Negotiating", "Won", "Lost"];
+
+const STAGE_STYLES = {
+  Identified: "bg-slate-100 text-slate-600 ring-slate-200",
+  Qualifying: "bg-blue-50 text-blue-700 ring-blue-200",
+  Proposal: "bg-orange-50 text-orange-700 ring-orange-200",
+  Negotiating: "bg-purple-50 text-purple-700 ring-purple-200",
+  Won: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  Lost: "bg-rose-50 text-rose-600 ring-rose-200",
 };
 
 const expectedInitialHeaders = [
@@ -1475,6 +1486,556 @@ function ContactActivitiesPanel({ contact, refreshKey }) {
   );
 }
 
+// ─── ContactOpportunitiesPanel ────────────────────────────────────────────────
+
+function StageBadge({ stage }) {
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STAGE_STYLES[stage] ?? "bg-slate-100 text-slate-600 ring-slate-200"}`}>
+      {stage}
+    </span>
+  );
+}
+
+const emptyOppForm = () => ({
+  title: "",
+  description: "",
+  value: "",
+  stage: "Identified",
+  services: [],
+  closeDate: "",
+  notes: "",
+  proposalId: null,
+});
+
+function OpportunityForm({ initial = null, contactId, onSave, onCancel }) {
+  const [form, setForm] = useState(initial ?? emptyOppForm());
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [proposals, setProposals] = useState([]);
+
+  useEffect(() => {
+    if (!isSupabaseMode()) return;
+    loadProposals().then((all) => {
+      // Prefer proposals linked to this contact; fall back to all if none match
+      const forContact = contactId ? all.filter((p) => p.contact_id === contactId) : [];
+      setProposals(forContact.length > 0 ? forContact : all);
+    }).catch(() => setProposals([]));
+  }, [contactId]);
+
+  function update(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function toggleService(service) {
+    setForm((prev) => ({
+      ...prev,
+      services: prev.services.includes(service)
+        ? prev.services.filter((s) => s !== service)
+        : [...prev.services, service],
+    }));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!form.title.trim()) {
+      setError("Title is required");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const saved = await saveOpportunity({
+        ...form,
+        id: initial?.id ?? undefined,
+        contactId: contactId ?? initial?.contact_id ?? undefined,
+        value: form.value === "" ? 0 : Number(form.value),
+      });
+      onSave(saved);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-3 space-y-3 rounded-md border border-line bg-mist p-4">
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 mb-1">Title <span className="text-rose-500">*</span></label>
+        <input
+          type="text"
+          value={form.title}
+          onChange={(e) => update("title", e.target.value)}
+          placeholder="e.g. Follow-on AI Foundations programme"
+          className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand"
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 mb-1">Description</label>
+        <textarea
+          value={form.description}
+          onChange={(e) => update("description", e.target.value)}
+          rows={2}
+          placeholder="How did this arise, what's the context?"
+          className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand resize-none"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1">Value (£)</label>
+          <input
+            type="number"
+            min="0"
+            value={form.value}
+            onChange={(e) => update("value", e.target.value)}
+            placeholder="0"
+            className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1">Stage</label>
+          <select
+            value={form.stage}
+            onChange={(e) => update("stage", e.target.value)}
+            className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand"
+          >
+            {STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 mb-1">Close date</label>
+        <input
+          type="date"
+          value={form.closeDate}
+          onChange={(e) => update("closeDate", e.target.value)}
+          className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand"
+        />
+      </div>
+      {proposals.length > 0 && (
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1">Linked Proposal</label>
+          <select
+            value={form.proposalId ?? ""}
+            onChange={(e) => update("proposalId", e.target.value || null)}
+            className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand"
+          >
+            <option value="">None</option>
+            {proposals.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.proposal_code ? `${p.proposal_code} — ${p.program_title}` : p.program_title}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 mb-1">Services in scope</label>
+        <div className="flex flex-wrap gap-1.5">
+          {SERVICE_OPTIONS.map((service) => {
+            const active = form.services.includes(service);
+            return (
+              <button
+                key={service}
+                type="button"
+                onClick={() => toggleService(service)}
+                className={`rounded border px-2 py-0.5 text-xs font-medium transition ${
+                  active
+                    ? "border-brand bg-brand text-white"
+                    : "border-line bg-white text-slate-600 hover:border-slate-400"
+                }`}
+              >
+                {service}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 mb-1">Notes</label>
+        <textarea
+          value={form.notes}
+          onChange={(e) => update("notes", e.target.value)}
+          rows={2}
+          placeholder="Ongoing notes (distinct from description)"
+          className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand resize-none"
+        />
+      </div>
+      {error && <p className="text-xs text-rose-600">{error}</p>}
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-md bg-black px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-inkSoft disabled:opacity-50"
+        >
+          {saving ? "Saving…" : (initial ? "Update" : "Create")}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-md border border-line px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function ContactOpportunitiesPanel({ contact }) {
+  const [opportunities, setOpportunities] = useState(null); // null = loading
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [updatingStage, setUpdatingStage] = useState(null);
+
+  function load() {
+    if (!isSupabaseMode()) {
+      setOpportunities([]);
+      return;
+    }
+    setOpportunities(null);
+    loadContactOpportunities(contact.id)
+      .then(setOpportunities)
+      .catch((err) => {
+        console.error(err);
+        setOpportunities([]);
+      });
+  }
+
+  useEffect(() => { load(); }, [contact.id]);
+
+  function handleCreated(opp) {
+    setOpportunities((prev) => [opp, ...(prev ?? [])]);
+    setShowForm(false);
+  }
+
+  function handleUpdated(opp) {
+    setOpportunities((prev) => (prev ?? []).map((o) => (o.id === opp.id ? opp : o)));
+    setEditingId(null);
+  }
+
+  async function handleStageChange(oppId, newStage) {
+    setUpdatingStage(oppId);
+    try {
+      await updateOpportunityStage(oppId, newStage);
+      setOpportunities((prev) =>
+        (prev ?? []).map((o) => (o.id === oppId ? { ...o, stage: newStage } : o))
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUpdatingStage(null);
+    }
+  }
+
+  async function handleDelete(oppId) {
+    try {
+      await deleteOpportunity(oppId);
+      setOpportunities((prev) => (prev ?? []).filter((o) => o.id !== oppId));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setConfirmDeleteId(null);
+    }
+  }
+
+  const isTerminal = (stage) => stage === "Won" || stage === "Lost";
+
+  return (
+    <div className="border border-line bg-white p-5">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+          Opportunities
+        </div>
+        {!showForm && isSupabaseMode() && (
+          <button
+            type="button"
+            onClick={() => { setShowForm(true); setEditingId(null); }}
+            className="text-xs text-brand hover:underline"
+          >
+            New Opportunity
+          </button>
+        )}
+      </div>
+
+      {showForm && (
+        <OpportunityForm
+          contactId={contact.id}
+          onSave={handleCreated}
+          onCancel={() => setShowForm(false)}
+        />
+      )}
+
+      {opportunities === null && (
+        <div className="mt-3 text-xs text-slate-400">Loading…</div>
+      )}
+
+      {opportunities !== null && opportunities.length === 0 && !showForm && (
+        <div className="mt-3 space-y-2">
+          <p className="text-xs italic text-slate-400">No opportunities yet — add the first one.</p>
+          {isSupabaseMode() && (
+            <button
+              type="button"
+              onClick={() => setShowForm(true)}
+              className="inline-flex items-center rounded border border-line px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            >
+              + New Opportunity
+            </button>
+          )}
+        </div>
+      )}
+
+      {opportunities !== null && opportunities.length > 0 && (
+        <div className="mt-3 space-y-3">
+          {opportunities.map((opp) => (
+            <div
+              key={opp.id}
+              className={`border-t border-line pt-3 first:border-t-0 first:pt-0 ${isTerminal(opp.stage) ? "opacity-60" : ""}`}
+            >
+              {editingId === opp.id ? (
+                <OpportunityForm
+                  initial={{
+                    id: opp.id,
+                    title: opp.title,
+                    description: opp.description ?? "",
+                    value: opp.value ?? "",
+                    stage: opp.stage,
+                    services: opp.services ?? [],
+                    closeDate: opp.close_date ?? "",
+                    notes: opp.notes ?? "",
+                    contact_id: opp.contact_id,
+                    proposalId: opp.proposal_id ?? null,
+                  }}
+                  contactId={contact.id}
+                  onSave={handleUpdated}
+                  onCancel={() => setEditingId(null)}
+                />
+              ) : (
+                <>
+                  <div className="flex items-start justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setEditingId(opp.id); setShowForm(false); }}
+                      className="text-sm font-medium text-ink leading-snug text-left hover:underline"
+                    >
+                      {opp.title}
+                    </button>
+                    <StageBadge stage={opp.stage} />
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="text-xs font-medium text-slate-600">
+                      {Number(opp.value) > 0 ? formatCurrency(opp.value) : "£—"}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      {opp.close_date
+                        ? new Date(opp.close_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                        : "No date set"}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <select
+                      value={opp.stage}
+                      onChange={(e) => handleStageChange(opp.id, e.target.value)}
+                      disabled={updatingStage === opp.id}
+                      className="rounded border border-line bg-white px-2 py-0.5 text-xs text-slate-600 focus:outline-none focus:ring-1 focus:ring-brand disabled:opacity-50"
+                    >
+                      {STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    {confirmDeleteId === opp.id ? (
+                      <span className="flex items-center gap-1">
+                        <span className="text-xs text-slate-500">Delete?</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(opp.id)}
+                          className="text-xs font-medium text-rose-600 hover:underline"
+                        >
+                          Yes
+                        </button>
+                        <span className="text-xs text-slate-400">/</span>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="text-xs text-slate-500 hover:underline"
+                        >
+                          No
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteId(opp.id)}
+                        className="text-xs text-slate-400 hover:text-rose-500"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── OpportunitiesTab ─────────────────────────────────────────────────────────
+
+function OpportunitiesTab({ contacts, onOpenContact }) {
+  const [opportunities, setOpportunities] = useState(null);
+  const [stageFilter, setStageFilter] = useState("");
+  const [showTerminal, setShowTerminal] = useState(false);
+
+  function load() {
+    if (!isSupabaseMode()) {
+      setOpportunities([]);
+      return;
+    }
+    setOpportunities(null);
+    loadAllOpportunities()
+      .then(setOpportunities)
+      .catch((err) => {
+        console.error(err);
+        setOpportunities([]);
+      });
+  }
+
+  useEffect(() => { load(); }, []);
+
+  const isTerminal = (stage) => stage === "Won" || stage === "Lost";
+
+  const visible = (opportunities ?? []).filter((opp) => {
+    if (!showTerminal && isTerminal(opp.stage)) return false;
+    if (stageFilter && opp.stage !== stageFilter) return false;
+    return true;
+  });
+
+  const activeOpportunities = (opportunities ?? []).filter((opp) => !isTerminal(opp.stage));
+  const totalPipelineValue = activeOpportunities.reduce((sum, opp) => sum + (Number(opp.value) || 0), 0);
+
+  function handleRowClick(opp) {
+    if (!opp.contact_id) return;
+    const contact = contacts.find((c) => c.id === opp.contact_id);
+    if (contact && onOpenContact) onOpenContact(contact);
+  }
+
+  return (
+    <div>
+      {/* Pipeline value hero */}
+      <div className="mb-6 border border-line bg-white p-5 shadow-panel sm:p-6">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Active Pipeline</div>
+        <div className="mt-2 font-editorial text-4xl font-semibold text-ink">
+          {formatCurrency(totalPipelineValue)}
+        </div>
+        <div className="mt-1 text-xs text-slate-400">
+          {activeOpportunities.length} active {activeOpportunities.length === 1 ? "opportunity" : "opportunities"}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <select
+          value={stageFilter}
+          onChange={(e) => setStageFilter(e.target.value)}
+          className="rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand"
+        >
+          <option value="">All stages</option>
+          {STAGES.filter((s) => !isTerminal(s)).map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showTerminal}
+            onChange={(e) => setShowTerminal(e.target.checked)}
+            className="rounded border-line"
+          />
+          Show Won / Lost
+        </label>
+        <button
+          type="button"
+          onClick={load}
+          className="ml-auto rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+        >
+          Refresh
+        </button>
+      </div>
+
+      {/* Table */}
+      <div className="border border-line bg-white shadow-panel">
+        {opportunities === null && (
+          <div className="px-6 py-10 text-sm text-slate-400">Loading…</div>
+        )}
+
+        {opportunities !== null && visible.length === 0 && (
+          <div className="px-6 py-10 text-center">
+            <p className="text-sm text-slate-400 italic">
+              {(opportunities ?? []).length === 0
+                ? "No active opportunities — add one from a contact record."
+                : "No opportunities match the current filters."}
+            </p>
+          </div>
+        )}
+
+        {opportunities !== null && visible.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-line bg-mist text-left">
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Company</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Contact</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Opportunity</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 text-right">Value</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Stage</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Close date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((opp) => {
+                  const terminal = isTerminal(opp.stage);
+                  return (
+                    <tr
+                      key={opp.id}
+                      onClick={() => handleRowClick(opp)}
+                      className={`border-b border-line last:border-b-0 transition-colors ${
+                        opp.contact_id ? "cursor-pointer hover:bg-mist" : ""
+                      } ${terminal ? "opacity-50" : ""}`}
+                    >
+                      <td className="px-4 py-3 text-ink font-medium">
+                        {opp.contacts?.company || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {opp.contacts?.contact_name || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-ink">
+                        {opp.title}
+                      </td>
+                      <td className="px-4 py-3 text-right font-medium text-ink tabular-nums">
+                        {Number(opp.value) > 0 ? formatCurrency(opp.value) : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StageBadge stage={opp.stage} />
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">
+                        {opp.close_date
+                          ? new Date(opp.close_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                          : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── ContactResearchIntelPanel ────────────────────────────────────────────────
 
 function ContactResearchIntelPanel({ contact, onResearchSaved }) {
@@ -2501,6 +3062,7 @@ export default function App() {
             <div className="-mx-1 flex gap-1 overflow-x-auto py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {[
                 { key: "crm", label: "CRM" },
+                { key: "opportunities", label: "Opportunities" },
                 { key: "proposals", label: "Proposals" },
                 { key: "client-area", label: "Client Area" },
               ].map((tab) => (
@@ -2562,6 +3124,19 @@ export default function App() {
           </div>
           </>)}
         </header>
+
+        {activeTab === "opportunities" && (
+          <div className="mt-6">
+            <OpportunitiesTab
+              contacts={contacts}
+              onOpenContact={(contact) => {
+                setActiveContact(contact);
+                setIsNewContact(false);
+                setActiveTab("crm");
+              }}
+            />
+          </div>
+        )}
 
         {activeTab === "proposals" && (
           <div className="mt-6">
@@ -3294,6 +3869,10 @@ export default function App() {
                   contact={activeContact}
                   onReplied={() => setActivityRefreshKey((k) => k + 1)}
                 />
+              ) : null}
+
+              {!isNewContact ? (
+                <ContactOpportunitiesPanel contact={activeContact} />
               ) : null}
 
               {!isNewContact ? (

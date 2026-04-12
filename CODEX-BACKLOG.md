@@ -247,6 +247,20 @@ Dev: CC-D (vibrant-curran)
 - proxy.ts updated to match recovered source
 Dev: CC-D (vibrant-curran)
 
+### CRM-010 — Opportunities feature 🔵
+Full pipeline opportunities feature. New `opportunities` table in Supabase (id, contact_id FK SET NULL, title, description, value, stage, services[], close_date, proposal_id FK SET NULL, notes, created_at, updated_at). Stages: Identified, Qualifying, Proposal, Negotiating, Won, Lost. RLS: authenticated full access. `updated_at` auto-trigger.
+API routes: `GET/POST /api/opportunities`, `PATCH/DELETE /api/opportunities/[id]`.
+UI: `ContactOpportunitiesPanel` in contact detail sidebar (below Proposals), with inline create/edit form, quick stage-change dropdown, and delete with confirmation. `OpportunitiesTab` accessible from CRM nav, showing total active pipeline value, table of all non-Won/non-Lost opportunities with stage badges, filtering by stage, Won/Lost toggle.
+Migration: `supabase/migrations/20260410000001_opportunities.sql` — apply via Supabase SQL Editor.
+Dev: CC-D (wonderful-grothendieck) | PR: TBD
+
+### CRM-011 — Sol's direct CRM write interface 🔵
+API routes protected by `x-sol-key` header (must match `SOL_API_KEY` env var). Uses Supabase service role key.
+Routes: `GET /api/sol/contacts?search=` (search by name/company/email), `POST /api/sol/contacts` (create — types: Warm Lead, Cold Lead, Mailing List, Enquiry only; Client is rejected), `PATCH /api/sol/contacts/[id]` (update non-locked fields; cannot change type to/from Client; cannot touch total_client_value or live_work_value).
+New env var required: `SOL_API_KEY` — add to Vercel env vars.
+Sol's write protocol documented in `~/Documents/Claude/wiki/agents/sol-working-context.md`.
+Dev: CC-D (wonderful-grothendieck) | PR: TBD
+
 ### REX-TODO-001 — Investigate easier I&E-to-CRM update flow
 **Raised:** 5 Apr 2026 | **Priority: Medium**
 **Context:** Sol ran a manual I&E audit catchup on 5 Apr 2026, adding 9 companies/10 contacts missing from CRM. This was done by comparing the I&E Google Sheet against the Supabase contacts table directly via the service role API.
