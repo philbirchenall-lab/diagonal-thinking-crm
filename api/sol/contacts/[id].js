@@ -123,6 +123,22 @@ export default async function handler(req, res) {
     updates.last_updated = new Date().toISOString().slice(0, 10);
   }
 
+  // Email uniqueness check — exclude the contact's own ID so editing without
+  // changing the email never triggers a false duplicate violation.
+  if (updates.email) {
+    const { data: conflict } = await supabase
+      .from("contacts")
+      .select("id")
+      .eq("email", updates.email)
+      .neq("id", id)
+      .maybeSingle();
+    if (conflict) {
+      return res.status(400).json({
+        error: `Email '${updates.email}' is already used by another contact.`,
+      });
+    }
+  }
+
   const { data, error } = await supabase
     .from("contacts")
     .update(updates)

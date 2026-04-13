@@ -268,6 +268,25 @@ New env var required: `SOL_API_KEY` — add to Vercel env vars.
 Sol's write protocol documented in `~/Documents/Claude/wiki/agents/sol-working-context.md`.
 Dev: CC-D (wonderful-grothendieck) | PR: TBD
 
+### CRM-BUG-001 — OpportunitiesTab opportunities not editable 🔵
+**Raised:** 13 Apr 2026 | **Fixed:** 13 Apr 2026 | **Priority: Medium**
+**Where:** CRM — Opportunities tab (global pipeline view)
+**Symptom:** Clicking an opportunity row navigated to the contact record instead of opening an edit form. No edit affordance existed in the global pipeline view.
+**Root cause:** `OpportunitiesTab` had only `handleRowClick` (opens contact); no edit state or `OpportunityForm` integration.
+**Fix:** Added `editingOpp` state and `handleUpdated` handler to `OpportunitiesTab`. Each row now has an "Edit" button (`e.stopPropagation()` prevents row-click conflict). Clicking Edit renders `OpportunityForm` pre-populated via `initial={opp}` in a panel above the table. On save, the row is updated in-place; on cancel, the form is dismissed. `OpportunityForm` already handles PATCH via `saveOpportunity` when `initial?.id` is set.
+Dev: CC-D (musing-lewin)
+
+### CRM-BUG-002 — Duplicate email constraint error when editing a contact 🔵
+**Raised:** 13 Apr 2026 | **Fixed:** 13 Apr 2026 | **Priority: High**
+**Where:** CRM — editing and saving any contact
+**Symptom:** `duplicate key value violates unique constraint 'contacts_email_unique'` fires on save, even when the email hasn't changed.
+**Root cause:** `saveAllContacts` in `src/db.js` deduplicates contacts by email in local state, but any duplicate rows still present in Supabase (e.g. created by the contact-form Edge Function with a different UUID) remained in the DB during the upsert. PostgreSQL's unique constraint check runs against ALL rows — including the stale duplicate — causing a false violation.
+**Fix (db.js):** Before the bulk upsert, delete any Supabase rows that share an email with a deduped contact but have a different ID (`DELETE WHERE email = $email AND id != $id`). This clears stale duplicates before the constraint check fires.
+**Fix (api/sol/contacts/[id].js):** Added an explicit email uniqueness pre-check to the Sol PATCH route that excludes the contact's own ID (`SELECT id WHERE email = $email AND id != $currentId`), returning a clean 400 instead of letting the DB constraint fire.
+Dev: CC-D (musing-lewin)
+
+---
+
 ### REX-TODO-001 — Investigate easier I&E-to-CRM update flow
 **Raised:** 5 Apr 2026 | **Priority: Medium**
 **Context:** Sol ran a manual I&E audit catchup on 5 Apr 2026, adding 9 companies/10 contacts missing from CRM. This was done by comparing the I&E Google Sheet against the Supabase contacts table directly via the service role API.
