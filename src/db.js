@@ -356,6 +356,20 @@ export async function saveAllContacts(contacts) {
     const deduped = Array.from(seen.values());
     const rows = deduped.map(toSnake);
 
+    // Remove any DB rows that share an email with a deduped contact but have a
+    // different ID. Without this, the upsert below would violate the
+    // contacts_email_unique constraint even when the email hasn't changed —
+    // because the duplicate row still exists in the DB at upsert time.
+    // SQL equivalent: DELETE FROM contacts WHERE email = $email AND id != $id
+    for (const c of deduped) {
+      if (!c.email) continue;
+      await supabase
+        .from("contacts")
+        .delete()
+        .eq("email", c.email.toLowerCase().trim())
+        .neq("id", c.id);
+    }
+
     // Upsert all current contacts, matching on primary key (id)
     const { error: upsertErr } = await supabase.from("contacts").upsert(rows, { onConflict: "id" });
     if (upsertErr) throw new Error(`Supabase upsert failed: ${upsertErr.message}`);

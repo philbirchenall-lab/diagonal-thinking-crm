@@ -1898,6 +1898,7 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
   const [showTerminal, setShowTerminal] = useState(false);
   const [sortCol, setSortCol] = useState("value");
   const [sortDir, setSortDir] = useState("desc");
+  const [editingOpp, setEditingOpp] = useState(null); // null = not editing, obj = editing
 
   function load() {
     if (!isSupabaseMode()) {
@@ -1953,6 +1954,11 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
   const activeOpportunities = (opportunities ?? []).filter((opp) => !isTerminal(opp.stage));
   const totalPipelineValue = activeOpportunities.reduce((sum, opp) => sum + (Number(opp.value) || 0), 0);
 
+  function handleUpdated(saved) {
+    setOpportunities((prev) => (prev ?? []).map((o) => (o.id === saved.id ? saved : o)));
+    setEditingOpp(null);
+  }
+
   function handleRowClick(opp) {
     if (!opp.contact_id) return;
     const contact = contacts.find((c) => c.id === opp.contact_id);
@@ -2002,6 +2008,31 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
         </button>
       </div>
 
+      {/* Inline edit form */}
+      {editingOpp && (
+        <div className="mb-4">
+          <div className="mb-2 text-xs font-semibold text-slate-500 uppercase tracking-[0.14em]">
+            Editing: {editingOpp.title}
+          </div>
+          <OpportunityForm
+            initial={{
+              id: editingOpp.id,
+              title: editingOpp.title,
+              description: editingOpp.description ?? "",
+              value: editingOpp.value ?? "",
+              stage: editingOpp.stage,
+              services: editingOpp.services ?? [],
+              closeDate: editingOpp.close_date ?? "",
+              notes: editingOpp.notes ?? "",
+              contact_id: editingOpp.contact_id,
+              proposalId: editingOpp.proposal_id ?? null,
+            }}
+            onSave={handleUpdated}
+            onCancel={() => setEditingOpp(null)}
+          />
+        </div>
+      )}
+
       {/* Table */}
       <div className="border border-line bg-white shadow-panel">
         {opportunities === null && (
@@ -2042,6 +2073,7 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
                       </span>
                     </th>
                   ))}
+                  <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody>
@@ -2074,6 +2106,15 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
                         {opp.close_date
                           ? new Date(opp.close_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
                           : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setEditingOpp(opp); }}
+                          className="rounded border border-line px-2 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                        >
+                          Edit
+                        </button>
                       </td>
                     </tr>
                   );
