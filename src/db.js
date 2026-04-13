@@ -44,6 +44,7 @@ function toSnake(contact) {
     last_updated: contact.lastUpdated ?? null,
     linkedin_url: contact.linkedinUrl ?? null,
     network_partner: contact.networkPartner ?? false,
+    platforms: contact.platforms ?? [],
   };
 }
 
@@ -65,6 +66,7 @@ function toCamel(row) {
     lastUpdated: row.last_updated ?? "",
     linkedinUrl: row.linkedin_url ?? "",
     networkPartner: row.network_partner ?? false,
+    platforms: row.platforms ?? [],
     researchNotes: row.research_notes ?? "",
     researchUpdatedAt: row.research_updated_at ?? "",
     researchSource: row.research_source ?? "",
@@ -338,10 +340,24 @@ export async function loadProposalAccesses(proposalId) {
 
 export async function saveAllContacts(contacts) {
   if (USE_SUPABASE) {
-    const rows = contacts.map(toSnake);
+    // Deduplicate by email before upserting — prevents unique-constraint violations
+    // when a contact-form submission creates a record with a different UUID but the
+    // same email as a row already in the local state. Keep the most recently updated
+    // version (by last_updated, falling back to date_added).
+    const seen = new Map();
+    for (const c of contacts) {
+      const key = (c.email || "").toLowerCase().trim();
+      if (!key) { seen.set(c.id, c); continue; }
+      const prev = seen.get(key);
+      if (!prev || (c.lastUpdated || c.dateAdded || "") > (prev.lastUpdated || prev.dateAdded || "")) {
+        seen.set(key, c);
+      }
+    }
+    const deduped = Array.from(seen.values());
+    const rows = deduped.map(toSnake);
 
-    // Upsert all current contacts
-    const { error: upsertErr } = await supabase.from("contacts").upsert(rows);
+    // Upsert all current contacts, matching on primary key (id)
+    const { error: upsertErr } = await supabase.from("contacts").upsert(rows, { onConflict: "id" });
     if (upsertErr) throw new Error(`Supabase upsert failed: ${upsertErr.message}`);
 
     // Delete any contacts that exist in Supabase but not in the current array
@@ -350,7 +366,7 @@ export async function saveAllContacts(contacts) {
       .select("id");
     if (fetchErr) throw new Error(`Supabase fetch IDs failed: ${fetchErr.message}`);
 
-    const currentIds = new Set(contacts.map((c) => c.id));
+    const currentIds = new Set(deduped.map((c) => c.id));
     const toDelete = existing.filter((r) => !currentIds.has(r.id)).map((r) => r.id);
 
     if (toDelete.length > 0) {
@@ -460,7 +476,7 @@ export async function saveOpportunity(opportunity) {
         value: opportunity.value ?? 0,
         stage,
         services: opportunity.services ?? [],
-        close_date: opportunity.closeDate ?? null,
+        close_date: opportunity.closeDate || null,
         proposal_id: opportunity.proposalId ?? null,
         notes: opportunity.notes ?? null,
         won_at: wonAt,
@@ -480,7 +496,7 @@ export async function saveOpportunity(opportunity) {
         value: opportunity.value ?? 0,
         stage,
         services: opportunity.services ?? [],
-        close_date: opportunity.closeDate ?? null,
+        close_date: opportunity.closeDate || null,
         proposal_id: opportunity.proposalId ?? null,
         notes: opportunity.notes ?? null,
         won_at: stage === "Won" ? new Date().toISOString() : null,

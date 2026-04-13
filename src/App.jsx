@@ -28,6 +28,14 @@ import {
 
 // LOCAL_API_URL is managed by db.js — use loadContacts/saveAllContacts instead
 const TYPE_OPTIONS = ["Client", "Warm Lead", "Cold Lead", "Mailing List"];
+const PLATFORM_OPTIONS = [
+  "ChatGPT",
+  "Anthropic Claude",
+  "Microsoft Copilot",
+  "Google Gemini",
+  "Other",
+];
+
 const SERVICE_OPTIONS = [
   "AI Advantage Course",
   "AI Agent Course",
@@ -144,6 +152,7 @@ const emptyContact = () => ({
   dateAdded: "",
   lastUpdated: "",
   networkPartner: false,
+  platforms: [],
 });
 
 function formatCurrency(value) {
@@ -1887,6 +1896,8 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
   const [opportunities, setOpportunities] = useState(null);
   const [stageFilter, setStageFilter] = useState("");
   const [showTerminal, setShowTerminal] = useState(false);
+  const [sortCol, setSortCol] = useState("value");
+  const [sortDir, setSortDir] = useState("desc");
 
   function load() {
     if (!isSupabaseMode()) {
@@ -1906,11 +1917,38 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
 
   const isTerminal = (stage) => stage === "Won" || stage === "Lost";
 
-  const visible = (opportunities ?? []).filter((opp) => {
-    if (!showTerminal && isTerminal(opp.stage)) return false;
-    if (stageFilter && opp.stage !== stageFilter) return false;
-    return true;
-  });
+  function handleSort(col) {
+    if (sortCol === col) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortCol(col);
+      setSortDir(col === "value" ? "desc" : "asc");
+    }
+  }
+
+  function sortValue(opp, col) {
+    if (col === "company") return (opp.contacts?.company ?? "").toLowerCase();
+    if (col === "contact") return (opp.contacts?.contact_name ?? "").toLowerCase();
+    if (col === "title") return (opp.title ?? "").toLowerCase();
+    if (col === "value") return Number(opp.value) || 0;
+    if (col === "stage") return STAGES.indexOf(opp.stage);
+    if (col === "close_date") return opp.close_date ?? "9999-99-99";
+    return "";
+  }
+
+  const visible = (opportunities ?? [])
+    .filter((opp) => {
+      if (!showTerminal && isTerminal(opp.stage)) return false;
+      if (stageFilter && opp.stage !== stageFilter) return false;
+      return true;
+    })
+    .slice()
+    .sort((a, b) => {
+      const av = sortValue(a, sortCol);
+      const bv = sortValue(b, sortCol);
+      const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
 
   const activeOpportunities = (opportunities ?? []).filter((opp) => !isTerminal(opp.stage));
   const totalPipelineValue = activeOpportunities.reduce((sum, opp) => sum + (Number(opp.value) || 0), 0);
@@ -1985,12 +2023,25 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line bg-mist text-left">
-                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Company</th>
-                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Contact</th>
-                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Opportunity</th>
-                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 text-right">Value</th>
-                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Stage</th>
-                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Close date</th>
+                  {[
+                    { col: "company", label: "Company", align: "left" },
+                    { col: "contact", label: "Contact", align: "left" },
+                    { col: "title", label: "Opportunity", align: "left" },
+                    { col: "value", label: "Value", align: "right" },
+                    { col: "stage", label: "Stage", align: "left" },
+                    { col: "close_date", label: "Close date", align: "left" },
+                  ].map(({ col, label, align }) => (
+                    <th
+                      key={col}
+                      className={`px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 cursor-pointer select-none hover:text-ink ${align === "right" ? "text-right" : ""}`}
+                      onClick={() => handleSort(col)}
+                    >
+                      {label}{" "}
+                      <span className="text-slate-400">
+                        {sortCol === col ? (sortDir === "asc" ? "↑" : "↓") : "↕"}
+                      </span>
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -2663,6 +2714,20 @@ export default function App() {
       return {
         ...current,
         services,
+        lastUpdated: todayStamp(),
+      };
+    });
+  }
+
+  function toggleActivePlatform(platform) {
+    setActiveContact((current) => {
+      const platforms = current.platforms.includes(platform)
+        ? current.platforms.filter((item) => item !== platform)
+        : [...current.platforms, platform];
+
+      return {
+        ...current,
+        platforms,
         lastUpdated: todayStamp(),
       };
     });
@@ -3793,6 +3858,27 @@ export default function App() {
                           }`}
                         >
                           {service}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </DetailField>
+                <DetailField label="Platforms">
+                  <div className="flex flex-wrap gap-2">
+                    {PLATFORM_OPTIONS.map((platform) => {
+                      const active = activeContact.platforms.includes(platform);
+                      return (
+                        <button
+                          key={platform}
+                          type="button"
+                          onClick={() => toggleActivePlatform(platform)}
+                          className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
+                            active
+                              ? "border-brand bg-brand text-white"
+                              : "border-line bg-white text-slate-600 hover:border-black hover:bg-mist"
+                          }`}
+                        >
+                          {platform}
                         </button>
                       );
                     })}

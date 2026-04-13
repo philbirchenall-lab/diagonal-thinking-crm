@@ -81,6 +81,13 @@ Dev: CC-D (naughty-ride)
 CRM app (contacts list, contact modal, proposals tab) fully mobile-responsive. No horizontal scroll at >=375px. All tap targets >=44px. Responsive CSS via Tailwind (sm:/lg: breakpoints). Proposal editor mm-padding scaled to vw on mobile. Proposals table replaced with card layout on mobile.
 Dev: CC-D (claude/festive-agnesi)
 
+### CRM-008 — Platforms multi-select field on contact record 🔵
+Adds a `platforms` text[] column to the `contacts` table tracking which AI platforms/tools each client uses. Options: ChatGPT, Anthropic Claude, Microsoft Copilot, Google Gemini, Other.
+Migration: `supabase/migrations/20260412000001_add_platforms_column.sql` — apply via Supabase SQL Editor.
+Pre-population included in migration: Rochdale Development Agency → Microsoft Copilot; Livin Housing → Microsoft Copilot; TACE → ChatGPT + Anthropic Claude; Clancy → Microsoft Copilot; all other Clients with "AI Advantage Course" in services → ChatGPT. All others left null for Phil to fill manually.
+UI: multi-toggle buttons in contact detail modal, same pattern as Services field.
+Dev: CC-D (thirsty-lewin)
+
 ### CRM-007 — Research & Intel panel on contact record 🔵
 Adds a "Research & Intel" collapsible panel to the contact detail modal sidebar (above Proposals). Stores Sol's call prep briefs and prospect research directly on the contact record. Fields: `research_notes` (freeform markdown/text), `research_source` (e.g. "Sol call prep — 9 Apr 2026"), `research_updated_by` (e.g. "Sol"), `research_updated_at` (auto-set on save).
 Panel is read-only by default; click "Add" or "Edit" to enter inline edit mode; "Save" writes only the 4 research fields (targeted update — standard contact save never overwrites them).
