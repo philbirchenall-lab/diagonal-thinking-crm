@@ -480,6 +480,23 @@ export async function loadAllOpportunities() {
   return data ?? [];
 }
 
+// Returns a Map: contact_id (string) → total active opportunity value (number)
+// "Active" = stage NOT IN ('Won', 'Lost'). Used by App.jsx to derive projected values.
+export async function loadContactOpportunityTotals() {
+  if (!USE_SUPABASE) return new Map();
+  const { data, error } = await supabase
+    .from("opportunities")
+    .select("contact_id, value, stage");
+  if (error) throw new Error(`Supabase opportunity totals load failed: ${error.message}`);
+  const totals = new Map();
+  for (const opp of data ?? []) {
+    if (opp.stage === "Won" || opp.stage === "Lost") continue;
+    const existing = totals.get(opp.contact_id) ?? 0;
+    totals.set(opp.contact_id, existing + (Number(opp.value) || 0));
+  }
+  return totals;
+}
+
 // Create or update an opportunity.
 // opportunity shape: { id (optional), title, description, value, stage, services, close_date, contact_id, proposal_id, notes }
 export async function saveOpportunity(opportunity) {

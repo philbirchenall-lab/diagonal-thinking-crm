@@ -3,7 +3,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import Papa from "papaparse";
-import { loadContacts, saveAllContacts, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi, loadContactActivities, updateActivityStatus, markProposalReplied, saveContactResearch, loadContactOpportunities, loadAllOpportunities, saveOpportunity, updateOpportunityStage, deleteOpportunity } from "./db.js";
+import { loadContacts, saveAllContacts, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi, loadContactActivities, updateActivityStatus, markProposalReplied, saveContactResearch, loadContactOpportunities, loadAllOpportunities, saveOpportunity, updateOpportunityStage, deleteOpportunity, loadContactOpportunityTotals } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
 import ProposalWriterForm from "./proposals/ProposalForm.jsx";
 import { ClientAreaTab, ContactSessionsPanel } from "./clientArea.jsx";
@@ -1691,7 +1691,7 @@ function OpportunityForm({ initial = null, contactId, onSave, onCancel }) {
   );
 }
 
-function ContactOpportunitiesPanel({ contact }) {
+function ContactOpportunitiesPanel({ contact, onOppChange }) {
   const [opportunities, setOpportunities] = useState(null); // null = loading
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -1717,11 +1717,13 @@ function ContactOpportunitiesPanel({ contact }) {
   function handleCreated(opp) {
     setOpportunities((prev) => [opp, ...(prev ?? [])]);
     setShowForm(false);
+    onOppChange?.();
   }
 
   function handleUpdated(opp) {
     setOpportunities((prev) => (prev ?? []).map((o) => (o.id === opp.id ? opp : o)));
     setEditingId(null);
+    onOppChange?.();
   }
 
   async function handleStageChange(oppId, newStage) {
@@ -1731,6 +1733,7 @@ function ContactOpportunitiesPanel({ contact }) {
       setOpportunities((prev) =>
         (prev ?? []).map((o) => (o.id === oppId ? { ...o, stage: newStage } : o))
       );
+      onOppChange?.();
     } catch (err) {
       console.error(err);
     } finally {
@@ -1742,6 +1745,7 @@ function ContactOpportunitiesPanel({ contact }) {
     try {
       await deleteOpportunity(oppId);
       setOpportunities((prev) => (prev ?? []).filter((o) => o.id !== oppId));
+      onOppChange?.();
     } catch (err) {
       console.error(err);
     } finally {
@@ -2557,6 +2561,9 @@ function normalizeCompanyName(name) {
 export default function App() {
   const [activeTab, setActiveTab] = useState("crm");
   const [contacts, setContacts] = useState([]);
+  // CRM-012: Map<contact_id, total active opp value> — derived from opportunities table.
+  // Used for pipeline stat, contact Snapshot, and contacts list sort.
+  const [oppTotals, setOppTotals] = useState(new Map());
   const [syncStatus, setSyncStatus] = useState("syncing");
   const [syncError, setSyncError] = useState("");
   const initialLoadDoneRef = useRef(false);
@@ -2622,6 +2629,15 @@ export default function App() {
       });
   }, []);
 
+  // CRM-012: Load opportunity totals on mount and expose a refresh function.
+  // Called after any opportunity create/edit/delete/stage-change.
+  function refreshOppTotals() {
+    loadContactOpportunityTotals()
+      .then(setOppTotals)
+      .catch((err) => console.error("Failed to load opportunity totals:", err));
+  }
+  useEffect(() => { refreshOppTotals(); }, []);
+
   const uniqueCompanyNames = useMemo(
     () =>
       [...new Set(contacts.map((c) => c.company).filter(Boolean))].sort(
@@ -2648,14 +2664,16 @@ export default function App() {
 
     result.sort((left, right) => {
       const direction = sortConfig.direction === "asc" ? 1 : -1;
+
+      // CRM-012: sort by derived opp total, not manual projected_value
+      if (sortConfig.key === "projectedValue") {
+        return ((oppTotals.get(left.id) ?? 0) - (oppTotals.get(right.id) ?? 0)) * direction;
+      }
+
       const a = left[sortConfig.key];
       const b = right[sortConfig.key];
 
-      if (
-        sortConfig.key === "totalClientValue" ||
-        sortConfig.key === "liveWorkValue" ||
-        sortConfig.key === "projectedValue"
-      ) {
+      if (sortConfig.key === "totalClientValue" || sortConfig.key === "liveWorkValue") {
         return (Number(a) - Number(b)) * direction;
       }
 
@@ -2663,7 +2681,7 @@ export default function App() {
     });
 
     return result;
-  }, [contacts, search, typeFilter, serviceFilter, sortConfig, networkPartnerFilter]);
+  }, [contacts, search, typeFilter, serviceFilter, sortConfig, networkPartnerFilter, oppTotals]);
 
   const stats = useMemo(() => {
     const counts = TYPE_OPTIONS.reduce(
@@ -2674,24 +2692,9 @@ export default function App() {
       {},
     );
 
-    // Projected Pipeline: Warm Leads only, with a projection attached,
-    // deduplicated by company (one entry per company, using the highest value
-    // where multiple contacts exist at the same company).
-    const warmLeadsWithProjection = contacts.filter(
-      (c) => c.type === "Warm Lead" && Number(c.projectedValue) > 0,
-    );
-    const projectionByCompany = new Map();
-    warmLeadsWithProjection.forEach((c) => {
-      const key = c.company?.trim() || c.id;
-      const existing = projectionByCompany.get(key) ?? 0;
-      if (Number(c.projectedValue) > existing) {
-        projectionByCompany.set(key, Number(c.projectedValue));
-      }
-    });
-    const projected = Array.from(projectionByCompany.values()).reduce(
-      (sum, val) => sum + val,
-      0,
-    );
+    // CRM-012: Projected Pipeline — sum of all active opportunity values across all contacts.
+    // "Active" = non-Won, non-Lost. No company-level deduplication (each opp counts individually).
+    const projected = Array.from(oppTotals.values()).reduce((sum, val) => sum + val, 0);
     const warmLeadValue = projected;
 
     const networkPartnerCount = contacts.filter((c) => c.networkPartner).length;
@@ -2710,7 +2713,7 @@ export default function App() {
         color: TYPE_COLORS[type],
       })),
     };
-  }, [contacts]);
+  }, [contacts, oppTotals]);
 
   // Dedup: find another contact with the same email or normalised company name
   const potentialDuplicate = useMemo(() => {
@@ -3579,7 +3582,7 @@ export default function App() {
                         {formatCurrencyOrDash(contact.liveWorkValue)}
                       </td>
                       <td className="px-4 py-3 text-right text-sm font-semibold text-ink">
-                        {formatCurrencyOrDash(contact.projectedValue)}
+                        {formatCurrencyOrDash(oppTotals.get(contact.id) ?? 0)}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600 max-w-0">
                         <div className="truncate">{contact.contactName || "No contact name"}</div>
@@ -3726,7 +3729,7 @@ export default function App() {
                       </div>
                       <div>
                         <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Projected</div>
-                        <div className="mt-1 font-semibold text-ink">{formatCurrencyOrDash(contact.projectedValue)}</div>
+                        <div className="mt-1 font-semibold text-ink">{formatCurrencyOrDash(oppTotals.get(contact.id) ?? 0)}</div>
                       </div>
                     </div>
                     <div className="text-sm">
@@ -3872,16 +3875,10 @@ export default function App() {
                   </label>
                 </DetailField>
                 <DetailField label="Projected Value (GBP)">
-                  <TextInput
-                    inputMode="decimal"
-                    value={activeContact.projectedValue}
-                    onChange={(event) =>
-                      updateActiveContact(
-                        "projectedValue",
-                        normaliseProjectedValue(event.target.value),
-                      )
-                    }
-                  />
+                  <div className="rounded-md border border-line bg-mist px-4 py-3 text-sm text-ink">
+                    {formatCurrencyOrDash(oppTotals.get(activeContact?.id) ?? 0)}
+                    <span className="ml-2 text-xs text-slate-400">derived from Opportunities</span>
+                  </div>
                 </DetailField>
                 <DetailField label="Services">
                   <div className="flex flex-wrap gap-2">
@@ -3959,7 +3956,7 @@ export default function App() {
                   <div className="flex items-end justify-between gap-4">
                     <span className="text-sm font-medium text-slate-500">Projected</span>
                     <span className="text-base font-medium text-slate-600">
-                      {formatCurrencyOrDash(activeContact.projectedValue)}
+                      {formatCurrencyOrDash(oppTotals.get(activeContact.id) ?? 0)}
                     </span>
                   </div>
                   <div>
@@ -3999,7 +3996,7 @@ export default function App() {
               ) : null}
 
               {!isNewContact ? (
-                <ContactOpportunitiesPanel contact={activeContact} />
+                <ContactOpportunitiesPanel contact={activeContact} onOppChange={refreshOppTotals} />
               ) : null}
 
               {!isNewContact ? (
