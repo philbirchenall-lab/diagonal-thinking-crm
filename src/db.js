@@ -356,18 +356,31 @@ export async function saveAllContacts(contacts) {
     const deduped = Array.from(seen.values());
     const rows = deduped.map(toSnake);
 
-    // Remove any DB rows that share an email with a deduped contact but have a
-    // different ID. Without this, the upsert below would violate the
-    // contacts_email_unique constraint even when the email hasn't changed —
-    // because the duplicate row still exists in the DB at upsert time.
-    // SQL equivalent: DELETE FROM contacts WHERE email = $email AND id != $id
-    for (const c of deduped) {
-      if (!c.email) continue;
-      await supabase
+    // Remove DB rows whose email matches a contact in this batch but whose ID
+    // differs. A single bulk query-then-delete replaces the previous one-by-one
+    // loop, which could fail silently and leave ghost rows that trigger the
+    // contacts_email_unique constraint on the upsert below.
+    const emailedContacts = deduped.filter((c) => c.email);
+    if (emailedContacts.length > 0) {
+      const emails = emailedContacts.map((c) => c.email.toLowerCase().trim());
+      const keepIds = emailedContacts.map((c) => c.id);
+
+      const { data: conflicts, error: conflictErr } = await supabase
         .from("contacts")
-        .delete()
-        .eq("email", c.email.toLowerCase().trim())
-        .neq("id", c.id);
+        .select("id")
+        .in("email", emails)
+        .not("id", "in", `(${keepIds.join(",")})`);
+
+      if (conflictErr) throw new Error(`Supabase conflict check failed: ${conflictErr.message}`);
+
+      const conflictIds = (conflicts || []).map((r) => r.id);
+      if (conflictIds.length > 0) {
+        const { error: preCleanErr } = await supabase
+          .from("contacts")
+          .delete()
+          .in("id", conflictIds);
+        if (preCleanErr) throw new Error(`Supabase pre-clean failed: ${preCleanErr.message}`);
+      }
     }
 
     // Upsert all current contacts, matching on primary key (id)
