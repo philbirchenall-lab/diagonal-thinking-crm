@@ -199,6 +199,10 @@ Data computed from engagementLog entries returned with each session. `api/_lib/c
 Deployed 3 Apr 2026 via CC-D (nightly-autonomous-backlog-run). Awaiting live verification.
 Note: engagement_log is now live and accepting data after the 2 Apr registration logging fix.
 
+### CA-QR-001 — QR code download button for Client Area links ✅ Done 14 Apr 2026
+"⬇ QR" button added next to every "View page" link in `src/clientArea.jsx`. Clicking fetches a 400×400 PNG from `api.qrserver.com` and triggers a browser download named `client-area-qr-[name].png`. Pure client-side — no server or npm packages needed. Appears in three places: ContactSessionsPanel (contact record sidebar), ClientAreaTab desktop table row, and ClientAreaTab mobile card view.
+Dev: CC-D (musing-merkle)
+
 ---
 
 ## Bugs

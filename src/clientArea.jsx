@@ -17,6 +17,17 @@ function sessionLandingUrl(slug) {
   return `${CLIENT_AREA_ORIGIN}/?session=${encodeURIComponent(slug)}`;
 }
 
+async function downloadQR(url, name) {
+  const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(url)}&format=png`;
+  const resp = await fetch(apiUrl);
+  const blob = await resp.blob();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `client-area-qr-${String(name || "session").replace(/\s+/g, "-").toLowerCase()}.png`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 function formatSessionDate(value) {
   if (!value) return "TBC";
   const parsed = new Date(value);
@@ -870,6 +881,13 @@ export function ClientAreaTab({ contacts, launchContact, onLaunchConsumed }) {
                           >
                             View page
                           </a>
+                          <button
+                            type="button"
+                            onClick={() => downloadQR(sessionLandingUrl(session.slug), session.organisationName || session.name)}
+                            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-black hover:bg-mist"
+                          >
+                            ⬇ QR
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -920,6 +938,13 @@ export function ClientAreaTab({ contacts, launchContact, onLaunchConsumed }) {
                       >
                         View
                       </a>
+                      <button
+                        type="button"
+                        onClick={() => downloadQR(sessionLandingUrl(session.slug), session.organisationName || session.name)}
+                        className="rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-black hover:bg-mist"
+                      >
+                        ⬇ QR
+                      </button>
                       <button
                         type="button"
                         onClick={() => setEditingSession(session)}
@@ -1033,6 +1058,13 @@ export function ContactSessionsPanel({ contact, contacts, onNewSession }) {
                     <ExternalLink size={12} />
                     View page
                   </a>
+                  <button
+                    type="button"
+                    onClick={() => downloadQR(sessionLandingUrl(session.slug), contact.contactName || session.organisationName)}
+                    className="text-xs text-slate-500 hover:text-slate-800 hover:underline"
+                  >
+                    ⬇ QR
+                  </button>
                 </div>
                 {(firstAccess || resourcesClicked.length > 0) ? (
                   <div className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5">
