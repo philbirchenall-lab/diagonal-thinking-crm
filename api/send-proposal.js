@@ -112,6 +112,7 @@ export default async function handler(req, res) {
     body: JSON.stringify({
       from: "Phil at Diagonal Thinking <phil@diagonalthinking.co>",
       to: [recipientEmail],
+      cc: ["phil@diagonalthinking.co"],
       subject,
       text,
       html,

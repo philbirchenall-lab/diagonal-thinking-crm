@@ -1,4 +1,5 @@
 # Diagonal Thinking CRM — Codex Backlog
+**Last updated:** 14 Apr 2026 (nightly-progress-reflection — Dot)
 
 ## Status Key
 - 🟢 Done — live tested and verified
@@ -55,9 +56,9 @@ Dev: CC
 Live tested 1 Apr 2026 — Edit link works correctly, no 404.
 Dev: CC-D (local_ffaca1f0)
 
-### PROP-005 — Send proposal email to client 🔵
+### PROP-005 — Send proposal email to client 🟢
 Send button re-added to Proposals tab (was accidentally removed in commit 89d0720 when Client Area tab was restored). New endpoint `api/send-proposal.js` — sends via Resend, sets `sent_at` on proposals row (used by follow-up cron), logs to `contact_activities`.
-RESEND_API_KEY confirmed in Vercel env vars. **Needs live test:** open a proposal linked to a contact with an email and click Send.
+RESEND_API_KEY confirmed in Vercel env vars. **Live verified 9 Apr 2026 by Phil** — end-to-end email delivery via Resend confirmed.
 Note: proposal must be linked to a contact with an email address — the Send button shows a tooltip if no email is found.
 Dev: CC-D (elegant-bassi)
 
@@ -93,6 +94,25 @@ Adds a "Research & Intel" collapsible panel to the contact detail modal sidebar 
 Panel is read-only by default; click "Add" or "Edit" to enter inline edit mode; "Save" writes only the 4 research fields (targeted update — standard contact save never overwrites them).
 Migration: `supabase/migrations/20260405000001_contact_research_intel.sql` — apply via Supabase Management API or SQL Editor.
 Dev: CC-D (elegant-bassi)
+
+### CRM-008 — Platforms multi-select on contact records 🟢
+Merged to main via PR #21 (03ec580, claude/thirsty-lewin, 13 Apr 2026). Adds a `platforms` JSON array field to each contact record. CRM UI: collapsible "Platforms" section in the contact detail modal with toggle chips (e.g. ChatGPT, Claude, Microsoft Copilot). Also includes: removed non-standard `turbopack: { root: __dirname }` from `client-area/next.config.ts` that was causing the Vercel client-area build to fail.
+Dev: CC-D (claude/thirsty-lewin)
+
+### CRM-009 — Squarespace contact form → CRM sync 🔴
+**Priority: High | Blocked on Phil**
+Webhook to capture new Squarespace enquiry form submissions and write contacts directly to CRM. Requires: (1) GitHub secrets set for the API route, (2) Squarespace form snippet injected. No code changes needed — logic is built. Blocked pending Phil actions.
+
+### CRM-010 — Opportunities feature 🟢
+Merged to main via PR #20 (209fe65, 13 Apr 2026). Full pipeline Opportunities tab with pipeline value hero (total active value), stage filter, Won/Lost toggle, and refresh. Opportunities can be created/edited/deleted from the contact detail modal. Global table with sortable headers: `sortCol` + `sortDir` state (default: value desc), `sortValue()` for title/value/stage/close_date columns, `↑ ↓ ↕` sort indicators, `.sort()` applied to filtered list before render.
+Dev: CC-D (PR #20)
+
+### CRM-011 — Sol direct-write API for opportunities 🟢
+Merged to main via PR #20 (209fe65, 13 Apr 2026). REST endpoint allowing Sol (AI agent) to create and update opportunities directly, without going through the CRM UI. Auth via `SUPABASE_SERVICE_ROLE_KEY`.
+Dev: CC-D (PR #20)
+
+### CRM-012 — Auto-derive Projected Value from Opportunities 🟢
+Done — live tested and verified. Merged to main via PR #23 (14 Apr 2026). Tes-approved 13 Apr. Auto-derive logic: `loadContactOpportunityTotals()` in `src/db.js` filters Won/Lost stages; pipeline stat = sum of all active opp values (no company dedup); contact Snapshot shows derived total; contacts list sorts by derived total; editable input replaced with read-only display. `refreshOppTotals()` wired on all mutations. `contacts.projected_value` DB column untouched — Sol API backward compatible. No DB migration needed. Spec: `outputs/tes-scope-crm-012-projected-value-from-opps.md`.
 
 ---
 
@@ -136,6 +156,10 @@ Dev: CC-D (brave-euclid)
 Same cron as PROP-011. If proposal has views > 0, first_opened_at is known, 5+ working days have passed since first open, and reply_received=false, sends a chase email via Resend and logs to contact_activities (subtype: chase_5day). Phil marks proposal as replied via the CRM Proposals panel when a reply arrives.
 Awaiting live verification.
 Dev: CC-D (brave-euclid)
+
+### PROP-014 — CC phil@diagonalthinking.co on all proposal send emails 🟢
+Added `cc: ['phil@diagonalthinking.co']` to the Resend call in `api/send-proposal.js`. Phil is now BCC'd on every proposal email sent via the Send Proposal button. Done ✅ 14 Apr 2026
+Dev: CC-D (condescending-tesla)
 
 ---
 

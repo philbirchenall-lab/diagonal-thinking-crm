@@ -142,9 +142,10 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 ### Resend
 - **What it does:** Transactional email. Currently used for two purposes:
   1. Internal notification email to `phil@diagonalthinking.co` on new contact form submission
-  2. Proposal email to client (PROP-005 — blocked, not yet deployed)
-- **How it's connected:** `contact-form` Edge Function calls Resend API directly. PROP-005 integration is in `dt-proposals` repo.
+  2. Proposal email to client (`api/send-proposal.js` — PROP-005, live)
+- **How it's connected:** `contact-form` Edge Function calls Resend API directly. Proposal send is in `api/send-proposal.js` (Vercel serverless).
 - **Sender address:** `notifications@diagonalthinking.co`
+- **CC behaviour (PROP-014):** All proposal emails CC `phil@diagonalthinking.co` so Phil always receives a copy alongside the client.
 
 ### Squarespace
 - **What it does:** Public marketing website (`diagonalthinking.co`). Contact forms on the site post to the `contact-form` Edge Function.
