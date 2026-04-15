@@ -338,6 +338,18 @@ export async function loadProposalAccesses(proposalId) {
   return data ?? [];
 }
 
+// Upsert a single contact to Supabase by primary key.
+// Use this for individual creates/updates — more reliable than saveAllContacts
+// for single rows and avoids the large-batch URL-length pitfall.
+export async function upsertContact(contact) {
+  if (!USE_SUPABASE) return;
+  const row = toSnake(contact);
+  const { error } = await supabase
+    .from("contacts")
+    .upsert(row, { onConflict: "id" });
+  if (error) throw new Error(`Supabase contact save failed: ${error.message}`);
+}
+
 export async function saveAllContacts(contacts) {
   if (USE_SUPABASE) {
     // Deduplicate by email before upserting — prevents unique-constraint violations
@@ -357,23 +369,30 @@ export async function saveAllContacts(contacts) {
     const rows = deduped.map(toSnake);
 
     // Remove DB rows whose email matches a contact in this batch but whose ID
-    // differs. A single bulk query-then-delete replaces the previous one-by-one
-    // loop, which could fail silently and leave ghost rows that trigger the
-    // contacts_email_unique constraint on the upsert below.
+    // differs (ghost rows from Sol API or contact-form that would block the upsert's
+    // email unique constraint). We fetch only the email-matched DB rows (small result
+    // set), then filter client-side — this avoids putting hundreds of UUIDs into the
+    // URL query string, which exceeds PostgREST's request-size limits.
     const emailedContacts = deduped.filter((c) => c.email);
     if (emailedContacts.length > 0) {
       const emails = emailedContacts.map((c) => c.email.toLowerCase().trim());
-      const keepIds = emailedContacts.map((c) => c.id);
+      const keepIdSet = new Set(emailedContacts.map((c) => c.id));
 
-      const { data: conflicts, error: conflictErr } = await supabase
-        .from("contacts")
-        .select("id")
-        .in("email", emails)
-        .not("id", "in", `(${keepIds.join(",")})`);
+      // Batch emails into chunks of 100 to stay within PostgREST URL limits
+      const CHUNK = 100;
+      const conflictIds = [];
+      for (let i = 0; i < emails.length; i += CHUNK) {
+        const chunk = emails.slice(i, i + CHUNK);
+        const { data: dbRows, error: conflictErr } = await supabase
+          .from("contacts")
+          .select("id, email")
+          .in("email", chunk);
+        if (conflictErr) throw new Error(`Supabase conflict check failed: ${conflictErr.message}`);
+        for (const row of dbRows ?? []) {
+          if (!keepIdSet.has(row.id)) conflictIds.push(row.id);
+        }
+      }
 
-      if (conflictErr) throw new Error(`Supabase conflict check failed: ${conflictErr.message}`);
-
-      const conflictIds = (conflicts || []).map((r) => r.id);
       if (conflictIds.length > 0) {
         const { error: preCleanErr } = await supabase
           .from("contacts")
@@ -387,22 +406,9 @@ export async function saveAllContacts(contacts) {
     const { error: upsertErr } = await supabase.from("contacts").upsert(rows, { onConflict: "id" });
     if (upsertErr) throw new Error(`Supabase upsert failed: ${upsertErr.message}`);
 
-    // Delete any contacts that exist in Supabase but not in the current array
-    const { data: existing, error: fetchErr } = await supabase
-      .from("contacts")
-      .select("id");
-    if (fetchErr) throw new Error(`Supabase fetch IDs failed: ${fetchErr.message}`);
-
-    const currentIds = new Set(deduped.map((c) => c.id));
-    const toDelete = existing.filter((r) => !currentIds.has(r.id)).map((r) => r.id);
-
-    if (toDelete.length > 0) {
-      const { error: deleteErr } = await supabase
-        .from("contacts")
-        .delete()
-        .in("id", toDelete);
-      if (deleteErr) throw new Error(`Supabase delete failed: ${deleteErr.message}`);
-    }
+    // Note: explicit contact deletes go through deleteContact(id) — we do NOT
+    // do a "delete orphans" pass here because that approach is unsafe (a stale
+    // local state would silently wipe contacts added via Sol API or contact forms).
   } else {
     // Local mode: POST the full array to Express
     const res = await fetch(LOCAL_API, {
@@ -480,6 +486,23 @@ export async function loadAllOpportunities() {
   return data ?? [];
 }
 
+// Returns a Map: contact_id (string) → total active opportunity value (number)
+// "Active" = stage NOT IN ('Won', 'Lost'). Used by App.jsx to derive projected values.
+export async function loadContactOpportunityTotals() {
+  if (!USE_SUPABASE) return new Map();
+  const { data, error } = await supabase
+    .from("opportunities")
+    .select("contact_id, value, stage");
+  if (error) throw new Error(`Supabase opportunity totals load failed: ${error.message}`);
+  const totals = new Map();
+  for (const opp of data ?? []) {
+    if (opp.stage === "Won" || opp.stage === "Lost") continue;
+    const existing = totals.get(opp.contact_id) ?? 0;
+    totals.set(opp.contact_id, existing + (Number(opp.value) || 0));
+  }
+  return totals;
+}
+
 // Create or update an opportunity.
 // opportunity shape: { id (optional), title, description, value, stage, services, close_date, contact_id, proposal_id, notes }
 export async function saveOpportunity(opportunity) {
@@ -511,7 +534,15 @@ export async function saveOpportunity(opportunity) {
       .eq("id", opportunity.id)
       .select()
       .single();
-    if (error) throw new Error(`Supabase opportunity update failed: ${error.message}`);
+    if (error) {
+      if (error.code === "23503") {
+        throw new Error(
+          "Could not link this opportunity to the contact — the contact may not be saved yet. " +
+          "Try refreshing the page (⌘R) and adding the opportunity again."
+        );
+      }
+      throw new Error(`Supabase opportunity update failed: ${error.message}`);
+    }
     return data;
   } else {
     const { data, error } = await supabase
@@ -530,7 +561,18 @@ export async function saveOpportunity(opportunity) {
       })
       .select()
       .single();
-    if (error) throw new Error(`Supabase opportunity insert failed: ${error.message}`);
+    if (error) {
+      // Postgres FK violation (23503): the contact_id doesn't exist in the contacts table.
+      // This can happen if the contact was created locally but the DB save failed, or the
+      // page is stale. Give a clear, actionable message instead of the raw constraint error.
+      if (error.code === "23503") {
+        throw new Error(
+          "Could not link this opportunity to the contact — the contact may not be saved yet. " +
+          "Try refreshing the page (⌘R) and adding the opportunity again."
+        );
+      }
+      throw new Error(`Supabase opportunity insert failed: ${error.message}`);
+    }
     return data;
   }
 }

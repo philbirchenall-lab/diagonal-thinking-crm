@@ -3,15 +3,18 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import Papa from "papaparse";
-import { loadContacts, saveAllContacts, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi, loadContactActivities, updateActivityStatus, markProposalReplied, saveContactResearch, loadContactOpportunities, loadAllOpportunities, saveOpportunity, updateOpportunityStage, deleteOpportunity } from "./db.js";
+import { loadContacts, saveAllContacts, upsertContact, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi, loadContactActivities, updateActivityStatus, markProposalReplied, saveContactResearch, loadContactOpportunities, loadAllOpportunities, saveOpportunity, updateOpportunityStage, deleteOpportunity, loadContactOpportunityTotals } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
 import ProposalWriterForm from "./proposals/ProposalForm.jsx";
 import { ClientAreaTab, ContactSessionsPanel } from "./clientArea.jsx";
 import {
   Download,
+  Eye,
   FileSpreadsheet,
   Filter,
+  Link2,
   Plus,
+  Printer,
   RefreshCw,
   Search,
   Trash2,
@@ -1691,7 +1694,7 @@ function OpportunityForm({ initial = null, contactId, onSave, onCancel }) {
   );
 }
 
-function ContactOpportunitiesPanel({ contact }) {
+function ContactOpportunitiesPanel({ contact, onOppChange }) {
   const [opportunities, setOpportunities] = useState(null); // null = loading
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -1717,11 +1720,13 @@ function ContactOpportunitiesPanel({ contact }) {
   function handleCreated(opp) {
     setOpportunities((prev) => [opp, ...(prev ?? [])]);
     setShowForm(false);
+    onOppChange?.();
   }
 
   function handleUpdated(opp) {
     setOpportunities((prev) => (prev ?? []).map((o) => (o.id === opp.id ? opp : o)));
     setEditingId(null);
+    onOppChange?.();
   }
 
   async function handleStageChange(oppId, newStage) {
@@ -1731,6 +1736,7 @@ function ContactOpportunitiesPanel({ contact }) {
       setOpportunities((prev) =>
         (prev ?? []).map((o) => (o.id === oppId ? { ...o, stage: newStage } : o))
       );
+      onOppChange?.();
     } catch (err) {
       console.error(err);
     } finally {
@@ -1742,6 +1748,7 @@ function ContactOpportunitiesPanel({ contact }) {
     try {
       await deleteOpportunity(oppId);
       setOpportunities((prev) => (prev ?? []).filter((o) => o.id !== oppId));
+      onOppChange?.();
     } catch (err) {
       console.error(err);
     } finally {
@@ -2409,45 +2416,60 @@ function ProposalsTab({ contacts }) {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
+                        {/* Primary actions */}
                         <button
                           type="button"
                           onClick={() => setEditingProposal(p)}
-                          className="text-xs text-brand hover:underline"
+                          className="text-xs font-medium text-brand hover:underline"
                         >
                           Edit
                         </button>
                         <button
                           type="button"
-                          onClick={() => copyLink(p)}
-                          className="text-xs text-slate-500 hover:text-brand"
-                          title={`Copy client link for code ${p.proposal_code}`}
-                        >
-                          {copied === p.id ? "Copied!" : "Copy link"}
-                        </button>
-                        <button
-                          type="button"
                           onClick={() => handleSendProposal(p)}
                           disabled={sendingProposal === p.id}
-                          className="text-xs text-emerald-600 hover:text-emerald-800 disabled:opacity-50"
+                          className="text-xs font-medium text-emerald-600 hover:text-emerald-800 disabled:opacity-50"
                           title={p.contacts?.email ? `Send to ${p.contacts.email}` : "Link a contact with an email to enable sending"}
                         >
                           {sendingProposal === p.id ? "Sending…" : "Send"}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setAccessProposal(p)}
-                          className="text-xs text-slate-500 hover:text-brand"
-                        >
-                          Accesses
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(p)}
-                          className="text-xs text-red-400 hover:text-red-600"
-                        >
-                          Delete
-                        </button>
+                        {/* Icon actions */}
+                        <div className="flex items-center gap-0.5 border-l border-line pl-3">
+                          <button
+                            type="button"
+                            onClick={() => copyLink(p)}
+                            title={`Copy client link (code ${p.proposal_code})`}
+                            className="rounded p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            {copied === p.id ? <span className="text-[10px] font-semibold text-brand">✓</span> : <Link2 size={14} />}
+                          </button>
+                          <a
+                            href={`${VIEWER_URL}?code=${encodeURIComponent(p.proposal_code)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Open proposal — use Cmd+P / Ctrl+P to save as PDF"
+                            className="rounded p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            <Printer size={14} />
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => setAccessProposal(p)}
+                            title="View access history"
+                            className="rounded p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(p)}
+                            title="Delete proposal"
+                            className="rounded p-1.5 text-rose-400 transition hover:bg-rose-50 hover:text-rose-600"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -2489,14 +2511,6 @@ function ProposalsTab({ contacts }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => copyLink(p)}
-                    className="min-h-[44px] rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand"
-                    title={`Copy client link for code ${p.proposal_code}`}
-                  >
-                    {copied === p.id ? "Copied!" : "Copy link"}
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => handleSendProposal(p)}
                     disabled={sendingProposal === p.id}
                     className="min-h-[44px] rounded-md border border-emerald-200 px-3 py-2 text-xs font-medium text-emerald-600 hover:text-emerald-800 disabled:opacity-50"
@@ -2504,6 +2518,24 @@ function ProposalsTab({ contacts }) {
                   >
                     {sendingProposal === p.id ? "Sending…" : "Send"}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => copyLink(p)}
+                    className="min-h-[44px] rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand"
+                    title={`Copy client link for code ${p.proposal_code}`}
+                  >
+                    {copied === p.id ? "Copied!" : "Copy link"}
+                  </button>
+                  <a
+                    href={`${VIEWER_URL}?code=${encodeURIComponent(p.proposal_code)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Open proposal — use your browser's Print to save as PDF"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand"
+                  >
+                    <Printer size={13} />
+                    Print PDF
+                  </a>
                   <button
                     type="button"
                     onClick={() => setAccessProposal(p)}
@@ -2557,6 +2589,9 @@ function normalizeCompanyName(name) {
 export default function App() {
   const [activeTab, setActiveTab] = useState("crm");
   const [contacts, setContacts] = useState([]);
+  // CRM-012: Map<contact_id, total active opp value> — derived from opportunities table.
+  // Used for pipeline stat, contact Snapshot, and contacts list sort.
+  const [oppTotals, setOppTotals] = useState(new Map());
   const [syncStatus, setSyncStatus] = useState("syncing");
   const [syncError, setSyncError] = useState("");
   const initialLoadDoneRef = useRef(false);
@@ -2622,6 +2657,15 @@ export default function App() {
       });
   }, []);
 
+  // CRM-012: Load opportunity totals on mount and expose a refresh function.
+  // Called after any opportunity create/edit/delete/stage-change.
+  function refreshOppTotals() {
+    loadContactOpportunityTotals()
+      .then(setOppTotals)
+      .catch((err) => console.error("Failed to load opportunity totals:", err));
+  }
+  useEffect(() => { refreshOppTotals(); }, []);
+
   const uniqueCompanyNames = useMemo(
     () =>
       [...new Set(contacts.map((c) => c.company).filter(Boolean))].sort(
@@ -2648,14 +2692,16 @@ export default function App() {
 
     result.sort((left, right) => {
       const direction = sortConfig.direction === "asc" ? 1 : -1;
+
+      // CRM-012: sort by derived opp total, not manual projected_value
+      if (sortConfig.key === "projectedValue") {
+        return ((oppTotals.get(left.id) ?? 0) - (oppTotals.get(right.id) ?? 0)) * direction;
+      }
+
       const a = left[sortConfig.key];
       const b = right[sortConfig.key];
 
-      if (
-        sortConfig.key === "totalClientValue" ||
-        sortConfig.key === "liveWorkValue" ||
-        sortConfig.key === "projectedValue"
-      ) {
+      if (sortConfig.key === "totalClientValue" || sortConfig.key === "liveWorkValue") {
         return (Number(a) - Number(b)) * direction;
       }
 
@@ -2663,7 +2709,7 @@ export default function App() {
     });
 
     return result;
-  }, [contacts, search, typeFilter, serviceFilter, sortConfig, networkPartnerFilter]);
+  }, [contacts, search, typeFilter, serviceFilter, sortConfig, networkPartnerFilter, oppTotals]);
 
   const stats = useMemo(() => {
     const counts = TYPE_OPTIONS.reduce(
@@ -2674,24 +2720,9 @@ export default function App() {
       {},
     );
 
-    // Projected Pipeline: Warm Leads only, with a projection attached,
-    // deduplicated by company (one entry per company, using the highest value
-    // where multiple contacts exist at the same company).
-    const warmLeadsWithProjection = contacts.filter(
-      (c) => c.type === "Warm Lead" && Number(c.projectedValue) > 0,
-    );
-    const projectionByCompany = new Map();
-    warmLeadsWithProjection.forEach((c) => {
-      const key = c.company?.trim() || c.id;
-      const existing = projectionByCompany.get(key) ?? 0;
-      if (Number(c.projectedValue) > existing) {
-        projectionByCompany.set(key, Number(c.projectedValue));
-      }
-    });
-    const projected = Array.from(projectionByCompany.values()).reduce(
-      (sum, val) => sum + val,
-      0,
-    );
+    // CRM-012: Projected Pipeline — sum of all active opportunity values across all contacts.
+    // "Active" = non-Won, non-Lost. No company-level deduplication (each opp counts individually).
+    const projected = Array.from(oppTotals.values()).reduce((sum, val) => sum + val, 0);
     const warmLeadValue = projected;
 
     const networkPartnerCount = contacts.filter((c) => c.networkPartner).length;
@@ -2710,7 +2741,7 @@ export default function App() {
         color: TYPE_COLORS[type],
       })),
     };
-  }, [contacts]);
+  }, [contacts, oppTotals]);
 
   // Dedup: find another contact with the same email or normalised company name
   const potentialDuplicate = useMemo(() => {
@@ -2794,6 +2825,17 @@ export default function App() {
     // Propagate newly added services to all other contacts at the same company
     const companyName = nextRecord.company?.trim();
     let updatedCount = 0;
+
+    // Immediately persist the primary contact to Supabase.
+    // This direct upsert is the reliable save path — it does not depend on the
+    // batch saveAllContacts effect and cannot be blocked by URL-size issues or
+    // race conditions in the bulk-sync flow.
+    if (isSupabaseMode()) {
+      upsertContact(nextRecord).catch((err) => {
+        setSyncError(err?.message || "Contact save failed");
+        setSyncStatus("error");
+      });
+    }
 
     setContacts((current) => {
       const updated = current.map((contact) => {
@@ -3579,7 +3621,7 @@ export default function App() {
                         {formatCurrencyOrDash(contact.liveWorkValue)}
                       </td>
                       <td className="px-4 py-3 text-right text-sm font-semibold text-ink">
-                        {formatCurrencyOrDash(contact.projectedValue)}
+                        {formatCurrencyOrDash(oppTotals.get(contact.id) ?? 0)}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600 max-w-0">
                         <div className="truncate">{contact.contactName || "No contact name"}</div>
@@ -3726,7 +3768,7 @@ export default function App() {
                       </div>
                       <div>
                         <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Projected</div>
-                        <div className="mt-1 font-semibold text-ink">{formatCurrencyOrDash(contact.projectedValue)}</div>
+                        <div className="mt-1 font-semibold text-ink">{formatCurrencyOrDash(oppTotals.get(contact.id) ?? 0)}</div>
                       </div>
                     </div>
                     <div className="text-sm">
@@ -3872,16 +3914,10 @@ export default function App() {
                   </label>
                 </DetailField>
                 <DetailField label="Projected Value (GBP)">
-                  <TextInput
-                    inputMode="decimal"
-                    value={activeContact.projectedValue}
-                    onChange={(event) =>
-                      updateActiveContact(
-                        "projectedValue",
-                        normaliseProjectedValue(event.target.value),
-                      )
-                    }
-                  />
+                  <div className="rounded-md border border-line bg-mist px-4 py-3 text-sm text-ink">
+                    {formatCurrencyOrDash(oppTotals.get(activeContact?.id) ?? 0)}
+                    <span className="ml-2 text-xs text-slate-400">derived from Opportunities</span>
+                  </div>
                 </DetailField>
                 <DetailField label="Services">
                   <div className="flex flex-wrap gap-2">
@@ -3959,7 +3995,7 @@ export default function App() {
                   <div className="flex items-end justify-between gap-4">
                     <span className="text-sm font-medium text-slate-500">Projected</span>
                     <span className="text-base font-medium text-slate-600">
-                      {formatCurrencyOrDash(activeContact.projectedValue)}
+                      {formatCurrencyOrDash(oppTotals.get(activeContact.id) ?? 0)}
                     </span>
                   </div>
                   <div>
@@ -3999,7 +4035,7 @@ export default function App() {
               ) : null}
 
               {!isNewContact ? (
-                <ContactOpportunitiesPanel contact={activeContact} />
+                <ContactOpportunitiesPanel contact={activeContact} onOppChange={refreshOppTotals} />
               ) : null}
 
               {!isNewContact ? (
