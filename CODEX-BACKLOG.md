@@ -1,5 +1,5 @@
 # Diagonal Thinking CRM — Codex Backlog
-**Last updated:** 14 Apr 2026 (nightly-progress-reflection — Dot)
+**Last updated:** 15 Apr 2026 (elastic-dijkstra — Rex)
 
 ## Status Key
 - 🟢 Done — live tested and verified
@@ -312,6 +312,34 @@ Dev: CC-D (musing-lewin)
 **Fix (db.js):** Before the bulk upsert, delete any Supabase rows that share an email with a deduped contact but have a different ID (`DELETE WHERE email = $email AND id != $id`). This clears stale duplicates before the constraint check fires.
 **Fix (api/sol/contacts/[id].js):** Added an explicit email uniqueness pre-check to the Sol PATCH route that excludes the contact's own ID (`SELECT id WHERE email = $email AND id != $currentId`), returning a clean 400 instead of letting the DB constraint fire.
 Dev: CC-D (musing-lewin)
+
+---
+
+### CRM-BUG-003 — New contact not persisting to DB → FK error on opportunity insert 🟢
+**Raised:** 15 Apr 2026 | **Fixed:** 15 Apr 2026 | **Priority: Critical**
+**Where:** CRM — creating a new contact (particularly no-email contacts), then adding an opportunity
+**Symptom:** `Supabase opportunity insert failed: insert or update on table "opportunities" violates foreign key constraint "opportunities_contact_id_fkey"` — even after the contact was freshly created and visibly present in the CRM UI.
+**Root cause:** `saveAllContacts` in `src/db.js` had a pre-clean step that issued a PostgREST GET request with all ~363 emailedContact UUIDs in a `.not("id", "in", "(uuid1,...uuid363)")` URL filter (~13KB). This exceeded Supabase/PostgREST's URL-length limits, causing the function to throw **before the upsert ever ran**. The contact existed in local React state but was never written to the database. The opportunity insert then used the local UUID, which didn't exist in the DB, firing the FK constraint.
+**Fix (db.js):**
+1. Added `upsertContact(contact)` — a direct single-row upsert by primary key, exported for use by individual save operations.
+2. Rewrote the pre-clean to batch emails in chunks of 100 and filter client-side (no giant keepIds list in the URL).
+3. Removed the "delete orphans" step from `saveAllContacts` entirely — it was unsafe (a stale local state could silently wipe contacts added via Sol API or contact forms). Explicit contact deletes already go through `deleteContactApi(id)`.
+**Fix (App.jsx):** `saveActiveContact()` now calls `upsertContact(nextRecord)` directly and immediately before `setContacts()`. This is the primary, reliable save path and is independent of the batch `saveAllContacts` effect.
+Dev: CC-D (elastic-dijkstra, PR #23)
+
+### CRM-BUG-004 — Proposal email not Phil's voice (full name, wrong body/sign-off) 🟢
+**Raised:** 15 Apr 2026 | **Fixed:** 15 Apr 2026 | **Priority: Medium**
+**Where:** `api/send-proposal.js` — `buildProposalEmail()`
+**Symptom:** The sent email greeted recipient as "Hi Kat Baty, NPD," (full `prepared_for` value), had a generic body, and used a corporate sign-off.
+**Fix:** Rewrote `buildProposalEmail()`: extracts first name only (`rawName.split(/[\s,]+/)[0]`), updated body to Phil's voice ("Following our conversations..."), CTA to "just hit reply and we'll get something in the diary", sign-off to "Cheers, Phil, Diagonal Thinking".
+Dev: CC-D (elastic-dijkstra, PR #23)
+
+### CRM-BUG-005 — No way to download/print proposal PDF from CRM 🟢
+**Raised:** 15 Apr 2026 | **Fixed:** 15 Apr 2026 | **Priority: Medium**
+**Where:** CRM — Proposals tab Actions column
+**Symptom:** No PDF download affordance; actions were Edit, Send, Copy link, Access history, Delete — crowded inline text links.
+**Fix:** Reworked Proposals Actions into an Edit/Send primary group + icon group (Copy link, Print PDF, Access history, Delete). "Print PDF" opens the viewer URL in a new tab with instructions to use Cmd+P to save as PDF. Mobile view adds a labelled "Print PDF" button. Added `Eye`, `Link2`, `Printer` Lucide icons.
+Dev: CC-D (elastic-dijkstra, PR #23)
 
 ---
 
