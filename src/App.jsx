@@ -3,7 +3,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import Papa from "papaparse";
-import { loadContacts, saveAllContacts, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi, loadContactActivities, updateActivityStatus, markProposalReplied, saveContactResearch, loadContactOpportunities, loadAllOpportunities, saveOpportunity, updateOpportunityStage, deleteOpportunity, loadContactOpportunityTotals } from "./db.js";
+import { loadContacts, saveAllContacts, upsertContact, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi, loadContactActivities, updateActivityStatus, markProposalReplied, saveContactResearch, loadContactOpportunities, loadAllOpportunities, saveOpportunity, updateOpportunityStage, deleteOpportunity, loadContactOpportunityTotals } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
 import ProposalWriterForm from "./proposals/ProposalForm.jsx";
 import { ClientAreaTab, ContactSessionsPanel } from "./clientArea.jsx";
@@ -2825,6 +2825,17 @@ export default function App() {
     // Propagate newly added services to all other contacts at the same company
     const companyName = nextRecord.company?.trim();
     let updatedCount = 0;
+
+    // Immediately persist the primary contact to Supabase.
+    // This direct upsert is the reliable save path — it does not depend on the
+    // batch saveAllContacts effect and cannot be blocked by URL-size issues or
+    // race conditions in the bulk-sync flow.
+    if (isSupabaseMode()) {
+      upsertContact(nextRecord).catch((err) => {
+        setSyncError(err?.message || "Contact save failed");
+        setSyncStatus("error");
+      });
+    }
 
     setContacts((current) => {
       const updated = current.map((contact) => {

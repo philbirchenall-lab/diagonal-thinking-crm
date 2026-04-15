@@ -338,6 +338,18 @@ export async function loadProposalAccesses(proposalId) {
   return data ?? [];
 }
 
+// Upsert a single contact to Supabase by primary key.
+// Use this for individual creates/updates — more reliable than saveAllContacts
+// for single rows and avoids the large-batch URL-length pitfall.
+export async function upsertContact(contact) {
+  if (!USE_SUPABASE) return;
+  const row = toSnake(contact);
+  const { error } = await supabase
+    .from("contacts")
+    .upsert(row, { onConflict: "id" });
+  if (error) throw new Error(`Supabase contact save failed: ${error.message}`);
+}
+
 export async function saveAllContacts(contacts) {
   if (USE_SUPABASE) {
     // Deduplicate by email before upserting — prevents unique-constraint violations
@@ -357,23 +369,30 @@ export async function saveAllContacts(contacts) {
     const rows = deduped.map(toSnake);
 
     // Remove DB rows whose email matches a contact in this batch but whose ID
-    // differs. A single bulk query-then-delete replaces the previous one-by-one
-    // loop, which could fail silently and leave ghost rows that trigger the
-    // contacts_email_unique constraint on the upsert below.
+    // differs (ghost rows from Sol API or contact-form that would block the upsert's
+    // email unique constraint). We fetch only the email-matched DB rows (small result
+    // set), then filter client-side — this avoids putting hundreds of UUIDs into the
+    // URL query string, which exceeds PostgREST's request-size limits.
     const emailedContacts = deduped.filter((c) => c.email);
     if (emailedContacts.length > 0) {
       const emails = emailedContacts.map((c) => c.email.toLowerCase().trim());
-      const keepIds = emailedContacts.map((c) => c.id);
+      const keepIdSet = new Set(emailedContacts.map((c) => c.id));
 
-      const { data: conflicts, error: conflictErr } = await supabase
-        .from("contacts")
-        .select("id")
-        .in("email", emails)
-        .not("id", "in", `(${keepIds.join(",")})`);
+      // Batch emails into chunks of 100 to stay within PostgREST URL limits
+      const CHUNK = 100;
+      const conflictIds = [];
+      for (let i = 0; i < emails.length; i += CHUNK) {
+        const chunk = emails.slice(i, i + CHUNK);
+        const { data: dbRows, error: conflictErr } = await supabase
+          .from("contacts")
+          .select("id, email")
+          .in("email", chunk);
+        if (conflictErr) throw new Error(`Supabase conflict check failed: ${conflictErr.message}`);
+        for (const row of dbRows ?? []) {
+          if (!keepIdSet.has(row.id)) conflictIds.push(row.id);
+        }
+      }
 
-      if (conflictErr) throw new Error(`Supabase conflict check failed: ${conflictErr.message}`);
-
-      const conflictIds = (conflicts || []).map((r) => r.id);
       if (conflictIds.length > 0) {
         const { error: preCleanErr } = await supabase
           .from("contacts")
@@ -387,22 +406,9 @@ export async function saveAllContacts(contacts) {
     const { error: upsertErr } = await supabase.from("contacts").upsert(rows, { onConflict: "id" });
     if (upsertErr) throw new Error(`Supabase upsert failed: ${upsertErr.message}`);
 
-    // Delete any contacts that exist in Supabase but not in the current array
-    const { data: existing, error: fetchErr } = await supabase
-      .from("contacts")
-      .select("id");
-    if (fetchErr) throw new Error(`Supabase fetch IDs failed: ${fetchErr.message}`);
-
-    const currentIds = new Set(deduped.map((c) => c.id));
-    const toDelete = existing.filter((r) => !currentIds.has(r.id)).map((r) => r.id);
-
-    if (toDelete.length > 0) {
-      const { error: deleteErr } = await supabase
-        .from("contacts")
-        .delete()
-        .in("id", toDelete);
-      if (deleteErr) throw new Error(`Supabase delete failed: ${deleteErr.message}`);
-    }
+    // Note: explicit contact deletes go through deleteContact(id) — we do NOT
+    // do a "delete orphans" pass here because that approach is unsafe (a stale
+    // local state would silently wipe contacts added via Sol API or contact forms).
   } else {
     // Local mode: POST the full array to Express
     const res = await fetch(LOCAL_API, {
