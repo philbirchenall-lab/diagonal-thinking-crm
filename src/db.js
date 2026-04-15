@@ -528,7 +528,15 @@ export async function saveOpportunity(opportunity) {
       .eq("id", opportunity.id)
       .select()
       .single();
-    if (error) throw new Error(`Supabase opportunity update failed: ${error.message}`);
+    if (error) {
+      if (error.code === "23503") {
+        throw new Error(
+          "Could not link this opportunity to the contact — the contact may not be saved yet. " +
+          "Try refreshing the page (⌘R) and adding the opportunity again."
+        );
+      }
+      throw new Error(`Supabase opportunity update failed: ${error.message}`);
+    }
     return data;
   } else {
     const { data, error } = await supabase
@@ -547,7 +555,18 @@ export async function saveOpportunity(opportunity) {
       })
       .select()
       .single();
-    if (error) throw new Error(`Supabase opportunity insert failed: ${error.message}`);
+    if (error) {
+      // Postgres FK violation (23503): the contact_id doesn't exist in the contacts table.
+      // This can happen if the contact was created locally but the DB save failed, or the
+      // page is stale. Give a clear, actionable message instead of the raw constraint error.
+      if (error.code === "23503") {
+        throw new Error(
+          "Could not link this opportunity to the contact — the contact may not be saved yet. " +
+          "Try refreshing the page (⌘R) and adding the opportunity again."
+        );
+      }
+      throw new Error(`Supabase opportunity insert failed: ${error.message}`);
+    }
     return data;
   }
 }

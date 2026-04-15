@@ -9,9 +9,12 @@ import ProposalWriterForm from "./proposals/ProposalForm.jsx";
 import { ClientAreaTab, ContactSessionsPanel } from "./clientArea.jsx";
 import {
   Download,
+  Eye,
   FileSpreadsheet,
   Filter,
+  Link2,
   Plus,
+  Printer,
   RefreshCw,
   Search,
   Trash2,
@@ -2413,45 +2416,60 @@ function ProposalsTab({ contacts }) {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
+                        {/* Primary actions */}
                         <button
                           type="button"
                           onClick={() => setEditingProposal(p)}
-                          className="text-xs text-brand hover:underline"
+                          className="text-xs font-medium text-brand hover:underline"
                         >
                           Edit
                         </button>
                         <button
                           type="button"
-                          onClick={() => copyLink(p)}
-                          className="text-xs text-slate-500 hover:text-brand"
-                          title={`Copy client link for code ${p.proposal_code}`}
-                        >
-                          {copied === p.id ? "Copied!" : "Copy link"}
-                        </button>
-                        <button
-                          type="button"
                           onClick={() => handleSendProposal(p)}
                           disabled={sendingProposal === p.id}
-                          className="text-xs text-emerald-600 hover:text-emerald-800 disabled:opacity-50"
+                          className="text-xs font-medium text-emerald-600 hover:text-emerald-800 disabled:opacity-50"
                           title={p.contacts?.email ? `Send to ${p.contacts.email}` : "Link a contact with an email to enable sending"}
                         >
                           {sendingProposal === p.id ? "Sending…" : "Send"}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setAccessProposal(p)}
-                          className="text-xs text-slate-500 hover:text-brand"
-                        >
-                          Accesses
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(p)}
-                          className="text-xs text-red-400 hover:text-red-600"
-                        >
-                          Delete
-                        </button>
+                        {/* Icon actions */}
+                        <div className="flex items-center gap-0.5 border-l border-line pl-3">
+                          <button
+                            type="button"
+                            onClick={() => copyLink(p)}
+                            title={`Copy client link (code ${p.proposal_code})`}
+                            className="rounded p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            {copied === p.id ? <span className="text-[10px] font-semibold text-brand">✓</span> : <Link2 size={14} />}
+                          </button>
+                          <a
+                            href={`${VIEWER_URL}?code=${encodeURIComponent(p.proposal_code)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Open proposal — use Cmd+P / Ctrl+P to save as PDF"
+                            className="rounded p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            <Printer size={14} />
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => setAccessProposal(p)}
+                            title="View access history"
+                            className="rounded p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(p)}
+                            title="Delete proposal"
+                            className="rounded p-1.5 text-rose-400 transition hover:bg-rose-50 hover:text-rose-600"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -2493,14 +2511,6 @@ function ProposalsTab({ contacts }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => copyLink(p)}
-                    className="min-h-[44px] rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand"
-                    title={`Copy client link for code ${p.proposal_code}`}
-                  >
-                    {copied === p.id ? "Copied!" : "Copy link"}
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => handleSendProposal(p)}
                     disabled={sendingProposal === p.id}
                     className="min-h-[44px] rounded-md border border-emerald-200 px-3 py-2 text-xs font-medium text-emerald-600 hover:text-emerald-800 disabled:opacity-50"
@@ -2508,6 +2518,24 @@ function ProposalsTab({ contacts }) {
                   >
                     {sendingProposal === p.id ? "Sending…" : "Send"}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => copyLink(p)}
+                    className="min-h-[44px] rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand"
+                    title={`Copy client link for code ${p.proposal_code}`}
+                  >
+                    {copied === p.id ? "Copied!" : "Copy link"}
+                  </button>
+                  <a
+                    href={`${VIEWER_URL}?code=${encodeURIComponent(p.proposal_code)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Open proposal — use your browser's Print to save as PDF"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand"
+                  >
+                    <Printer size={13} />
+                    Print PDF
+                  </a>
                   <button
                     type="button"
                     onClick={() => setAccessProposal(p)}

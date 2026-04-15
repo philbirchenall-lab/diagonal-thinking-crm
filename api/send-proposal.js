@@ -31,32 +31,37 @@ function getSupabase() {
 }
 
 function buildProposalEmail(proposal) {
-  const clientName =
+  const rawName =
     proposal.prepared_for ||
     proposal.contacts?.contact_name ||
-    "there";
+    "";
+  // Use first name only (everything before the first space or comma)
+  const firstName = rawName.split(/[\s,]+/)[0] || "there";
+
   const viewUrl = `https://proposals.diagonalthinking.co/view?code=${proposal.proposal_code}`;
   const subject = `Your proposal — ${proposal.program_title}`;
 
   const text = [
-    `Hi ${clientName},`,
+    `Hi ${firstName},`,
     "",
-    `Please find your proposal attached below. You can view it anytime using this link:`,
+    `Following our conversations, I've put together a proposal. You can view it anytime using this link:`,
+    "",
     viewUrl,
     "",
-    `If you have any questions or would like to talk through anything, just reply to this email and we'll find a time.`,
+    `If you have any questions or would like to talk through anything, just hit reply and we'll get something in the diary.`,
     "",
-    "Best,",
+    "Cheers,",
     "Phil",
+    "",
     "Diagonal Thinking",
   ].join("\n");
 
   const html = `
-    <p>Hi ${clientName},</p>
-    <p>Please find your proposal below. You can view it anytime using this link:</p>
+    <p>Hi ${firstName},</p>
+    <p>Following our conversations, I've put together a proposal. You can view it anytime using this link:</p>
     <p><a href="${viewUrl}">${viewUrl}</a></p>
-    <p>If you have any questions or would like to talk through anything, just reply to this email and we'll find a time.</p>
-    <p>Best,<br>Phil<br>Diagonal Thinking</p>
+    <p>If you have any questions or would like to talk through anything, just hit reply and we'll get something in the diary.</p>
+    <p>Cheers,<br>Phil<br><br>Diagonal Thinking</p>
   `.trim();
 
   return { subject, text, html };
