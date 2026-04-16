@@ -50,8 +50,10 @@ export default async function handler(req, res) {
         PIPELINE: c.pipeline || "",
         SERVICES: Array.isArray(c.services) ? c.services.join(", ") : (c.services || ""),
         // CRM-011: segmentation fields
-        NETWORK_PARTNER: c.network_partner ? "Yes" : "No",
+        // NOTE: Mailchimp merge field tags max 10 chars — NETPARTNER (10) not NETWORK_PARTNER (15)
+        NETPARTNER: c.network_partner ? "Yes" : "No",
         CRM_TYPE: c.type || "",
+        // MAIL-003: acquisition source field
         SOURCE: c.source || "",
       },
     }));
@@ -120,14 +122,17 @@ async function ensureMergeFields(baseUrl, audienceId, authHeader) {
     );
 
     const required = [
-      { tag: "NETWORK_PARTNER", name: "Network Partner", type: "text" },
+      // NOTE: Mailchimp merge field tags are limited to 10 characters.
+      // NETPARTNER (10 chars) is correct; NETWORK_PARTNER (15 chars) would be rejected silently.
+      { tag: "NETPARTNER", name: "Network Partner", type: "text" },
       { tag: "CRM_TYPE", name: "CRM Type", type: "text" },
+      // MAIL-003: SOURCE (6 chars) — contact acquisition source
       { tag: "SOURCE", name: "Source", type: "text" },
     ];
 
     for (const field of required) {
       if (!existingTags.has(field.tag)) {
-        await fetch(`${baseUrl}/lists/${audienceId}/merge-fields`, {
+        const createRes = await fetch(`${baseUrl}/lists/${audienceId}/merge-fields`, {
           method: "POST",
           headers: {
             Authorization: authHeader,
@@ -139,6 +144,12 @@ async function ensureMergeFields(baseUrl, audienceId, authHeader) {
             type: field.type,
           }),
         });
+        if (!createRes.ok) {
+          const errBody = await createRes.text().catch(() => "(unreadable)");
+          console.error(`[ensureMergeFields] Failed to create ${field.tag} (${createRes.status}): ${errBody}`);
+        } else {
+          console.log(`[ensureMergeFields] Created merge field: ${field.tag}`);
+        }
       }
     }
   } catch (_) {
