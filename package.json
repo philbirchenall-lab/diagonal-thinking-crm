@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.5.1",
     "@supabase/supabase-js": "^2.100.1",
     "@tiptap/extension-placeholder": "^3.21.0",
     "@tiptap/pm": "^3.21.0",
@@ -16,6 +17,7 @@
     "@tiptap/starter-kit": "^3.21.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "google-auth-library": "^9.14.1",
     "lucide-react": "^0.542.0",
     "papaparse": "^5.5.3",
     "react": "^19.1.1",

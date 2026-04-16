@@ -129,9 +129,9 @@ Deployed (f9d2928). On every contact save, fires a background upsert to /api/mai
 **Unverified:** Cannot confirm working until MAIL-001 merge fields are visible. Do NOT mark as 🟢 until Phil verifies NETPARTNER field populates after a contact save.
 Dev: CC-D (local_51144ae2)
 
-### MAIL-003 — SOURCE merge field + Mailchimp segment builder 🔴
-Building. Adds SOURCE as a sync'd merge field. Creates a /api/mailchimp-build-segments.js endpoint that creates saved segments for every CRM_TYPE, SOURCE, service tag, and Network Partner dimension.
-Dev: local_9ae5f82c
+### MAIL-003 — SOURCE merge field + segment builder 🔵
+Adds SOURCE merge field to mailchimp-sync (ensureMergeFields + members batch map). New api/mailchimp-build-segments.js endpoint (POST, Bearer token auth) creates 17 saved Mailchimp segments across CRM_TYPE, NETWORK_PARTNER, SOURCE, and service tags. Skips segments that already exist. Requires MAILCHIMP_SEGMENT_SECRET env var.
+Dev: CC-D (confident-einstein)
 
 ---
 
@@ -320,4 +320,23 @@ Dev: CC-D (musing-lewin)
 **Context:** Sol ran a manual I&E audit catchup on 5 Apr 2026, adding 9 companies/10 contacts missing from CRM. This was done by comparing the I&E Google Sheet against the Supabase contacts table directly via the service role API.
 **Question for Rex:** Is there a smarter, less manual way to keep CRM and I&E in sync? Options might include: a script that compares the two data sources and flags mismatches, a CRM UI feature to import from I&E, or a scheduled cross-check. Weekly Monday 1am audit task is now running but the actual catchup is still manual.
 **Owner:** Rex
-**Status:** Queued — awaiting Rex session
+**Status:** Phase 1 built — service account auth branch open (`rex/ie-crm-gap-check-service-account`), awaiting Tes sign-off + Phil env provisioning.
+
+**Phase 1 — `api/ie-crm-gap-check.js` (Vercel serverless fn):**
+- Fetches I&E 26-27 Income tab via Google Sheets API v4.
+- Fetches Supabase contacts and fuzzy-matches company names (normalise → exact / substring / space-stripped exact).
+- Strips parentheticals ("TACE (Contollo)" → "tace") and common legal suffixes.
+- `GET /api/ie-crm-gap-check` returns a JSON gap report (dry run by default).
+- `GET /api/ie-crm-gap-check?auto_add=true` creates missing CRM contacts (type = Warm Lead, source = "Income & Expenditure").
+- Bearer-auth protected by `CRON_SECRET`.
+
+**Auth change (14 Apr 2026, Phil decision):** Original build supported `GOOGLE_SHEETS_API_KEY` and a CSV export fallback that required the I&E sheet to be public. Phil chose to keep the sheet private, so this endpoint now authenticates as a Google Cloud service account via a signed JWT (scope: `https://www.googleapis.com/auth/spreadsheets.readonly`). Implemented via the `google-auth-library` package.
+
+**Env vars needed on Vercel:**
+- `GOOGLE_SERVICE_ACCOUNT_JSON` — stringified JSON of the downloaded service account key. The `client_email` field inside the JSON must be granted **Viewer** on the I&E sheet (Share → add email → Viewer).
+- `CRON_SECRET` — shared secret for `Authorization: Bearer <token>`.
+- `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — already configured for other cron endpoints.
+
+The legacy `GOOGLE_SHEETS_API_KEY` env var is no longer read by this endpoint and can be removed from Vercel.
+
+**Phil action (blocker):** Provision a Google Cloud service account, download the JSON key, Share the I&E sheet with the service account email as Viewer, and paste the stringified JSON into the Vercel env var `GOOGLE_SERVICE_ACCOUNT_JSON`.
