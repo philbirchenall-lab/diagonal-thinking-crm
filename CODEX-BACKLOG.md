@@ -129,9 +129,9 @@ Deployed (f9d2928). On every contact save, fires a background upsert to /api/mai
 **Unverified:** Cannot confirm working until MAIL-001 merge fields are visible. Do NOT mark as 🟢 until Phil verifies NETPARTNER field populates after a contact save.
 Dev: CC-D (local_51144ae2)
 
-### MAIL-003 — SOURCE merge field + Mailchimp segment builder 🔴
-Building. Adds SOURCE as a sync'd merge field. Creates a /api/mailchimp-build-segments.js endpoint that creates saved segments for every CRM_TYPE, SOURCE, service tag, and Network Partner dimension.
-Dev: local_9ae5f82c
+### MAIL-003 — SOURCE merge field + Mailchimp segment builder 🔵
+SOURCE merge field added to mailchimp-sync.js (merge_fields map + ensureMergeFields). New /api/mailchimp-build-segments.js endpoint creates 11 saved segments (4× CRM_TYPE, 5× SOURCE, 2× NETPARTNER). Idempotent. PR #9 merged 5 Apr 2026.
+Dev: CC-D (codi/mail-003-source-merge-field)
 
 ---
 
