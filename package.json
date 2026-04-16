@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@react-pdf/renderer": "^4.5.1",
+    "@sparticuz/chromium-min": "^143.0.4",
     "@supabase/supabase-js": "^2.100.1",
     "@tiptap/extension-placeholder": "^3.21.0",
     "@tiptap/pm": "^3.21.0",
@@ -20,6 +20,7 @@
     "google-auth-library": "^9.14.1",
     "lucide-react": "^0.542.0",
     "papaparse": "^5.5.3",
+    "puppeteer-core": "^24.40.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "recharts": "^3.1.2",
