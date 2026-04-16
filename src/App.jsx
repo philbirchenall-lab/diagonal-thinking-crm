@@ -3,15 +3,18 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import Papa from "papaparse";
-import { loadContacts, saveAllContacts, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi, loadContactActivities, updateActivityStatus, markProposalReplied, saveContactResearch } from "./db.js";
+import { loadContacts, saveAllContacts, upsertContact, isSupabaseMode, getSupabaseClient, loadProposals, saveProposal, deleteProposal, loadProposalAccesses, loadContactProposals, deleteContact as deleteContactApi, loadContactActivities, updateActivityStatus, markProposalReplied, saveContactResearch, loadContactOpportunities, loadAllOpportunities, saveOpportunity, updateOpportunityStage, deleteOpportunity, loadContactOpportunityTotals } from "./db.js";
 import { signOut } from "./AuthWrapper.jsx";
 import ProposalWriterForm from "./proposals/ProposalForm.jsx";
 import { ClientAreaTab, ContactSessionsPanel } from "./clientArea.jsx";
 import {
   Download,
+  Eye,
   FileSpreadsheet,
   Filter,
+  Link2,
   Plus,
+  Printer,
   RefreshCw,
   Search,
   Trash2,
@@ -28,6 +31,14 @@ import {
 
 // LOCAL_API_URL is managed by db.js — use loadContacts/saveAllContacts instead
 const TYPE_OPTIONS = ["Client", "Warm Lead", "Cold Lead", "Mailing List"];
+const PLATFORM_OPTIONS = [
+  "ChatGPT",
+  "Anthropic Claude",
+  "Microsoft Copilot",
+  "Google Gemini",
+  "Other",
+];
+
 const SERVICE_OPTIONS = [
   "AI Advantage Course",
   "AI Agent Course",
@@ -98,6 +109,17 @@ const TYPE_COLORS = {
   "Mailing List": "#94a3b8",
 };
 
+const STAGES = ["Identified", "Qualifying", "Proposal", "Negotiating", "Won", "Lost"];
+
+const STAGE_STYLES = {
+  Identified: "bg-slate-100 text-slate-600 ring-slate-200",
+  Qualifying: "bg-blue-50 text-blue-700 ring-blue-200",
+  Proposal: "bg-orange-50 text-orange-700 ring-orange-200",
+  Negotiating: "bg-purple-50 text-purple-700 ring-purple-200",
+  Won: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  Lost: "bg-rose-50 text-rose-600 ring-rose-200",
+};
+
 const expectedInitialHeaders = [
   "Company / Organisation",
   "Contact Name",
@@ -133,6 +155,7 @@ const emptyContact = () => ({
   dateAdded: "",
   lastUpdated: "",
   networkPartner: false,
+  platforms: [],
 });
 
 function formatCurrency(value) {
@@ -1475,6 +1498,643 @@ function ContactActivitiesPanel({ contact, refreshKey }) {
   );
 }
 
+// ─── ContactOpportunitiesPanel ────────────────────────────────────────────────
+
+function StageBadge({ stage }) {
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STAGE_STYLES[stage] ?? "bg-slate-100 text-slate-600 ring-slate-200"}`}>
+      {stage}
+    </span>
+  );
+}
+
+const emptyOppForm = () => ({
+  title: "",
+  description: "",
+  value: "",
+  stage: "Identified",
+  services: [],
+  closeDate: "",
+  notes: "",
+  proposalId: null,
+});
+
+function OpportunityForm({ initial = null, contactId, onSave, onCancel }) {
+  const [form, setForm] = useState(initial ?? emptyOppForm());
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [proposals, setProposals] = useState([]);
+
+  useEffect(() => {
+    if (!isSupabaseMode()) return;
+    loadProposals().then((all) => {
+      // Prefer proposals linked to this contact; fall back to all if none match
+      const forContact = contactId ? all.filter((p) => p.contact_id === contactId) : [];
+      setProposals(forContact.length > 0 ? forContact : all);
+    }).catch(() => setProposals([]));
+  }, [contactId]);
+
+  function update(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function toggleService(service) {
+    setForm((prev) => ({
+      ...prev,
+      services: prev.services.includes(service)
+        ? prev.services.filter((s) => s !== service)
+        : [...prev.services, service],
+    }));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!form.title.trim()) {
+      setError("Title is required");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const saved = await saveOpportunity({
+        ...form,
+        id: initial?.id ?? undefined,
+        contactId: contactId ?? initial?.contact_id ?? undefined,
+        value: form.value === "" ? 0 : Number(form.value),
+      });
+      onSave(saved);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-3 space-y-3 rounded-md border border-line bg-mist p-4">
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 mb-1">Title <span className="text-rose-500">*</span></label>
+        <input
+          type="text"
+          value={form.title}
+          onChange={(e) => update("title", e.target.value)}
+          placeholder="e.g. Follow-on AI Foundations programme"
+          className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand"
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 mb-1">Description</label>
+        <textarea
+          value={form.description}
+          onChange={(e) => update("description", e.target.value)}
+          rows={2}
+          placeholder="How did this arise, what's the context?"
+          className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand resize-none"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1">Value (£)</label>
+          <input
+            type="number"
+            min="0"
+            value={form.value}
+            onChange={(e) => update("value", e.target.value)}
+            placeholder="0"
+            className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1">Stage</label>
+          <select
+            value={form.stage}
+            onChange={(e) => update("stage", e.target.value)}
+            className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand"
+          >
+            {STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 mb-1">Close date</label>
+        <input
+          type="date"
+          value={form.closeDate}
+          onChange={(e) => update("closeDate", e.target.value)}
+          className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand"
+        />
+      </div>
+      {proposals.length > 0 && (
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1">Linked Proposal</label>
+          <select
+            value={form.proposalId ?? ""}
+            onChange={(e) => update("proposalId", e.target.value || null)}
+            className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand"
+          >
+            <option value="">None</option>
+            {proposals.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.proposal_code ? `${p.proposal_code} — ${p.program_title}` : p.program_title}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 mb-1">Services in scope</label>
+        <div className="flex flex-wrap gap-1.5">
+          {SERVICE_OPTIONS.map((service) => {
+            const active = form.services.includes(service);
+            return (
+              <button
+                key={service}
+                type="button"
+                onClick={() => toggleService(service)}
+                className={`rounded border px-2 py-0.5 text-xs font-medium transition ${
+                  active
+                    ? "border-brand bg-brand text-white"
+                    : "border-line bg-white text-slate-600 hover:border-slate-400"
+                }`}
+              >
+                {service}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 mb-1">Notes</label>
+        <textarea
+          value={form.notes}
+          onChange={(e) => update("notes", e.target.value)}
+          rows={2}
+          placeholder="Ongoing notes (distinct from description)"
+          className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand resize-none"
+        />
+      </div>
+      {error && <p className="text-xs text-rose-600">{error}</p>}
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-md bg-black px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-inkSoft disabled:opacity-50"
+        >
+          {saving ? "Saving…" : (initial ? "Update" : "Create")}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-md border border-line px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function ContactOpportunitiesPanel({ contact, onOppChange }) {
+  const [opportunities, setOpportunities] = useState(null); // null = loading
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [updatingStage, setUpdatingStage] = useState(null);
+
+  function load() {
+    if (!isSupabaseMode()) {
+      setOpportunities([]);
+      return;
+    }
+    setOpportunities(null);
+    loadContactOpportunities(contact.id)
+      .then(setOpportunities)
+      .catch((err) => {
+        console.error(err);
+        setOpportunities([]);
+      });
+  }
+
+  useEffect(() => { load(); }, [contact.id]);
+
+  function handleCreated(opp) {
+    setOpportunities((prev) => [opp, ...(prev ?? [])]);
+    setShowForm(false);
+    onOppChange?.();
+  }
+
+  function handleUpdated(opp) {
+    setOpportunities((prev) => (prev ?? []).map((o) => (o.id === opp.id ? opp : o)));
+    setEditingId(null);
+    onOppChange?.();
+  }
+
+  async function handleStageChange(oppId, newStage) {
+    setUpdatingStage(oppId);
+    try {
+      await updateOpportunityStage(oppId, newStage);
+      setOpportunities((prev) =>
+        (prev ?? []).map((o) => (o.id === oppId ? { ...o, stage: newStage } : o))
+      );
+      onOppChange?.();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUpdatingStage(null);
+    }
+  }
+
+  async function handleDelete(oppId) {
+    try {
+      await deleteOpportunity(oppId);
+      setOpportunities((prev) => (prev ?? []).filter((o) => o.id !== oppId));
+      onOppChange?.();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setConfirmDeleteId(null);
+    }
+  }
+
+  const isTerminal = (stage) => stage === "Won" || stage === "Lost";
+
+  return (
+    <div className="border border-line bg-white p-5">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+          Opportunities
+        </div>
+        {!showForm && isSupabaseMode() && (
+          <button
+            type="button"
+            onClick={() => { setShowForm(true); setEditingId(null); }}
+            className="text-xs text-brand hover:underline"
+          >
+            New Opportunity
+          </button>
+        )}
+      </div>
+
+      {showForm && (
+        <OpportunityForm
+          contactId={contact.id}
+          onSave={handleCreated}
+          onCancel={() => setShowForm(false)}
+        />
+      )}
+
+      {opportunities === null && (
+        <div className="mt-3 text-xs text-slate-400">Loading…</div>
+      )}
+
+      {opportunities !== null && opportunities.length === 0 && !showForm && (
+        <div className="mt-3 space-y-2">
+          <p className="text-xs italic text-slate-400">No opportunities yet — add the first one.</p>
+          {isSupabaseMode() && (
+            <button
+              type="button"
+              onClick={() => setShowForm(true)}
+              className="inline-flex items-center rounded border border-line px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            >
+              + New Opportunity
+            </button>
+          )}
+        </div>
+      )}
+
+      {opportunities !== null && opportunities.length > 0 && (
+        <div className="mt-3 space-y-3">
+          {opportunities.map((opp) => (
+            <div
+              key={opp.id}
+              className={`border-t border-line pt-3 first:border-t-0 first:pt-0 ${isTerminal(opp.stage) ? "opacity-60" : ""}`}
+            >
+              {editingId === opp.id ? (
+                <OpportunityForm
+                  initial={{
+                    id: opp.id,
+                    title: opp.title,
+                    description: opp.description ?? "",
+                    value: opp.value ?? "",
+                    stage: opp.stage,
+                    services: opp.services ?? [],
+                    closeDate: opp.close_date ?? "",
+                    notes: opp.notes ?? "",
+                    contact_id: opp.contact_id,
+                    proposalId: opp.proposal_id ?? null,
+                  }}
+                  contactId={contact.id}
+                  onSave={handleUpdated}
+                  onCancel={() => setEditingId(null)}
+                />
+              ) : (
+                <>
+                  <div className="flex items-start justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setEditingId(opp.id); setShowForm(false); }}
+                      className="text-sm font-medium text-ink leading-snug text-left hover:underline"
+                    >
+                      {opp.title}
+                    </button>
+                    <StageBadge stage={opp.stage} />
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="text-xs font-medium text-slate-600">
+                      {Number(opp.value) > 0 ? formatCurrency(opp.value) : "£—"}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      {opp.close_date
+                        ? new Date(opp.close_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                        : "No date set"}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <select
+                      value={opp.stage}
+                      onChange={(e) => handleStageChange(opp.id, e.target.value)}
+                      disabled={updatingStage === opp.id}
+                      className="rounded border border-line bg-white px-2 py-0.5 text-xs text-slate-600 focus:outline-none focus:ring-1 focus:ring-brand disabled:opacity-50"
+                    >
+                      {STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    {confirmDeleteId === opp.id ? (
+                      <span className="flex items-center gap-1">
+                        <span className="text-xs text-slate-500">Delete?</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(opp.id)}
+                          className="text-xs font-medium text-rose-600 hover:underline"
+                        >
+                          Yes
+                        </button>
+                        <span className="text-xs text-slate-400">/</span>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="text-xs text-slate-500 hover:underline"
+                        >
+                          No
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteId(opp.id)}
+                        className="text-xs text-slate-400 hover:text-rose-500"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── OpportunitiesTab ─────────────────────────────────────────────────────────
+
+function OpportunitiesTab({ contacts, onOpenContact }) {
+  const [opportunities, setOpportunities] = useState(null);
+  const [stageFilter, setStageFilter] = useState("");
+  const [showTerminal, setShowTerminal] = useState(false);
+  const [sortCol, setSortCol] = useState("value");
+  const [sortDir, setSortDir] = useState("desc");
+  const [editingOpp, setEditingOpp] = useState(null); // null = not editing, obj = editing
+
+  function load() {
+    if (!isSupabaseMode()) {
+      setOpportunities([]);
+      return;
+    }
+    setOpportunities(null);
+    loadAllOpportunities()
+      .then(setOpportunities)
+      .catch((err) => {
+        console.error(err);
+        setOpportunities([]);
+      });
+  }
+
+  useEffect(() => { load(); }, []);
+
+  const isTerminal = (stage) => stage === "Won" || stage === "Lost";
+
+  function handleSort(col) {
+    if (sortCol === col) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortCol(col);
+      setSortDir(col === "value" ? "desc" : "asc");
+    }
+  }
+
+  function sortValue(opp, col) {
+    if (col === "company") return (opp.contacts?.company ?? "").toLowerCase();
+    if (col === "contact") return (opp.contacts?.contact_name ?? "").toLowerCase();
+    if (col === "title") return (opp.title ?? "").toLowerCase();
+    if (col === "value") return Number(opp.value) || 0;
+    if (col === "stage") return STAGES.indexOf(opp.stage);
+    if (col === "close_date") return opp.close_date ?? "9999-99-99";
+    return "";
+  }
+
+  const visible = (opportunities ?? [])
+    .filter((opp) => {
+      if (!showTerminal && isTerminal(opp.stage)) return false;
+      if (stageFilter && opp.stage !== stageFilter) return false;
+      return true;
+    })
+    .slice()
+    .sort((a, b) => {
+      const av = sortValue(a, sortCol);
+      const bv = sortValue(b, sortCol);
+      const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+  const activeOpportunities = (opportunities ?? []).filter((opp) => !isTerminal(opp.stage));
+  const totalPipelineValue = activeOpportunities.reduce((sum, opp) => sum + (Number(opp.value) || 0), 0);
+
+  function handleUpdated(saved) {
+    setOpportunities((prev) => (prev ?? []).map((o) => (o.id === saved.id ? saved : o)));
+    setEditingOpp(null);
+  }
+
+  function handleRowClick(opp) {
+    if (!opp.contact_id) return;
+    const contact = contacts.find((c) => c.id === opp.contact_id);
+    if (contact && onOpenContact) onOpenContact(contact);
+  }
+
+  return (
+    <div>
+      {/* Pipeline value hero */}
+      <div className="mb-6 border border-line bg-white p-5 shadow-panel sm:p-6">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Active Pipeline</div>
+        <div className="mt-2 font-editorial text-4xl font-semibold text-ink">
+          {formatCurrency(totalPipelineValue)}
+        </div>
+        <div className="mt-1 text-xs text-slate-400">
+          {activeOpportunities.length} active {activeOpportunities.length === 1 ? "opportunity" : "opportunities"}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <select
+          value={stageFilter}
+          onChange={(e) => setStageFilter(e.target.value)}
+          className="rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-brand"
+        >
+          <option value="">All stages</option>
+          {STAGES.filter((s) => !isTerminal(s)).map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showTerminal}
+            onChange={(e) => setShowTerminal(e.target.checked)}
+            className="rounded border-line"
+          />
+          Show Won / Lost
+        </label>
+        <button
+          type="button"
+          onClick={load}
+          className="ml-auto rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+        >
+          Refresh
+        </button>
+      </div>
+
+      {/* Inline edit form */}
+      {editingOpp && (
+        <div className="mb-4">
+          <div className="mb-2 text-xs font-semibold text-slate-500 uppercase tracking-[0.14em]">
+            Editing: {editingOpp.title}
+          </div>
+          <OpportunityForm
+            initial={{
+              id: editingOpp.id,
+              title: editingOpp.title,
+              description: editingOpp.description ?? "",
+              value: editingOpp.value ?? "",
+              stage: editingOpp.stage,
+              services: editingOpp.services ?? [],
+              closeDate: editingOpp.close_date ?? "",
+              notes: editingOpp.notes ?? "",
+              contact_id: editingOpp.contact_id,
+              proposalId: editingOpp.proposal_id ?? null,
+            }}
+            onSave={handleUpdated}
+            onCancel={() => setEditingOpp(null)}
+          />
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="border border-line bg-white shadow-panel">
+        {opportunities === null && (
+          <div className="px-6 py-10 text-sm text-slate-400">Loading…</div>
+        )}
+
+        {opportunities !== null && visible.length === 0 && (
+          <div className="px-6 py-10 text-center">
+            <p className="text-sm text-slate-400 italic">
+              {(opportunities ?? []).length === 0
+                ? "No active opportunities — add one from a contact record."
+                : "No opportunities match the current filters."}
+            </p>
+          </div>
+        )}
+
+        {opportunities !== null && visible.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-line bg-mist text-left">
+                  {[
+                    { col: "company", label: "Company", align: "left" },
+                    { col: "contact", label: "Contact", align: "left" },
+                    { col: "title", label: "Opportunity", align: "left" },
+                    { col: "value", label: "Value", align: "right" },
+                    { col: "stage", label: "Stage", align: "left" },
+                    { col: "close_date", label: "Close date", align: "left" },
+                  ].map(({ col, label, align }) => (
+                    <th
+                      key={col}
+                      className={`px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 cursor-pointer select-none hover:text-ink ${align === "right" ? "text-right" : ""}`}
+                      onClick={() => handleSort(col)}
+                    >
+                      {label}{" "}
+                      <span className="text-slate-400">
+                        {sortCol === col ? (sortDir === "asc" ? "↑" : "↓") : "↕"}
+                      </span>
+                    </th>
+                  ))}
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((opp) => {
+                  const terminal = isTerminal(opp.stage);
+                  return (
+                    <tr
+                      key={opp.id}
+                      onClick={() => handleRowClick(opp)}
+                      className={`border-b border-line last:border-b-0 transition-colors ${
+                        opp.contact_id ? "cursor-pointer hover:bg-mist" : ""
+                      } ${terminal ? "opacity-50" : ""}`}
+                    >
+                      <td className="px-4 py-3 text-ink font-medium">
+                        {opp.contacts?.company || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {opp.contacts?.contact_name || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-ink">
+                        {opp.title}
+                      </td>
+                      <td className="px-4 py-3 text-right font-medium text-ink tabular-nums">
+                        {Number(opp.value) > 0 ? formatCurrency(opp.value) : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StageBadge stage={opp.stage} />
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">
+                        {opp.close_date
+                          ? new Date(opp.close_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setEditingOpp(opp); }}
+                          className="rounded border border-line px-2 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── ContactResearchIntelPanel ────────────────────────────────────────────────
 
 function ContactResearchIntelPanel({ contact, onResearchSaved }) {
@@ -1756,45 +2416,60 @@ function ProposalsTab({ contacts }) {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
+                        {/* Primary actions */}
                         <button
                           type="button"
                           onClick={() => setEditingProposal(p)}
-                          className="text-xs text-brand hover:underline"
+                          className="text-xs font-medium text-brand hover:underline"
                         >
                           Edit
                         </button>
                         <button
                           type="button"
-                          onClick={() => copyLink(p)}
-                          className="text-xs text-slate-500 hover:text-brand"
-                          title={`Copy client link for code ${p.proposal_code}`}
-                        >
-                          {copied === p.id ? "Copied!" : "Copy link"}
-                        </button>
-                        <button
-                          type="button"
                           onClick={() => handleSendProposal(p)}
                           disabled={sendingProposal === p.id}
-                          className="text-xs text-emerald-600 hover:text-emerald-800 disabled:opacity-50"
+                          className="text-xs font-medium text-emerald-600 hover:text-emerald-800 disabled:opacity-50"
                           title={p.contacts?.email ? `Send to ${p.contacts.email}` : "Link a contact with an email to enable sending"}
                         >
                           {sendingProposal === p.id ? "Sending…" : "Send"}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setAccessProposal(p)}
-                          className="text-xs text-slate-500 hover:text-brand"
-                        >
-                          Accesses
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(p)}
-                          className="text-xs text-red-400 hover:text-red-600"
-                        >
-                          Delete
-                        </button>
+                        {/* Icon actions */}
+                        <div className="flex items-center gap-0.5 border-l border-line pl-3">
+                          <button
+                            type="button"
+                            onClick={() => copyLink(p)}
+                            title={`Copy client link (code ${p.proposal_code})`}
+                            className="rounded p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            {copied === p.id ? <span className="text-[10px] font-semibold text-brand">✓</span> : <Link2 size={14} />}
+                          </button>
+                          <a
+                            href={`${VIEWER_URL}?code=${encodeURIComponent(p.proposal_code)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Open proposal — use Cmd+P / Ctrl+P to save as PDF"
+                            className="rounded p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            <Printer size={14} />
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => setAccessProposal(p)}
+                            title="View access history"
+                            className="rounded p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(p)}
+                            title="Delete proposal"
+                            className="rounded p-1.5 text-rose-400 transition hover:bg-rose-50 hover:text-rose-600"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -1836,14 +2511,6 @@ function ProposalsTab({ contacts }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => copyLink(p)}
-                    className="min-h-[44px] rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand"
-                    title={`Copy client link for code ${p.proposal_code}`}
-                  >
-                    {copied === p.id ? "Copied!" : "Copy link"}
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => handleSendProposal(p)}
                     disabled={sendingProposal === p.id}
                     className="min-h-[44px] rounded-md border border-emerald-200 px-3 py-2 text-xs font-medium text-emerald-600 hover:text-emerald-800 disabled:opacity-50"
@@ -1851,6 +2518,24 @@ function ProposalsTab({ contacts }) {
                   >
                     {sendingProposal === p.id ? "Sending…" : "Send"}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => copyLink(p)}
+                    className="min-h-[44px] rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand"
+                    title={`Copy client link for code ${p.proposal_code}`}
+                  >
+                    {copied === p.id ? "Copied!" : "Copy link"}
+                  </button>
+                  <a
+                    href={`${VIEWER_URL}?code=${encodeURIComponent(p.proposal_code)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Open proposal — use your browser's Print to save as PDF"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand"
+                  >
+                    <Printer size={13} />
+                    Print PDF
+                  </a>
                   <button
                     type="button"
                     onClick={() => setAccessProposal(p)}
@@ -1904,6 +2589,9 @@ function normalizeCompanyName(name) {
 export default function App() {
   const [activeTab, setActiveTab] = useState("crm");
   const [contacts, setContacts] = useState([]);
+  // CRM-012: Map<contact_id, total active opp value> — derived from opportunities table.
+  // Used for pipeline stat, contact Snapshot, and contacts list sort.
+  const [oppTotals, setOppTotals] = useState(new Map());
   const [syncStatus, setSyncStatus] = useState("syncing");
   const [syncError, setSyncError] = useState("");
   const initialLoadDoneRef = useRef(false);
@@ -1976,6 +2664,15 @@ export default function App() {
       });
   }, []);
 
+  // CRM-012: Load opportunity totals on mount and expose a refresh function.
+  // Called after any opportunity create/edit/delete/stage-change.
+  function refreshOppTotals() {
+    loadContactOpportunityTotals()
+      .then(setOppTotals)
+      .catch((err) => console.error("Failed to load opportunity totals:", err));
+  }
+  useEffect(() => { refreshOppTotals(); }, []);
+
   const uniqueCompanyNames = useMemo(
     () =>
       [...new Set(contacts.map((c) => c.company).filter(Boolean))].sort(
@@ -2002,14 +2699,16 @@ export default function App() {
 
     result.sort((left, right) => {
       const direction = sortConfig.direction === "asc" ? 1 : -1;
+
+      // CRM-012: sort by derived opp total, not manual projected_value
+      if (sortConfig.key === "projectedValue") {
+        return ((oppTotals.get(left.id) ?? 0) - (oppTotals.get(right.id) ?? 0)) * direction;
+      }
+
       const a = left[sortConfig.key];
       const b = right[sortConfig.key];
 
-      if (
-        sortConfig.key === "totalClientValue" ||
-        sortConfig.key === "liveWorkValue" ||
-        sortConfig.key === "projectedValue"
-      ) {
+      if (sortConfig.key === "totalClientValue" || sortConfig.key === "liveWorkValue") {
         return (Number(a) - Number(b)) * direction;
       }
 
@@ -2017,7 +2716,7 @@ export default function App() {
     });
 
     return result;
-  }, [contacts, search, typeFilter, serviceFilter, sortConfig, networkPartnerFilter]);
+  }, [contacts, search, typeFilter, serviceFilter, sortConfig, networkPartnerFilter, oppTotals]);
 
   const stats = useMemo(() => {
     const counts = TYPE_OPTIONS.reduce(
@@ -2028,24 +2727,9 @@ export default function App() {
       {},
     );
 
-    // Projected Pipeline: Warm Leads only, with a projection attached,
-    // deduplicated by company (one entry per company, using the highest value
-    // where multiple contacts exist at the same company).
-    const warmLeadsWithProjection = contacts.filter(
-      (c) => c.type === "Warm Lead" && Number(c.projectedValue) > 0,
-    );
-    const projectionByCompany = new Map();
-    warmLeadsWithProjection.forEach((c) => {
-      const key = c.company?.trim() || c.id;
-      const existing = projectionByCompany.get(key) ?? 0;
-      if (Number(c.projectedValue) > existing) {
-        projectionByCompany.set(key, Number(c.projectedValue));
-      }
-    });
-    const projected = Array.from(projectionByCompany.values()).reduce(
-      (sum, val) => sum + val,
-      0,
-    );
+    // CRM-012: Projected Pipeline — sum of all active opportunity values across all contacts.
+    // "Active" = non-Won, non-Lost. No company-level deduplication (each opp counts individually).
+    const projected = Array.from(oppTotals.values()).reduce((sum, val) => sum + val, 0);
     const warmLeadValue = projected;
 
     const networkPartnerCount = contacts.filter((c) => c.networkPartner).length;
@@ -2064,7 +2748,7 @@ export default function App() {
         color: TYPE_COLORS[type],
       })),
     };
-  }, [contacts]);
+  }, [contacts, oppTotals]);
 
   // Dedup: find another contact with the same email or normalised company name
   const potentialDuplicate = useMemo(() => {
@@ -2114,6 +2798,20 @@ export default function App() {
     });
   }
 
+  function toggleActivePlatform(platform) {
+    setActiveContact((current) => {
+      const platforms = current.platforms.includes(platform)
+        ? current.platforms.filter((item) => item !== platform)
+        : [...current.platforms, platform];
+
+      return {
+        ...current,
+        platforms,
+        lastUpdated: todayStamp(),
+      };
+    });
+  }
+
   function saveActiveContact() {
     if (!activeContact) return;
 
@@ -2134,6 +2832,17 @@ export default function App() {
     // Propagate newly added services to all other contacts at the same company
     const companyName = nextRecord.company?.trim();
     let updatedCount = 0;
+
+    // Immediately persist the primary contact to Supabase.
+    // This direct upsert is the reliable save path — it does not depend on the
+    // batch saveAllContacts effect and cannot be blocked by URL-size issues or
+    // race conditions in the bulk-sync flow.
+    if (isSupabaseMode()) {
+      upsertContact(nextRecord).catch((err) => {
+        setSyncError(err?.message || "Contact save failed");
+        setSyncStatus("error");
+      });
+    }
 
     setContacts((current) => {
       const updated = current.map((contact) => {
@@ -2543,6 +3252,7 @@ export default function App() {
             <div className="-mx-1 flex gap-1 overflow-x-auto py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {[
                 { key: "crm", label: "CRM" },
+                { key: "opportunities", label: "Opportunities" },
                 { key: "proposals", label: "Proposals" },
                 { key: "client-area", label: "Client Area" },
               ].map((tab) => (
@@ -2604,6 +3314,19 @@ export default function App() {
           </div>
           </>)}
         </header>
+
+        {activeTab === "opportunities" && (
+          <div className="mt-6">
+            <OpportunitiesTab
+              contacts={contacts}
+              onOpenContact={(contact) => {
+                setActiveContact(contact);
+                setIsNewContact(false);
+                setActiveTab("crm");
+              }}
+            />
+          </div>
+        )}
 
         {activeTab === "proposals" && (
           <div className="mt-6">
@@ -2950,7 +3673,7 @@ export default function App() {
                         {formatCurrencyOrDash(contact.liveWorkValue)}
                       </td>
                       <td className="px-4 py-3 text-right text-sm font-semibold text-ink">
-                        {formatCurrencyOrDash(contact.projectedValue)}
+                        {formatCurrencyOrDash(oppTotals.get(contact.id) ?? 0)}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600 max-w-0">
                         <div className="truncate">{contact.contactName || "No contact name"}</div>
@@ -3097,7 +3820,7 @@ export default function App() {
                       </div>
                       <div>
                         <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Projected</div>
-                        <div className="mt-1 font-semibold text-ink">{formatCurrencyOrDash(contact.projectedValue)}</div>
+                        <div className="mt-1 font-semibold text-ink">{formatCurrencyOrDash(oppTotals.get(contact.id) ?? 0)}</div>
                       </div>
                     </div>
                     <div className="text-sm">
@@ -3243,16 +3966,10 @@ export default function App() {
                   </label>
                 </DetailField>
                 <DetailField label="Projected Value (GBP)">
-                  <TextInput
-                    inputMode="decimal"
-                    value={activeContact.projectedValue}
-                    onChange={(event) =>
-                      updateActiveContact(
-                        "projectedValue",
-                        normaliseProjectedValue(event.target.value),
-                      )
-                    }
-                  />
+                  <div className="rounded-md border border-line bg-mist px-4 py-3 text-sm text-ink">
+                    {formatCurrencyOrDash(oppTotals.get(activeContact?.id) ?? 0)}
+                    <span className="ml-2 text-xs text-slate-400">derived from Opportunities</span>
+                  </div>
                 </DetailField>
                 <DetailField label="Services">
                   <div className="flex flex-wrap gap-2">
@@ -3270,6 +3987,27 @@ export default function App() {
                           }`}
                         >
                           {service}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </DetailField>
+                <DetailField label="Platforms">
+                  <div className="flex flex-wrap gap-2">
+                    {PLATFORM_OPTIONS.map((platform) => {
+                      const active = activeContact.platforms.includes(platform);
+                      return (
+                        <button
+                          key={platform}
+                          type="button"
+                          onClick={() => toggleActivePlatform(platform)}
+                          className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
+                            active
+                              ? "border-brand bg-brand text-white"
+                              : "border-line bg-white text-slate-600 hover:border-black hover:bg-mist"
+                          }`}
+                        >
+                          {platform}
                         </button>
                       );
                     })}
@@ -3309,7 +4047,7 @@ export default function App() {
                   <div className="flex items-end justify-between gap-4">
                     <span className="text-sm font-medium text-slate-500">Projected</span>
                     <span className="text-base font-medium text-slate-600">
-                      {formatCurrencyOrDash(activeContact.projectedValue)}
+                      {formatCurrencyOrDash(oppTotals.get(activeContact.id) ?? 0)}
                     </span>
                   </div>
                   <div>
@@ -3346,6 +4084,10 @@ export default function App() {
                   contact={activeContact}
                   onReplied={() => setActivityRefreshKey((k) => k + 1)}
                 />
+              ) : null}
+
+              {!isNewContact ? (
+                <ContactOpportunitiesPanel contact={activeContact} onOppChange={refreshOppTotals} />
               ) : null}
 
               {!isNewContact ? (

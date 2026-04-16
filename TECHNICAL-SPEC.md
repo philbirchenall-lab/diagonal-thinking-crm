@@ -142,9 +142,10 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 ### Resend
 - **What it does:** Transactional email. Currently used for two purposes:
   1. Internal notification email to `phil@diagonalthinking.co` on new contact form submission
-  2. Proposal email to client (PROP-005 — blocked, not yet deployed)
-- **How it's connected:** `contact-form` Edge Function calls Resend API directly. PROP-005 integration is in `dt-proposals` repo.
+  2. Proposal email to client (`api/send-proposal.js` — PROP-005, live)
+- **How it's connected:** `contact-form` Edge Function calls Resend API directly. Proposal send is in `api/send-proposal.js` (Vercel serverless).
 - **Sender address:** `notifications@diagonalthinking.co`
+- **CC behaviour (PROP-014):** All proposal emails CC `phil@diagonalthinking.co` so Phil always receives a copy alongside the client.
 
 ### Squarespace
 - **What it does:** Public marketing website (`diagonalthinking.co`). Contact forms on the site post to the `contact-form` Edge Function.
@@ -323,6 +324,7 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 | `research_updated_at` | TIMESTAMPTZ | Auto-set when research saved — added CRM-007 |
 | `research_source` | TEXT | e.g. "Sol call prep — 9 Apr 2026" — added CRM-007 |
 | `research_updated_by` | TEXT | e.g. "Sol" — added CRM-007 |
+| `platforms` | TEXT[] | AI platforms used by the client (ChatGPT / Anthropic Claude / Microsoft Copilot / Google Gemini / Other) — added CRM-008 |
 
 **Known issues / notes:**
 - `setup/schema.sql` reflects the initial schema. `network_partner`, `total_client_value`, `live_work_value`, and the four `research_*` columns were added via later migrations and are not in the SQL file.
@@ -458,6 +460,7 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
   - `network_partner` (BOOLEAN)
   - `total_client_value` (NUMERIC) — CRM-004
   - `live_work_value` (NUMERIC) — CRM-004
+  - `platforms` (TEXT[]) — CRM-008
 - There is no `proposals` or `proposal_access` table definition in any file in this repo — those were created directly in the Supabase dashboard ⚠️ verify.
 
 ---
