@@ -1,5 +1,5 @@
 /**
- * api/admin/proposal-pdf/[id].jsx
+ * api/admin/proposal-pdf/[id].js
  *
  * Admin-only: generate and download a proposal PDF server-side.
  *
@@ -13,6 +13,10 @@
  * Required env vars (same as other API routes):
  *   SUPABASE_URL or VITE_SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_KEY or VITE_SUPABASE_ANON_KEY
+ *
+ * NOTE: This file uses React.createElement instead of JSX so that Vercel's
+ * Node.js serverless runtime (which only supports .js/.ts) can execute it
+ * without a JSX compilation step.
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -198,27 +202,15 @@ function renderInlineContent(nodes) {
     const isBold = node.marks?.some((m) => m.type === "bold");
     const isItalic = node.marks?.some((m) => m.type === "italic");
     if (isBold && isItalic) {
-      return (
-        <Text key={i} style={{ fontFamily: "Helvetica-BoldOblique" }}>
-          {text}
-        </Text>
-      );
+      return React.createElement(Text, { key: i, style: { fontFamily: "Helvetica-BoldOblique" } }, text);
     }
     if (isBold) {
-      return (
-        <Text key={i} style={{ fontFamily: "Helvetica-Bold" }}>
-          {text}
-        </Text>
-      );
+      return React.createElement(Text, { key: i, style: { fontFamily: "Helvetica-Bold" } }, text);
     }
     if (isItalic) {
-      return (
-        <Text key={i} style={{ fontFamily: "Helvetica-Oblique" }}>
-          {text}
-        </Text>
-      );
+      return React.createElement(Text, { key: i, style: { fontFamily: "Helvetica-Oblique" } }, text);
     }
-    return <Text key={i}>{text}</Text>;
+    return React.createElement(Text, { key: i }, text);
   });
 }
 
@@ -234,74 +226,58 @@ function renderDocNode(node, index) {
     case "heading": {
       _headingCount++;
       const isFirst = _headingCount === 1;
-      return (
-        <Text
-          key={index}
-          style={[styles.heading, isFirst && styles.headingFirst]}
-        >
-          {extractPlainText(node.content)}
-        </Text>
+      return React.createElement(
+        Text,
+        { key: index, style: [styles.heading, isFirst && styles.headingFirst] },
+        extractPlainText(node.content),
       );
     }
     case "paragraph": {
       const content = node.content ?? [];
       if (content.length === 0) {
-        return <Text key={index} style={styles.paraEmpty}>{" "}</Text>;
+        return React.createElement(Text, { key: index, style: styles.paraEmpty }, " ");
       }
-      // Label paragraph: first run is bold, second is plain
       const isLabel =
         node.attrs?.class === "label-paragraph" ||
         (content.length === 2 &&
           content[0].marks?.some((m) => m.type === "bold") &&
           !content[1].marks?.some((m) => m.type === "bold"));
-      return (
-        <Text key={index} style={isLabel ? styles.label : styles.para}>
-          {renderInlineContent(content)}
-        </Text>
+      return React.createElement(
+        Text,
+        { key: index, style: isLabel ? styles.label : styles.para },
+        renderInlineContent(content),
       );
     }
     case "bulletList":
-      return (
-        <View key={index}>
-          {(node.content ?? []).map((item, i) => {
-            const text = (item.content ?? [])
-              .flatMap((p) => p.content ?? [])
-              .map((n) => n.text ?? "")
-              .join("");
-            const inlineNodes = (item.content ?? []).flatMap(
-              (p) => p.content ?? [],
-            );
-            return (
-              <View key={i} style={styles.bulletRow}>
-                <Text style={styles.bulletDot}>•</Text>
-                <Text style={styles.bulletText}>
-                  {renderInlineContent(inlineNodes)}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
+      return React.createElement(
+        View,
+        { key: index },
+        ...(node.content ?? []).map((item, i) => {
+          const inlineNodes = (item.content ?? []).flatMap((p) => p.content ?? []);
+          return React.createElement(
+            View,
+            { key: i, style: styles.bulletRow },
+            React.createElement(Text, { style: styles.bulletDot }, "\u2022"),
+            React.createElement(Text, { style: styles.bulletText }, renderInlineContent(inlineNodes)),
+          );
+        }),
       );
     case "orderedList":
-      return (
-        <View key={index}>
-          {(node.content ?? []).map((item, i) => {
-            const inlineNodes = (item.content ?? []).flatMap(
-              (p) => p.content ?? [],
-            );
-            return (
-              <View key={i} style={styles.orderedRow}>
-                <Text style={styles.orderedNum}>{i + 1}.</Text>
-                <Text style={styles.orderedText}>
-                  {renderInlineContent(inlineNodes)}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
+      return React.createElement(
+        View,
+        { key: index },
+        ...(node.content ?? []).map((item, i) => {
+          const inlineNodes = (item.content ?? []).flatMap((p) => p.content ?? []);
+          return React.createElement(
+            View,
+            { key: i, style: styles.orderedRow },
+            React.createElement(Text, { style: styles.orderedNum }, `${i + 1}.`),
+            React.createElement(Text, { style: styles.orderedText }, renderInlineContent(inlineNodes)),
+          );
+        }),
       );
     case "horizontalRule":
-      return <View key={index} style={styles.hr} />;
+      return React.createElement(View, { key: index, style: styles.hr });
     default:
       return null;
   }
@@ -315,64 +291,69 @@ function ProposalPDF({ proposal }) {
 
   const docNodes = proposal.tiptap_json?.content ?? [];
 
-  return (
-    <Document
-      title={proposal.program_title ?? "Proposal"}
-      author={proposal.prepared_by ?? "Diagonal Thinking"}
-    >
-      <Page size="A4" style={styles.page}>
-        {/* Cover */}
-        <View style={styles.cover}>
-          <Text style={styles.coverBadge}>Proposal</Text>
-          <Text style={styles.coverTitle}>
-            {proposal.program_title || "Untitled Proposal"}
-          </Text>
-          {proposal.subtitle ? (
-            <Text style={styles.coverSubtitle}>{proposal.subtitle}</Text>
-          ) : null}
-          <View style={styles.coverDivider} />
-          {proposal.client_name ? (
-            <View style={styles.coverMetaRow}>
-              <Text style={styles.coverMetaLabel}>Client</Text>
-              <Text style={styles.coverMetaValue}>{proposal.client_name}</Text>
-            </View>
-          ) : null}
-          {proposal.prepared_for ? (
-            <View style={styles.coverMetaRow}>
-              <Text style={styles.coverMetaLabel}>Prepared for</Text>
-              <Text style={styles.coverMetaValue}>{proposal.prepared_for}</Text>
-            </View>
-          ) : null}
-          {proposal.date ? (
-            <View style={styles.coverMetaRow}>
-              <Text style={styles.coverMetaLabel}>Date</Text>
-              <Text style={styles.coverMetaValue}>{proposal.date}</Text>
-            </View>
-          ) : null}
-          {proposal.prepared_by ? (
-            <View style={styles.coverMetaRow}>
-              <Text style={styles.coverMetaLabel}>Prepared by</Text>
-              <Text style={styles.coverMetaValue}>{proposal.prepared_by}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        {/* Body */}
-        <View style={styles.body}>
-          {docNodes.map((node, i) => renderDocNode(node, i))}
-        </View>
-
-        {/* Footer */}
-        <View style={styles.footer} fixed>
-          <Text style={styles.footerText}>
-            {proposal.footer_label || "The AI Advantage"}
-          </Text>
-          <Text style={styles.footerText}>
-            {proposal.prepared_by || "Diagonal Thinking"}
-          </Text>
-        </View>
-      </Page>
-    </Document>
+  return React.createElement(
+    Document,
+    { title: proposal.program_title ?? "Proposal", author: proposal.prepared_by ?? "Diagonal Thinking" },
+    React.createElement(
+      Page,
+      { size: "A4", style: styles.page },
+      // Cover
+      React.createElement(
+        View,
+        { style: styles.cover },
+        React.createElement(Text, { style: styles.coverBadge }, "Proposal"),
+        React.createElement(Text, { style: styles.coverTitle }, proposal.program_title || "Untitled Proposal"),
+        proposal.subtitle
+          ? React.createElement(Text, { style: styles.coverSubtitle }, proposal.subtitle)
+          : null,
+        React.createElement(View, { style: styles.coverDivider }),
+        proposal.client_name
+          ? React.createElement(
+              View,
+              { style: styles.coverMetaRow },
+              React.createElement(Text, { style: styles.coverMetaLabel }, "Client"),
+              React.createElement(Text, { style: styles.coverMetaValue }, proposal.client_name),
+            )
+          : null,
+        proposal.prepared_for
+          ? React.createElement(
+              View,
+              { style: styles.coverMetaRow },
+              React.createElement(Text, { style: styles.coverMetaLabel }, "Prepared for"),
+              React.createElement(Text, { style: styles.coverMetaValue }, proposal.prepared_for),
+            )
+          : null,
+        proposal.date
+          ? React.createElement(
+              View,
+              { style: styles.coverMetaRow },
+              React.createElement(Text, { style: styles.coverMetaLabel }, "Date"),
+              React.createElement(Text, { style: styles.coverMetaValue }, proposal.date),
+            )
+          : null,
+        proposal.prepared_by
+          ? React.createElement(
+              View,
+              { style: styles.coverMetaRow },
+              React.createElement(Text, { style: styles.coverMetaLabel }, "Prepared by"),
+              React.createElement(Text, { style: styles.coverMetaValue }, proposal.prepared_by),
+            )
+          : null,
+      ),
+      // Body
+      React.createElement(
+        View,
+        { style: styles.body },
+        ...docNodes.map((node, i) => renderDocNode(node, i)),
+      ),
+      // Footer
+      React.createElement(
+        View,
+        { style: styles.footer, fixed: true },
+        React.createElement(Text, { style: styles.footerText }, proposal.footer_label || "The AI Advantage"),
+        React.createElement(Text, { style: styles.footerText }, proposal.prepared_by || "Diagonal Thinking"),
+      ),
+    ),
   );
 }
 
@@ -417,7 +398,7 @@ export default async function handler(req, res) {
 
   let pdfBuffer;
   try {
-    pdfBuffer = await renderToBuffer(<ProposalPDF proposal={proposal} />);
+    pdfBuffer = await renderToBuffer(React.createElement(ProposalPDF, { proposal }));
   } catch (err) {
     console.error("[proposal-pdf] renderToBuffer failed:", err);
     return res.status(500).json({ error: "PDF generation failed." });
