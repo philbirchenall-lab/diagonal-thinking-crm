@@ -1,12 +1,51 @@
+import { createClient } from "@supabase/supabase-js";
+
+function getSupabaseAuthClient(authHeader) {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+  if (!url || !key || !authHeader) return null;
+
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: authHeader } },
+  });
+}
+
+async function isAuthorizedRequest(req) {
+  const authHeader = req.headers.authorization || "";
+  const cronSecret = process.env.CRON_SECRET || "";
+
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+    return true;
+  }
+
+  if (!authHeader.startsWith("Bearer ")) {
+    return false;
+  }
+
+  try {
+    const supabase = getSupabaseAuthClient(authHeader);
+    if (!supabase) return false;
+
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    return Boolean(user) && !error;
+  } catch {
+    return false;
+  }
+}
+
 // MAIL-003: Auto-create Mailchimp saved segments for every CRM segmentation dimension.
 // This is a manually-triggered endpoint — call it once after a full sync to ensure
 // segments are up to date. Idempotent: existing segments are skipped, not duplicated.
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const authHeader = req.headers.authorization || "";
-  const cronSecret = process.env.CRON_SECRET || "";
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!(await isAuthorizedRequest(req))) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 

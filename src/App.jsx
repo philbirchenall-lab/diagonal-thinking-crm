@@ -1927,6 +1927,7 @@ export default function App() {
   const [companyToast, setCompanyToast] = useState(null);
   const companyToastTimerRef = useRef(null);
   const [mailchimpSyncing, setMailchimpSyncing] = useState(false);
+  const [mailchimpBuildingSegments, setMailchimpBuildingSegments] = useState(false);
   const [mailchimpToast, setMailchimpToast] = useState(null);
   const mailchimpToastTimerRef = useRef(null);
   const importFileRef = useRef(null);
@@ -1938,6 +1939,12 @@ export default function App() {
     setTimeout(() => {
       contactsListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 50);
+  }
+
+  function showMailchimpToast(msg) {
+    setMailchimpToast(msg);
+    if (mailchimpToastTimerRef.current) clearTimeout(mailchimpToastTimerRef.current);
+    mailchimpToastTimerRef.current = setTimeout(() => setMailchimpToast(null), 6000);
   }
 
   // Save contacts whenever they change (but not during initial load)
@@ -2218,12 +2225,6 @@ export default function App() {
   async function handleMailchimpSync() {
     setMailchimpSyncing(true);
 
-    function showMailchimpToast(msg) {
-      setMailchimpToast(msg);
-      if (mailchimpToastTimerRef.current) clearTimeout(mailchimpToastTimerRef.current);
-      mailchimpToastTimerRef.current = setTimeout(() => setMailchimpToast(null), 6000);
-    }
-
     try {
       const payload = contacts
         .filter((c) => c.email)
@@ -2276,6 +2277,47 @@ export default function App() {
       showMailchimpToast(`Mailchimp sync failed: ${err.message}`);
     } finally {
       setMailchimpSyncing(false);
+    }
+  }
+
+  async function handleMailchimpBuildSegments() {
+    setMailchimpBuildingSegments(true);
+
+    try {
+      const headers = { "Content-Type": "application/json" };
+
+      if (isSupabaseMode()) {
+        const sb = getSupabaseClient();
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session?.access_token) {
+          throw new Error("Please sign in again to build Mailchimp segments.");
+        }
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+
+      const res = await fetch("/api/mailchimp-build-segments", {
+        method: "POST",
+        headers,
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error || "Segment build failed");
+      }
+
+      const results = Array.isArray(data.segments) ? data.segments : [];
+      const created = results.filter((item) => item.action === "created").length;
+      const skipped = results.filter((item) => String(item.action || "").startsWith("skipped")).length;
+      const errors = results.filter((item) => item.action === "error").length;
+
+      showMailchimpToast(
+        `Mailchimp segments updated — ${created} created, ${skipped} skipped, ${errors} errors`
+      );
+    } catch (err) {
+      showMailchimpToast(`Mailchimp segment build failed: ${err.message}`);
+    } finally {
+      setMailchimpBuildingSegments(false);
     }
   }
 
@@ -2745,6 +2787,16 @@ export default function App() {
               >
                 {mailchimpSyncing ? "Syncing…" : "Sync to Mailchimp"}
               </ActionButton>
+              {isSupabaseMode() ? (
+                <ActionButton
+                  onClick={handleMailchimpBuildSegments}
+                  variant="secondary"
+                  icon={<RefreshCw size={16} className={mailchimpBuildingSegments ? "animate-spin" : ""} />}
+                  className={mailchimpBuildingSegments ? "opacity-60 cursor-not-allowed" : ""}
+                >
+                  {mailchimpBuildingSegments ? "Building…" : "Build Segments"}
+                </ActionButton>
+              ) : null}
             </div>
 
             <div className="mt-5 space-y-4">
