@@ -14,7 +14,6 @@ import {
   Filter,
   Link2,
   Plus,
-  Printer,
   RefreshCw,
   Search,
   Trash2,
@@ -2445,13 +2444,12 @@ function ProposalsTab({ contacts }) {
                             {copied === p.id ? <span className="text-[10px] font-semibold text-brand">✓</span> : <Link2 size={14} />}
                           </button>
                           <a
-                            href={`${VIEWER_URL}?code=${encodeURIComponent(p.proposal_code)}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            title="Open proposal — use Cmd+P / Ctrl+P to save as PDF"
+                            href={`/api/admin/proposal-pdf/${p.id}`}
+                            download
+                            title="Download proposal as PDF"
                             className="rounded p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                           >
-                            <Printer size={14} />
+                            <Download size={14} />
                           </a>
                           <button
                             type="button"
@@ -2527,14 +2525,12 @@ function ProposalsTab({ contacts }) {
                     {copied === p.id ? "Copied!" : "Copy link"}
                   </button>
                   <a
-                    href={`${VIEWER_URL}?code=${encodeURIComponent(p.proposal_code)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    title="Open proposal — use your browser's Print to save as PDF"
+                    href={`/api/admin/proposal-pdf/${p.id}`}
+                    download
                     className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand"
                   >
-                    <Printer size={13} />
-                    Print PDF
+                    <Download size={13} />
+                    Download PDF
                   </a>
                   <button
                     type="button"
