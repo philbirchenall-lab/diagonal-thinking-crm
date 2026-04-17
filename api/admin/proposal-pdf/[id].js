@@ -100,6 +100,24 @@ export default async function handler(req, res) {
       }
     });
 
+    // Scroll to the bottom so intersection-observer-based lazy images (e.g.
+    // the Next.js <Image> signature in the closing page) receive a visibility
+    // event and start loading, then wait for every <img> to finish.
+    await page.evaluate(async () => {
+      window.scrollTo(0, document.body.scrollHeight);
+      // Give intersection observers a tick to fire after the scroll
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      await Promise.all(
+        Array.from(document.querySelectorAll("img")).map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((resolve) => {
+            img.addEventListener("load", resolve, { once: true });
+            img.addEventListener("error", resolve, { once: true });
+          });
+        })
+      );
+    });
+
     const pdfBuffer = await page.pdf({
       format: "A4",
       preferCSSPageSize: true,
