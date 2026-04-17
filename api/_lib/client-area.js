@@ -9,7 +9,11 @@ function getSupabaseUrl() {
 }
 
 function getSupabaseServiceKey() {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || "";
+  return (
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_KEY ||
+    ""
+  );
 }
 
 export function getSupabaseAdmin() {
@@ -469,11 +473,15 @@ export async function listSessionDetails(supabase) {
       const resource = resourceMap.get(entry.resource_id);
       return {
         id: entry.id,
+        contactId: entry.contact_id || "",
         eventType: entry.event_type || "activity",
         occurredAt: formatTimestamp(entry.occurred_at),
+        occurredAtRaw: entry.occurred_at || "",
         contactName: contact?.contact_name || "",
         email: contact?.email || "",
+        company: contact?.company || "",
         resourceLabel: resource?.label || "",
+        resourceId: entry.resource_id || "",
       };
     });
 
@@ -494,9 +502,30 @@ export async function listSessionDetails(supabase) {
   });
 }
 
+async function uniqueSlug(supabase, baseSlug, existingId) {
+  let candidate = baseSlug;
+  let suffix = 2;
+
+  while (true) {
+    const { data } = await supabase
+      .from("sessions")
+      .select("id")
+      .eq("slug", candidate)
+      .maybeSingle();
+
+    // No collision, or collision is the session we're currently editing
+    if (!data || (existingId && data.id === existingId)) {
+      return candidate;
+    }
+
+    candidate = `${baseSlug}-${suffix}`;
+    suffix++;
+  }
+}
+
 export async function saveSessionDetails(supabase, payload) {
   const name = String(payload.name || "").trim();
-  const slug = slugify(payload.slug || payload.name);
+  const baseSlug = slugify(payload.slug || payload.name);
   const sessionType = payload.sessionType === "open_event" ? "open_event" : "in_house";
   const status = payload.status === "inactive" ? "inactive" : "active";
   const organisationId = payload.organisationId || null;
@@ -506,13 +535,15 @@ export async function saveSessionDetails(supabase, payload) {
     throw new Error("Session name is required.");
   }
 
-  if (!slug) {
+  if (!baseSlug) {
     throw new Error("Session slug is required.");
   }
 
   if (sessionType === "in_house" && !organisationId) {
     throw new Error("In-house sessions must be linked to an organisation.");
   }
+
+  const slug = await uniqueSlug(supabase, baseSlug, payload.id || null);
 
   const resourceRows = Array.isArray(payload.resources)
     ? payload.resources

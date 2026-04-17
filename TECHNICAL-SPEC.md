@@ -3,7 +3,7 @@
 > **Purpose:** Any agent (Codex sub-task, diagnostic session, or Dispatch) should be able to read this document cold and immediately understand the full system architecture without needing to grep the codebase.
 >
 > **Maintained by:** Claude Code (Dispatch) — update after every significant feature or architecture change.
-> **Last updated:** 2 April 2026
+> **Last updated:** 5 April 2026
 
 ---
 
@@ -77,7 +77,7 @@ diagonal-thinking-crm/
 | Variable | Service | Required | Notes |
 |---|---|---|---|
 | `VITE_SUPABASE_URL` | Supabase | Required | Enables Supabase mode; without it the app falls back to local Express API |
-| `VITE_SUPABASE_ANON_KEY` | Supabase | Required | Public anon key used by the frontend client |
+| `VITE_SUPABASE_ANON_KEY` | Supabase | Required | Public anon key used by the frontend client; also used as fallback service key in `api/_lib/client-area.js` when `SUPABASE_SERVICE_ROLE_KEY` is absent |
 | `MAILCHIMP_API_KEY` | Mailchimp | Required for MAIL-001/002 | Used by `api/mailchimp-sync.js` · **NOT YET SET** as of 2 Apr 2026 |
 | `MAILCHIMP_AUDIENCE_ID` | Mailchimp | Required for MAIL-001/002 | Used by `api/mailchimp-sync.js` · **NOT YET SET** as of 2 Apr 2026 |
 
@@ -136,14 +136,16 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 - **Key identifiers:**
   - Audience ID: `d89fc8d69c`
   - Server prefix: `us8`
-  - Required custom merge fields: `COMPANY` (Text), `TYPE` (Text), `PHONE`, `SERVICES`, `NETWORK`, `SOURCE`
+  - Required custom merge fields: `COMPANY` (Text), `CRM_TYPE` (Text), `PHONE`, `SERVICES`, `NETPARTNER` (Text), `SOURCE`
+  - ⚠️ Mailchimp merge field tags max 10 chars — tag is `NETPARTNER` not `NETWORK_PARTNER`
 
 ### Resend
 - **What it does:** Transactional email. Currently used for two purposes:
   1. Internal notification email to `phil@diagonalthinking.co` on new contact form submission
-  2. Proposal email to client (PROP-005 — blocked, not yet deployed)
-- **How it's connected:** `contact-form` Edge Function calls Resend API directly. PROP-005 integration is in `dt-proposals` repo.
+  2. Proposal email to client (`api/send-proposal.js` — PROP-005, live)
+- **How it's connected:** `contact-form` Edge Function calls Resend API directly. Proposal send is in `api/send-proposal.js` (Vercel serverless).
 - **Sender address:** `notifications@diagonalthinking.co`
+- **CC behaviour (PROP-014):** All proposal emails CC `phil@diagonalthinking.co` so Phil always receives a copy alongside the client.
 
 ### Squarespace
 - **What it does:** Public marketing website (`diagonalthinking.co`). Contact forms on the site post to the `contact-form` Edge Function.
@@ -271,9 +273,9 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 | `contact_name` (remainder) | `LNAME` |
 | `company` | `COMPANY` |
 | `phone` | `PHONE` |
-| `type` | `TYPE` |
+| `type` | `CRM_TYPE` |
 | `services` (array → comma string) | `SERVICES` |
-| `network_partner` (bool → Yes/No) | `NETWORK` |
+| `network_partner` (bool → Yes/No) | `NETPARTNER` (renamed from `NETWORK_PARTNER` — Mailchimp tag limit is 10 chars) |
 | `source` | `SOURCE` |
 
 **Known issues / notes:** JWT verification is disabled (`verify_jwt = false` in `supabase/config.toml`) — the webhook does not send a JWT so this is intentional.
@@ -318,9 +320,15 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 | `linkedin_url` | TEXT | |
 | `network_partner` | BOOLEAN | ⚠️ verify — not in schema.sql |
 | `created_at` | TIMESTAMPTZ | Auto |
+| `research_notes` | TEXT | Call prep / prospect intel (freeform markdown) — added CRM-007 |
+| `research_updated_at` | TIMESTAMPTZ | Auto-set when research saved — added CRM-007 |
+| `research_source` | TEXT | e.g. "Sol call prep — 9 Apr 2026" — added CRM-007 |
+| `research_updated_by` | TEXT | e.g. "Sol" — added CRM-007 |
+| `platforms` | TEXT[] | AI platforms used by the client (ChatGPT / Anthropic Claude / Microsoft Copilot / Google Gemini / Other) — added CRM-008 |
 
 **Known issues / notes:**
-- `setup/schema.sql` reflects the initial schema. `network_partner`, `total_client_value`, and `live_work_value` columns were added via CRM-004 and are not captured in the SQL file.
+- `setup/schema.sql` reflects the initial schema. `network_partner`, `total_client_value`, `live_work_value`, and the four `research_*` columns were added via later migrations and are not in the SQL file.
+- Research fields are intentionally excluded from `toSnake()` in `db.js` — standard contact saves never overwrite them. Use `saveContactResearch()` for targeted updates.
 - RLS requires authenticated session — all reads/writes must go through an authenticated Supabase client.
 - In local mode (no `VITE_SUPABASE_URL`), the app falls back to a local Express API on `http://localhost:3001/api/contacts`.
 
@@ -393,13 +401,47 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 
 ---
 
-### F-09 — Client Area (CA-001 through CA-004)
+### F-09 — Client Area
 
-**What it does:** Client-facing area with magic link authentication, registration, and session management.
+**What it does:** Client-facing area with magic link authentication, registration, and session management. Admin side lives in `src/clientArea.jsx` (CRM tab). Client-facing side is a **separate Next.js app** deployed to `client.diagonalthinking.co`.
 
-**Status:** Not yet deployed / in separate repo — ⚠️ verify. Referenced in project planning but no implementation files found in this repository.
+**Status (CRM admin side):** Live — `ClientAreaTab`, `SessionEditorModal`, `ContactSessionsPanel` all deployed.
+**Status (client-facing Next.js app):** Deployed to `client.diagonalthinking.co` — separate repo, NOT in this repository.
 
-**Known issues / notes:** CA-001 (schema), CA-002 (magic link), CA-003 (registration), CA-004 (session) are tracked in the backlog but may belong to a separate `dt-client-area` project.
+**Key files (CRM admin side — this repo):**
+- `src/clientArea.jsx` — CRM admin UI (session list, session editor, contact sessions panel)
+- `api/client/sessions.js` — Vercel serverless: GET/POST/PATCH client sessions
+- `api/client/auth/` — Magic link request and verification endpoints
+- `api/_lib/client-area.js` — Shared logic: DB queries, email sending, slug generation
+
+**Data model (Supabase tables used by Client Area):**
+
+| Table | Purpose |
+|---|---|
+| `sessions` | Session records (name, slug, org, date, status) |
+| `resources` | Resources per session (label, type, url, sort_order) |
+| `engagement_log` | Event log — registrations (`event_type=resource_click, resource_id=null`) and resource opens |
+| `magic_links` | One-time auth tokens (contact_id, session_slug, token, expires_at) |
+| `contacts` | Linked organisation and registrant data |
+
+**Engagement log entry shape (as returned to the UI in session.engagementLog):**
+
+| Field | Notes |
+|---|---|
+| `id` | UUID |
+| `contactId` | contact_id from DB — added 3 Apr 2026 (CC-D, CA-FE-006) |
+| `eventType` | e.g. `resource_click` |
+| `occurredAt` | Formatted datetime string (en-GB) |
+| `occurredAtRaw` | ISO timestamp — added 3 Apr 2026 for future sorting use |
+| `contactName` | Resolved contact name |
+| `email` | Resolved contact email |
+| `company` | Resolved contact company — added 3 Apr 2026 |
+| `resourceLabel` | Resolved resource label |
+| `resourceId` | resource_id from DB — added 3 Apr 2026 |
+
+**Known issues / notes:**
+- The client-facing Next.js app is NOT in this repo. CA-BUG-001/002/003 require a direct Codex session against the client-area repo.
+- CA-BUG-001 (Open Resource button) is high priority and likely a missing href/click handler in the resource list component.
 
 ---
 
@@ -418,6 +460,7 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
   - `network_partner` (BOOLEAN)
   - `total_client_value` (NUMERIC) — CRM-004
   - `live_work_value` (NUMERIC) — CRM-004
+  - `platforms` (TEXT[]) — CRM-008
 - There is no `proposals` or `proposal_access` table definition in any file in this repo — those were created directly in the Supabase dashboard ⚠️ verify.
 
 ---
@@ -451,14 +494,16 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 
 **Behaviour:**
 
-1. **Merge field bootstrap** — on every request, `ensureMergeFields()` fetches the audience's existing merge fields and creates `NETWORK_PARTNER` (text) and `CRM_TYPE` (text) if they are not already present. This is a no-op after the first successful run and never blocks the main sync on failure.
+1. **Merge field bootstrap** — on every request, `ensureMergeFields()` fetches the audience's existing merge fields and creates `NETPARTNER` (text) and `CRM_TYPE` (text) if they are not already present. This is a no-op after the first successful run. Failures are now logged (not silently swallowed) to aid diagnosis.
 
 2. **Per-contact merge field values** — each member payload now includes:
 
 | CRM field | Mailchimp merge field tag | Value |
 |---|---|---|
-| `network_partner` (boolean) | `NETWORK_PARTNER` | `"Yes"` or `"No"` |
+| `network_partner` (boolean) | `NETPARTNER` | `"Yes"` or `"No"` |
 | `type` (string) | `CRM_TYPE` | verbatim string e.g. `"Client"`, `"Warm Lead"` |
+
+> ⚠️ **Important**: Mailchimp merge field tags are limited to **10 characters**. The tag is `NETPARTNER` (10 chars), not `NETWORK_PARTNER` (15 chars). Using the longer form causes silent rejection by the Mailchimp API — this was the root cause of MAIL-BUG-003.
 
 3. **Per-contact service tags** — after each batch upsert, `applyServiceTags()` fires a `POST /lists/{id}/members/{hash}/tags` call for every contact that has a non-empty `services` array. Each service string becomes a Mailchimp tag set to `status: "active"`. Tags already on the contact that are not in the current `services` list are **not** removed — this preserves any tags applied manually or from other sources.
 
@@ -471,7 +516,7 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 | `company` | `COMPANY` merge field | |
 | `pipeline` | `PIPELINE` merge field | |
 | `services` (array) | `SERVICES` merge field (comma string) + individual tags | Both written |
-| `network_partner` (bool) | `NETWORK_PARTNER` merge field | `"Yes"` / `"No"` |
+| `network_partner` (bool) | `NETPARTNER` merge field | `"Yes"` / `"No"` — tag is 10 chars max |
 | `type` (string) | `CRM_TYPE` merge field | |
 
 **Known issues / notes:**

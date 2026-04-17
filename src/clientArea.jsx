@@ -17,6 +17,17 @@ function sessionLandingUrl(slug) {
   return `${CLIENT_AREA_ORIGIN}/?session=${encodeURIComponent(slug)}`;
 }
 
+async function downloadQR(url, name) {
+  const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(url)}&format=png`;
+  const resp = await fetch(apiUrl);
+  const blob = await resp.blob();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `client-area-qr-${String(name || "session").replace(/\s+/g, "-").toLowerCase()}.png`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 function formatSessionDate(value) {
   if (!value) return "TBC";
   const parsed = new Date(value);
@@ -54,11 +65,82 @@ function slugify(value) {
 }
 
 function matchesSessionToContact(session, contact) {
-  return (
+  // Host organisation match
+  if (
     session.organisationId === contact.id ||
     session.organisationId === contact.company ||
     session.organisationName === contact.company
+  ) {
+    return true;
+  }
+
+  // Attendee match — contact registered for this session
+  const regs = session.registrations ?? [];
+  return regs.some(
+    (reg) =>
+      (reg.contactId && contact.id && reg.contactId === contact.id) ||
+      (reg.email && contact.email && reg.email.toLowerCase() === contact.email.toLowerCase()),
   );
+}
+
+/**
+ * Combines registrations + engagementLog into a per-attendee summary.
+ * Each attendee has: name, email, company, registeredAt, firstAccess,
+ * lastAccess, resourcesClicked[].
+ * engagementLog entries are assumed to be sorted descending by occurredAt
+ * (newest first), matching the API sort order.
+ */
+function buildAttendeeTable(registrations, engagementLog) {
+  const attendeeMap = new Map();
+
+  for (const reg of registrations) {
+    const key = reg.contactId || reg.email;
+    if (!key) continue;
+    attendeeMap.set(key, {
+      contactId: reg.contactId || "",
+      name: reg.name || "",
+      email: reg.email || "",
+      company: reg.company || "",
+      registeredAt: reg.registeredAt || "",
+      engagementEntries: [],
+    });
+  }
+
+  for (const entry of engagementLog) {
+    const key = entry.contactId || entry.email;
+    if (!key) continue;
+    if (!attendeeMap.has(key)) {
+      attendeeMap.set(key, {
+        contactId: entry.contactId || "",
+        name: entry.contactName || "",
+        email: entry.email || "",
+        company: entry.company || "",
+        registeredAt: "",
+        engagementEntries: [],
+      });
+    }
+    attendeeMap.get(key).engagementEntries.push(entry);
+  }
+
+  return Array.from(attendeeMap.values()).map((attendee) => {
+    const entries = attendee.engagementEntries;
+    // entries sorted desc → last item is oldest (first access), first item is newest (last access)
+    const firstAccess = entries.length > 0 ? entries[entries.length - 1].occurredAt : "";
+    const lastAccess = entries.length > 0 ? entries[0].occurredAt : "";
+    const resourcesClicked = [
+      ...new Set(entries.map((e) => e.resourceLabel).filter(Boolean)),
+    ];
+    return {
+      contactId: attendee.contactId,
+      name: attendee.name,
+      email: attendee.email,
+      company: attendee.company,
+      registeredAt: attendee.registeredAt,
+      firstAccess,
+      lastAccess,
+      resourcesClicked,
+    };
+  });
 }
 
 function getStatusClasses(status) {
@@ -274,6 +356,55 @@ function ResourceEditor({ resources, onChange }) {
   );
 }
 
+function AttendeeCard({ attendee }) {
+  return (
+    <div className="border-t border-line pt-4 first:border-t-0 first:pt-0">
+      <div className="font-medium text-ink">{attendee.name || attendee.email}</div>
+      {attendee.name ? (
+        <div className="text-xs text-slate-500">{attendee.email}</div>
+      ) : null}
+      {attendee.company ? (
+        <div className="text-xs text-slate-500">{attendee.company}</div>
+      ) : null}
+      <div className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+        {attendee.registeredAt ? (
+          <>
+            <div className="text-xs text-slate-400">Registered</div>
+            <div className="text-xs text-slate-600">{attendee.registeredAt}</div>
+          </>
+        ) : null}
+        {attendee.firstAccess ? (
+          <>
+            <div className="text-xs text-slate-400">First open</div>
+            <div className="text-xs text-slate-600">{attendee.firstAccess}</div>
+          </>
+        ) : null}
+        {attendee.lastAccess && attendee.lastAccess !== attendee.firstAccess ? (
+          <>
+            <div className="text-xs text-slate-400">Last open</div>
+            <div className="text-xs text-slate-600">{attendee.lastAccess}</div>
+          </>
+        ) : null}
+      </div>
+      {attendee.resourcesClicked.length > 0 ? (
+        <div className="mt-2">
+          <div className="mb-1 text-xs text-slate-400">Resources opened</div>
+          <div className="flex flex-wrap gap-1">
+            {attendee.resourcesClicked.map((label) => (
+              <span
+                key={label}
+                className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600"
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function SessionEditorModal({ contacts, initialSession, launchEmail, onClose, onSaved }) {
   const [session, setSession] = useState(() => ({
     ...initialSession,
@@ -286,6 +417,11 @@ function SessionEditorModal({ contacts, initialSession, launchEmail, onClose, on
   const [success, setSuccess] = useState("");
   const [sendEmail, setSendEmail] = useState(launchEmail || "");
   const [sending, setSending] = useState(false);
+
+  const attendees = useMemo(
+    () => buildAttendeeTable(session.registrations ?? [], session.engagementLog ?? []),
+    [session.registrations, session.engagementLog],
+  );
 
   const landingUrl = session.slug ? sessionLandingUrl(session.slug) : "";
 
@@ -548,45 +684,24 @@ function SessionEditorModal({ contacts, initialSession, launchEmail, onClose, on
 
           {session.id ? (
             <div className="border border-line bg-white p-5">
-              <div className="text-sm font-semibold text-ink">Registrations</div>
-              <div className="mt-3 space-y-3 text-sm">
-                {session.registrations?.length ? (
-                  session.registrations.map((registration) => (
-                    <div key={`${registration.contactId}-${registration.registeredAt}`} className="border-t border-line pt-3 first:border-t-0 first:pt-0">
-                      <div className="font-medium text-ink">
-                        {registration.name || registration.email}
-                      </div>
-                      <div className="text-slate-500">{registration.email}</div>
-                      <div className="text-xs text-slate-500">
-                        {[registration.company, registration.registeredAt].filter(Boolean).join(" · ")}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-slate-400">No registrations yet.</div>
-                )}
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-semibold text-ink">Attendees</div>
+                {attendees.length > 0 ? (
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
+                    {attendees.length}
+                  </span>
+                ) : null}
               </div>
-            </div>
-          ) : null}
-
-          {session.id ? (
-            <div className="border border-line bg-white p-5">
-              <div className="text-sm font-semibold text-ink">Engagement log</div>
-              <div className="mt-3 space-y-3 text-sm">
-                {session.engagementLog?.length ? (
-                  session.engagementLog.map((entry) => (
-                    <div key={entry.id} className="border-t border-line pt-3 first:border-t-0 first:pt-0">
-                      <div className="font-medium capitalize text-ink">
-                        {entry.eventType.replace(/_/g, " ")}
-                      </div>
-                      <div className="text-slate-500">
-                        {[entry.contactName || entry.email, entry.resourceLabel].filter(Boolean).join(" · ")}
-                      </div>
-                      <div className="text-xs text-slate-500">{entry.occurredAt}</div>
-                    </div>
+              <div className="mt-3 space-y-0 text-sm">
+                {attendees.length ? (
+                  attendees.map((attendee) => (
+                    <AttendeeCard
+                      key={attendee.contactId || attendee.email}
+                      attendee={attendee}
+                    />
                   ))
                 ) : (
-                  <div className="text-slate-400">No engagement tracked yet.</div>
+                  <div className="text-slate-400">No attendees yet.</div>
                 )}
               </div>
             </div>
@@ -766,6 +881,13 @@ export function ClientAreaTab({ contacts, launchContact, onLaunchConsumed }) {
                           >
                             View page
                           </a>
+                          <button
+                            type="button"
+                            onClick={() => downloadQR(sessionLandingUrl(session.slug), session.organisationName || session.name)}
+                            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-black hover:bg-mist"
+                          >
+                            ⬇ QR
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -818,6 +940,13 @@ export function ClientAreaTab({ contacts, launchContact, onLaunchConsumed }) {
                       </a>
                       <button
                         type="button"
+                        onClick={() => downloadQR(sessionLandingUrl(session.slug), session.organisationName || session.name)}
+                        className="rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-black hover:bg-mist"
+                      >
+                        ⬇ QR
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setEditingSession(session)}
                         className="rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-black hover:bg-mist"
                       >
@@ -841,6 +970,7 @@ export function ClientAreaTab({ contacts, launchContact, onLaunchConsumed }) {
 
       {editingSession ? (
         <SessionEditorModal
+          key={editingSession.id || "new"}
           contacts={contacts}
           initialSession={editingSession}
           onClose={() => setEditingSession(null)}
@@ -897,26 +1027,70 @@ export function ContactSessionsPanel({ contact, contacts, onNewSession }) {
 
       {sessions !== null && sessions.length > 0 ? (
         <div className="mt-3 space-y-3">
-          {sessions.map((session) => (
-            <div key={session.id} className="border-t border-line pt-3 first:border-t-0 first:pt-0">
-              <div className="text-sm font-medium leading-snug text-ink">{session.name}</div>
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="text-xs text-slate-400">{formatSessionDate(session.date)}</span>
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStatusClasses(session.status)}`}>
-                  {session.status}
-                </span>
-                <a
-                  href={sessionLandingUrl(session.slug)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-brand hover:underline"
-                >
-                  <ExternalLink size={12} />
-                  View page
-                </a>
+          {sessions.map((session) => {
+            // Compute this contact's engagement within the session
+            const contactEvents = (session.engagementLog ?? []).filter(
+              (entry) =>
+                (entry.contactId && contact.id && entry.contactId === contact.id) ||
+                (entry.email && contact.email && entry.email.toLowerCase() === contact.email.toLowerCase()),
+            );
+            // engagementLog sorted desc → last item = first access, first item = last access
+            const firstAccess = contactEvents.length > 0 ? contactEvents[contactEvents.length - 1].occurredAt : null;
+            const lastAccess = contactEvents.length > 0 ? contactEvents[0].occurredAt : null;
+            const resourcesClicked = [
+              ...new Set(contactEvents.map((e) => e.resourceLabel).filter(Boolean)),
+            ];
+
+            return (
+              <div key={session.id} className="border-t border-line pt-3 first:border-t-0 first:pt-0">
+                <div className="text-sm font-medium leading-snug text-ink">{session.name}</div>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-xs text-slate-400">{formatSessionDate(session.date)}</span>
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStatusClasses(session.status)}`}>
+                    {session.status}
+                  </span>
+                  <a
+                    href={sessionLandingUrl(session.slug)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-brand hover:underline"
+                  >
+                    <ExternalLink size={12} />
+                    View page
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => downloadQR(sessionLandingUrl(session.slug), contact.contactName || session.organisationName)}
+                    className="text-xs text-slate-500 hover:text-slate-800 hover:underline"
+                  >
+                    ⬇ QR
+                  </button>
+                </div>
+                {(firstAccess || resourcesClicked.length > 0) ? (
+                  <div className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5">
+                    {firstAccess ? (
+                      <>
+                        <div className="text-xs text-slate-400">First open</div>
+                        <div className="text-xs text-slate-600">{firstAccess}</div>
+                      </>
+                    ) : null}
+                    {lastAccess && lastAccess !== firstAccess ? (
+                      <>
+                        <div className="text-xs text-slate-400">Last open</div>
+                        <div className="text-xs text-slate-600">{lastAccess}</div>
+                      </>
+                    ) : null}
+                    {resourcesClicked.length > 0 ? (
+                      <>
+                        <div className="text-xs text-slate-400">Opened</div>
+                        <div className="text-xs text-slate-600">{resourcesClicked.join(", ")}</div>
+                      </>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : null}
     </div>
