@@ -1,3 +1,28 @@
+/* ============================================================
+   AI Intelligence — Next.js wrapper global styles
+   Brand tokens per Diagonal Thinking brand guidelines v1
+   (Phil-approved 17 Apr 2026).
+   ============================================================ */
+
+:root {
+  /* DT brand canon */
+  --brand-navy: #305DAB;
+  --ink: #000000;
+  --paper: #FFFFFF;
+  --stone: #A7A59F;
+
+  /* Utility (not brand) */
+  --text: #111111;
+  --muted: #5A6372;
+  --border: #E5E7EB;
+  --bg: #F7F8FA;
+
+  /* Type faces — loaded via next/font/google in layout.tsx */
+  --font-display: var(--font-oswald), "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+  --font-body: var(--font-body), "Omnes Pro", "Source Sans 3", "Inter",
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -6,4 +31,81 @@
 
 html, body {
   height: 100%;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Display type — Oswald, uppercase H1/H2 per brand v1 */
+h1, h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+a {
+  color: var(--brand-navy);
+}
+
+/* Utility classes used by the app shell */
+.dt-topbar-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--paper);
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+  transition: background 0.15s;
+}
+.dt-topbar-button:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.dt-hamburger {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  color: var(--paper);
+  width: 44px;
+  height: 44px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.dt-hamburger svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Mobile-only hamburger — hidden on desktop */
+@media (max-width: 767px) {
+  .dt-hamburger {
+    display: inline-flex;
+  }
 }

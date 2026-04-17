@@ -3,104 +3,114 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Intelligence — Diagonal Thinking</title>
+<title>AI Intelligence | Diagonal Thinking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* DT brand canon per brand-guidelines-v1.md (Phil-approved 17 Apr 2026).
+   DT Navy #305DAB, Ink Black, Paper White, Stone as CTA tint only. */
 :root {
-  --orange: #E8552A;
-  --navy: #1d2d44;
-  --text: #2d3748;
-  --muted: #718096;
-  --border: #e2e8f0;
-  --bg: #f7f8fa;
-  --white: #ffffff;
+  --brand-navy: #305DAB;
+  --ink: #000000;
+  --paper: #FFFFFF;
+  --stone: #A7A59F;
+  --text: #111111;
+  --muted: #5A6372;
+  --border: #E5E7EB;
+  --bg: #F7F8FA;
+  --white: #FFFFFF;
   --radius: 8px;
-  --high: #E53E3E;
+  --high: #D93A3A;
   --medium: #D69E2E;
-  --low: #38A169;
+  --low: #2F855A;
+  --display: 'Oswald', 'Bebas Neue', Impact, 'Arial Narrow', sans-serif;
+  --body: 'Omnes Pro', 'Source Sans 3', 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; font-size: 14px; }
+html { -webkit-text-size-adjust: 100%; }
+body { font-family: var(--body); background: var(--bg); color: var(--text); display: flex; height: 100dvh; overflow: hidden; font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 
-/* Sidebar */
-#sidebar { width: 264px; background: var(--navy); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; color: white; }
-#sidebar-header { padding: 18px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.logo-text { color: white; font-size: 13px; font-weight: 700; }
-.logo-sub { color: rgba(255,255,255,0.4); font-size: 10px; }
+/* Sidebar — full DT Navy with Paper White text per brand v1 §2.6 dark-first */
+#sidebar { width: 264px; background: var(--brand-navy); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; color: var(--paper); }
+#sidebar-header { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.14); }
 #search-box { margin: 10px 12px 0; }
-#search-box input { width: 100%; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: white; padding: 7px 10px; font-size: 12px; outline: none; }
-#search-box input::placeholder { color: rgba(255,255,255,0.3); }
-#search-box input:focus { border-color: var(--orange); background: rgba(255,255,255,0.1); }
+#search-box input { width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; color: var(--paper); padding: 10px 12px; font-size: 14px; font-family: inherit; outline: none; min-height: 40px; }
+#search-box input::placeholder { color: rgba(255,255,255,0.55); }
+#search-box input:focus { border-color: var(--paper); background: rgba(255,255,255,0.14); box-shadow: 0 0 0 2px rgba(255,255,255,0.2); }
 #nav { flex: 1; padding: 6px 0 16px; }
-.nav-group-label { color: rgba(255,255,255,0.28); font-size: 9.5px; font-weight: 700; text-transform: uppercase; padding: 12px 16px 4px; letter-spacing: 0.09em; }
-.nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 16px; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 12.5px; transition: background 0.12s, color 0.12s; position: relative; }
-.nav-item:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.9); }
-.nav-item.active { color: white; background: rgba(232,85,42,0.2); }
-.nav-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--orange); }
-.nav-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-#sidebar-footer { padding: 10px 16px; border-top: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.22); font-size: 10px; }
+.nav-group-label { color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 12px 16px 4px; letter-spacing: 0.09em; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: rgba(255,255,255,0.88); cursor: pointer; font-size: 14px; transition: background 0.12s, color 0.12s; position: relative; min-height: 44px; }
+.nav-item:hover { background: rgba(255,255,255,0.08); color: var(--paper); }
+.nav-item.active { color: var(--paper); background: rgba(255,255,255,0.14); }
+.nav-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--paper); }
+.nav-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+#sidebar-footer { padding: 10px 16px; border-top: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.55); font-size: 11px; }
+#sidebar-backdrop { display: none; }
 
 /* Main */
 #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-#topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 28px; height: 50px; display: flex; align-items: center; justify-content: space-between; }
-#content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+#topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 28px; min-height: 48px; display: flex; align-items: center; justify-content: space-between; }
+#topbar #breadcrumb { font-size: 14px; color: var(--ink); font-weight: 500; }
+#content { flex: 1; overflow-y: auto; padding: 24px 28px; background: var(--paper); }
 
 /* Platform grid */
 .platform-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 12px 0; }
 .platform-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: all 0.15s; }
 .platform-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.09); transform: translateY(-1px); }
 
-/* Typography */
-h1 { font-size: 22px; color: var(--navy); margin: 0 0 8px 0; font-weight: 700; }
-h2 { font-size: 17px; color: var(--navy); margin: 24px 0 12px 0; border-bottom: 1px solid var(--border); padding-bottom: 8px; font-weight: 600; }
-h3 { font-size: 15px; color: var(--navy); margin: 16px 0 8px 0; font-weight: 600; }
-p { margin: 8px 0; line-height: 1.65; }
-a { color: var(--orange); text-decoration: none; }
+/* Typography — brand v1 §2.3: Oswald for display, Source Sans for body */
+h1 { font-family: var(--display); font-size: 30px; color: var(--brand-navy); margin: 0 0 10px 0; font-weight: 400; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.1; }
+h2 { font-family: var(--display); font-size: 22px; color: var(--brand-navy); margin: 24px 0 12px 0; border-bottom: 1px solid var(--border); padding-bottom: 8px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.02em; }
+h3 { font-family: var(--display); font-size: 18px; color: var(--brand-navy); margin: 16px 0 8px 0; font-weight: 400; }
+p { margin: 8px 0; line-height: 1.6; }
+a { color: var(--brand-navy); font-weight: 500; text-decoration: none; }
 a:hover { text-decoration: underline; }
-code { background: #f0f4f8; border-radius: 3px; padding: 1px 5px; font-size: 12px; font-family: 'SF Mono', 'Fira Code', monospace; }
-blockquote, .md-quote { border-left: 3px solid var(--border); padding: 4px 12px; color: var(--muted); font-style: italic; margin: 8px 0; }
+code { background: #f0f4f8; border-radius: 3px; padding: 1px 5px; font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; }
+blockquote, .md-quote { border-left: 3px solid var(--brand-navy); padding: 4px 12px; color: var(--muted); font-style: italic; margin: 8px 0; }
 hr, .md-hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 
 /* Markdown content container */
 .md-content { line-height: 1.65; }
 .md-content .md-h { margin-top: 20px; margin-bottom: 8px; }
-.md-content h1.md-h { font-size: 18px; }
-.md-content h2.md-h { font-size: 16px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
-.md-content h3.md-h { font-size: 14px; color: var(--navy); }
-.md-content h4.md-h, .md-content h5.md-h { font-size: 13px; color: var(--muted); font-weight: 600; }
+.md-content h1.md-h { font-size: 24px; }
+.md-content h2.md-h { font-size: 20px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.md-content h3.md-h { font-size: 17px; color: var(--brand-navy); }
+.md-content h4.md-h, .md-content h5.md-h { font-family: var(--body); font-size: 14px; color: var(--muted); font-weight: 600; text-transform: none; letter-spacing: 0; }
 
 /* Tables */
-.md-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
-.md-table th { background: #f0f4f8; text-align: left; padding: 8px 12px; border: 1px solid var(--border); font-weight: 600; color: var(--navy); }
+.md-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+.md-table th { background: #f0f4f8; text-align: left; padding: 8px 12px; border: 1px solid var(--border); font-weight: 600; color: var(--brand-navy); }
 .md-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
 .md-table tr:hover td { background: #fafbfc; }
 
 /* Tabs */
-.tab-bar { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin: 16px 0 0 0; }
-.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; padding: 10px 18px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.15s; }
-.tab-btn:hover { color: var(--navy); }
-.tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); font-weight: 600; }
+.tab-bar { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin: 16px 0 0 0; flex-wrap: wrap; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; padding: 12px 18px; font-size: 14px; font-family: inherit; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.15s; min-height: 44px; }
+.tab-btn:hover { color: var(--brand-navy); }
+.tab-btn.active { color: var(--brand-navy); border-bottom-color: var(--brand-navy); font-weight: 600; }
 .tab-pane { padding: 20px 0; }
 
 /* Development cards */
 .dev-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
 .sig-badge { display: inline-block; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: white; }
-.dev-body { font-size: 13px; color: var(--text); line-height: 1.6; margin-bottom: 8px; }
+.dev-body { font-size: 14px; color: var(--text); line-height: 1.6; margin-bottom: 8px; }
 .dev-body details { margin: 0; }
 .dev-body summary { list-style: none; cursor: pointer; display: block; }
 .dev-body summary::-webkit-details-marker { display: none; }
-.dev-body .read-more { color: var(--orange); font-weight: 600; white-space: nowrap; }
+.dev-body .read-more { color: var(--brand-navy); font-weight: 600; white-space: nowrap; }
 .dev-body .read-more::before { content: ' '; }
 .dev-body details[open] summary { display: none; }
 .dev-body .dev-body-full p { margin: 0 0 10px 0; }
 .dev-body .dev-body-full p:last-child { margin-bottom: 0; }
-.dev-body .show-less { display: inline-block; margin-top: 6px; color: var(--orange); font-weight: 600; cursor: pointer; font-size: 12px; }
-.dev-headline-link { font-weight: 600; color: var(--navy); margin-bottom: 6px; line-height: 1.4; font-size: 14px; display: block; text-decoration: none; }
-.dev-headline-link:hover { color: var(--orange); text-decoration: none; }
+.dev-body .show-less { display: inline-block; margin-top: 6px; color: var(--brand-navy); font-weight: 600; cursor: pointer; font-size: 13px; }
+.dev-headline-link { font-weight: 600; color: var(--brand-navy); margin-bottom: 6px; line-height: 1.4; font-size: 15px; display: block; text-decoration: none; }
+.dev-headline-link:hover { color: var(--brand-navy); text-decoration: underline; }
 
 /* Stats bar */
 .stat-chip { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 10px 16px; text-align: center; }
-.stat-value { font-size: 24px; font-weight: 700; color: var(--navy); }
-.stat-label { font-size: 11px; color: var(--muted); }
+.stat-value { font-family: var(--display); font-size: 28px; font-weight: 400; color: var(--brand-navy); }
+.stat-label { font-size: 12px; color: var(--muted); }
 
 .generated-note { font-size: 10px; color: var(--muted); margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--border); }
 
@@ -143,9 +153,10 @@ details[open] > .category-header::after {
   transform: rotate(-180deg);
 }
 .category-header-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--navy);
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--brand-navy);
   text-transform: uppercase;
   letter-spacing: 0.07em;
 }
@@ -154,7 +165,7 @@ details[open] > .category-header::after {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1px 7px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--muted);
 }
@@ -180,31 +191,86 @@ details[open] > .category-header::after {
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 5px 13px;
-  font-size: 12px;
+  padding: 8px 14px;
+  font-size: 13px;
   font-family: inherit;
   cursor: pointer;
   color: var(--muted);
   transition: all 0.12s;
   white-space: nowrap;
+  min-height: 36px;
 }
-.filter-btn:hover { border-color: var(--orange); color: var(--orange); }
+.filter-btn:hover { border-color: var(--brand-navy); color: var(--brand-navy); }
 .filter-btn.active {
-  background: var(--orange);
-  border-color: var(--orange);
-  color: white;
+  background: var(--brand-navy);
+  border-color: var(--brand-navy);
+  color: var(--paper);
   font-weight: 600;
 }
 
-/* ---- Mobile (≤768px) ---- */
-@media (max-width: 768px) {
+/* ---- Tablet (768px–1023px) — slimmer sidebar ---- */
+@media (min-width: 768px) and (max-width: 1023px) {
+  #sidebar { width: 220px; }
+}
+
+/* ---- Mobile (<768px) — off-canvas drawer, natural scroll ---- */
+@media (max-width: 767px) {
+  body {
+    display: block;
+    height: auto;
+    overflow: auto;
+  }
+  #main {
+    display: block;
+    min-height: 100dvh;
+  }
+  #content {
+    padding: 16px;
+    font-size: 16px;
+  }
+  #topbar {
+    padding: 0 16px;
+  }
+  #topbar #breadcrumb { font-size: 13px; font-weight: 600; }
+  h1 { font-size: 30px; }
+  h2 { font-size: 22px; }
+  h3 { font-size: 18px; }
+  #sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(280px, 80vw);
+    height: 100dvh;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease-out;
+    z-index: 1000;
+    box-shadow: 0 0 24px rgba(0,0,0,0.32);
+  }
+  body.sidebar-open #sidebar {
+    transform: translateX(0);
+  }
+  #sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease-out;
+    z-index: 999;
+  }
+  body.sidebar-open #sidebar-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
   .filter-bar {
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 4px;
   }
-  .filter-btn { flex-shrink: 0; }
+  .filter-btn { flex-shrink: 0; min-height: 44px; }
   .platform-grid {
     grid-template-columns: 1fr;
     gap: 10px;
@@ -213,13 +279,14 @@ details[open] > .category-header::after {
     min-height: 44px;
     padding: 10px 0;
   }
+  .tab-btn { padding: 12px 14px; font-size: 14px; }
 }
-@media (min-width: 480px) and (max-width: 768px) {
+@media (min-width: 480px) and (max-width: 767px) {
   .platform-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* ---- Desktop (>768px): AC24 — no collapse indicator ---- */
-@media (min-width: 769px) {
+/* ---- Desktop (>=768px): AC24 — no collapse indicator ---- */
+@media (min-width: 768px) {
   .category-header { cursor: default; }
   .category-header::after { display: none; }
 }
@@ -227,20 +294,12 @@ details[open] > .category-header::after {
 </head>
 <body>
 
-<div id="sidebar">
-  <div id="sidebar-header">
-    <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="navigate('home')">
-      <div style="width:36px;height:36px;background:var(--orange);border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:13px;">D//T</div>
-      <div>
-        <div class="logo-text">AI Intelligence</div>
-        <div class="logo-sub">Diagonal Thinking Wiki</div>
-      </div>
-    </div>
-  </div>
+<div id="sidebar-backdrop" onclick="dtCloseSidebar()"></div>
 
+<div id="sidebar">
   <div id="search-box">
-    <input type="text" id="search-input" placeholder="Search platforms…" oninput="handleSearch(this.value)" onblur="setTimeout(()=>{document.getElementById('search-results').innerHTML=''},200)">
-    <div id="search-results" style="background:#243550;border:1px solid rgba(255,255,255,0.12);border-top:none;border-radius:0 0 6px 6px;"></div>
+    <input type="text" id="search-input" placeholder="Search platforms." oninput="handleSearch(this.value)" onblur="setTimeout(()=>{document.getElementById('search-results').innerHTML=''},200)">
+    <div id="search-results" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-top:none;border-radius:0 0 6px 6px;"></div>
   </div>
 
   <nav id="nav">
@@ -325,13 +384,13 @@ details[open] > .category-header::after {
     </div>
   </nav>
 
-  <div id="sidebar-footer">Generated 17 Apr 2026 16:37</div>
+  <div id="sidebar-footer">Generated 17 Apr 2026 18:06</div>
 </div>
 
 <div id="main">
   <div id="topbar">
     <div id="breadcrumb" style="font-size:13px;color:var(--muted);"><span>AI Intelligence</span></div>
-    <div style="font-size:11px;color:var(--muted);">Last updated: 17 Apr 2026 16:37</div>
+    <div style="font-size:11px;color:var(--muted);">Last updated: 17 Apr 2026 18:06</div>
   </div>
   <div id="content"></div>
 </div>
@@ -390,7 +449,7 @@ function renderDevCard(d) {
     + '</div>'
     + (d.source_url
         ? '<a href="' + d.source_url + '" target="_blank" rel="noopener" class="dev-headline-link">' + d.headline + ' <span style="font-size:11px;color:var(--muted);font-weight:400;">↗</span></a>'
-        : '<div style="font-weight:600;color:var(--navy);margin-bottom:6px;line-height:1.4;font-size:14px;">' + d.headline + '</div>');
+        : '<div style="font-weight:600;color:var(--brand-navy);margin-bottom:6px;line-height:1.4;font-size:14px;">' + d.headline + '</div>');
   if (d.body) {
     var paras = d.body.split('\n\n').map(function(p) { return p.trim(); }).filter(function(p) { return p.length > 0; });
     if (paras.length === 0) paras = [d.body];
@@ -430,7 +489,7 @@ function renderPlatform(p) {
 
   return '<div style="display:flex;align-items:center;gap:14px;margin-bottom:4px;">'
     + '<div style="width:44px;height:44px;background:' + p.color + ';border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;flex-shrink:0;">' + p.abbr + '</div>'
-    + '<h1 style="color:var(--navy);">' + p.name + '</h1>'
+    + '<h1 style="color:var(--brand-navy);">' + p.name + '</h1>'
     + '</div>'
     + '<p style="color:var(--muted);margin-bottom:0;font-size:13px;">' + p.overview + '</p>'
     + '<div class="tab-bar">'
@@ -512,7 +571,7 @@ function renderClientRelevance() {
     + '<p style="color:var(--muted);margin-bottom:20px;">AI developments with specific implications for Phil\'s clients. Primary sectors: infrastructure, civil engineering, industrial manufacturing.</p>';
   CLIENT_REL.forEach(function(item, i) {
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px;">'
-      + '<h3 style="color:var(--navy);margin-bottom:12px;margin-top:0;">' + (i+1) + '. ' + item.title + '</h3>';
+      + '<h3 style="color:var(--brand-navy);margin-bottom:12px;margin-top:0;">' + (i+1) + '. ' + item.title + '</h3>';
     if (item.what) {
       html += '<div style="margin-bottom:10px;"><strong>What:</strong> ' + item.what + '</div>';
     }
@@ -566,7 +625,7 @@ function renderRumourMill() {
           + '<td><strong>' + story + '</strong></td>'
           + '<td style="font-size:12px;color:var(--muted);">' + (r.reported_by || '—') + '</td>'
           + '<td style="font-size:12px;white-space:nowrap;">' + (r.first_seen || '—') + '</td>'
-          + '<td style="font-size:12px;color:var(--orange);">' + (r.watch_for || '—') + '</td>'
+          + '<td style="font-size:12px;color:var(--brand-navy);">' + (r.watch_for || '—') + '</td>'
           + '</tr>';
       }).join('')
     + '</tbody></table>';
@@ -583,17 +642,17 @@ function renderHome() {
     + '<div class="stat-chip"><div class="stat-value">' + CLIENT_REL.length + '</div><div class="stat-label">Client action items</div></div>'
     + '</div>'
     + '<h2>Platforms</h2>'
-    + '<div class="filter-bar" id="category-filter"><button class="filter-btn active" data-filter="all" onclick="filterCategory(\'all\')">All</button><button class="filter-btn" data-filter="Frontier Labs" onclick="filterCategory(\'Frontier Labs\')">Frontier Labs</button><button class="filter-btn" data-filter="Cloud Platforms" onclick="filterCategory(\'Cloud Platforms\')">Cloud</button><button class="filter-btn" data-filter="Developer Infrastructure" onclick="filterCategory(\'Developer Infrastructure\')">Dev Infra</button><button class="filter-btn" data-filter="Hardware & Infrastructure" onclick="filterCategory(\'Hardware & Infrastructure\')">Hardware</button><button class="filter-btn" data-filter="Video AI" onclick="filterCategory(\'Video AI\')">Video AI</button><button class="filter-btn" data-filter="Voice / Audio AI" onclick="filterCategory(\'Voice / Audio AI\')">Voice AI</button><button class="filter-btn" data-filter="Agent Tooling" onclick="filterCategory(\'Agent Tooling\')">Agent</button><button class="filter-btn" data-filter="Search & Research" onclick="filterCategory(\'Search & Research\')">Search</button></div><details class="category-section" data-category="Frontier Labs" open>   <summary class="category-header">    <span class="category-header-label">Frontier Labs</span>    <span class="category-count">7</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'anthropic\')" style="border-top:3px solid #CC785C" data-category="Frontier Labs">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#CC785C;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">AN</div><span style="font-size:13px;font-weight:700;color:var(--navy);">Claude</span><span class="tier-badge" style="background:#EBF8FF;color:#2B6CB0">Core</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Anthropic is the fastest-growing AI platform company in the market as of April 2026, having reached a $350 billion pre-m…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'openai\')" style="border-top:3px solid #10a37f" data-category="Frontier Labs">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#10a37f;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">OA</div><span style="font-size:13px;font-weight:700;color:var(--navy);">ChatGPT</span><span class="tier-badge" style="background:#EBF8FF;color:#2B6CB0">Core</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">OpenAI is the most recognised name in AI and the creator of ChatGPT, still the default AI assistant for the majority of …</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'google\')" style="border-top:3px solid #4285F4" data-category="Frontier Labs">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#4285F4;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">G</div><span style="font-size:13px;font-weight:700;color:var(--navy);">Gemini</span><span class="tier-badge" style="background:#EBF8FF;color:#2B6CB0">Core</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Google runs its AI through Google DeepMind and is one of a very small handful of organisations able to compete across ev…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'meta\')" style="border-top:3px solid #0082FB" data-category="Frontier Labs">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#0082FB;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">ME</div><span style="font-size:13px;font-weight:700;color:var(--navy);">Llama / Meta AI</span><span class="tier-badge" style="background:#EBF8FF;color:#2B6CB0">Core</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Meta AI represents the world\'s largest AI deployment by sheer user access — embedded natively across WhatsApp, Instagram…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'xai\')" style="border-top:3px solid #222222" data-category="Frontier Labs">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#222222;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">XA</div><span style="font-size:13px;font-weight:700;color:var(--navy);">Grok</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">xAI is Elon Musk\'s artificial intelligence company, founded in 2023 and headquartered in Memphis, Tennessee. The company…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'deepseek\')" style="border-top:3px solid #4A90D9" data-category="Frontier Labs">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#4A90D9;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">DS</div><span style="font-size:13px;font-weight:700;color:var(--navy);">DeepSeek</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">DeepSeek is a Chinese AI research laboratory founded in 2023, backed by High-Flyer Capital Management — a quantitative h…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'mistral\')" style="border-top:3px solid #FF7000" data-category="Frontier Labs">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#FF7000;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">MI</div><span style="font-size:13px;font-weight:700;color:var(--navy);">Mistral</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Mistral is a French AI company focused on high-performance open and closed models. Its models are known for efficiency —…</div> </div>   </div> </details> <details class="category-section" data-category="Cloud Platforms" >   <summary class="category-header">    <span class="category-header-label">Cloud Platforms</span>    <span class="category-count">2</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'microsoft\')" style="border-top:3px solid #00A4EF" data-category="Cloud Platforms">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#00A4EF;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">MS</div><span style="font-size:13px;font-weight:700;color:var(--navy);">Copilot</span><span class="tier-badge" style="background:#EBF8FF;color:#2B6CB0">Core</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Microsoft is the largest enterprise AI distributor on the planet. It does not try to out-research OpenAI or Anthropic or…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'aws-bedrock\')" style="border-top:3px solid #FF9900" data-category="Cloud Platforms">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#FF9900;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">AB</div><span style="font-size:13px;font-weight:700;color:var(--navy);">AWS Bedrock</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">AWS Bedrock is Amazon Web Services\' managed AI model platform — a single, unified API through which enterprise customers…</div> </div>   </div> </details> <details class="category-section" data-category="Developer Infrastructure" >   <summary class="category-header">    <span class="category-header-label">Developer Infrastructure</span>    <span class="category-count">4</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'hugging-face\')" style="border-top:3px solid #FFD21E" data-category="Developer Infrastructure">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#FFD21E;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">HF</div><span style="font-size:13px;font-weight:700;color:var(--navy);">Hugging Face</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Hugging Face is the primary public repository for AI models, datasets, and demonstration applications — the closest thin…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'groq\')" style="border-top:3px solid #F55036" data-category="Developer Infrastructure">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#F55036;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">GQ</div><span style="font-size:13px;font-weight:700;color:var(--navy);">GroqCloud</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Groq is an AI inference company founded in 2016 by Jonathan Ross (formerly of Google Brain, where he co-created the TPU)…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'together-ai\')" style="border-top:3px solid #5B4CF6" data-category="Developer Infrastructure">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#5B4CF6;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">TG</div><span style="font-size:13px;font-weight:700;color:var(--navy);">Together AI</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Together AI is a San Francisco-based AI infrastructure company founded in 2022 by Vipul Ved Prakash (CEO), Chris Ré (Sta…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'cohere\')" style="border-top:3px solid #39B5AC" data-category="Developer Infrastructure">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#39B5AC;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">CO</div><span style="font-size:13px;font-weight:700;color:var(--navy);">Cohere</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Cohere is a Canadian enterprise AI company founded in 2019 by Aidan Gomez (CEO), Nick Frosst, and Ivan Zhang, headquarte…</div> </div>   </div> </details> <details class="category-section" data-category="Hardware & Infrastructure" >   <summary class="category-header">    <span class="category-header-label">Hardware & Infrastructure</span>    <span class="category-count">1</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'nvidia\')" style="border-top:3px solid #76B900" data-category="Hardware & Infrastructure">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#76B900;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">NV</div><span style="font-size:13px;font-weight:700;color:var(--navy);">Nvidia NIM</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Nvidia is the dominant infrastructure layer of the global AI industry. While it is best known as a GPU manufacturer, its…</div> </div>   </div> </details> <details class="category-section" data-category="Video AI" >   <summary class="category-header">    <span class="category-header-label">Video AI</span>    <span class="category-count">1</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'video-ai\')" style="border-top:3px solid #E53E3E" data-category="Video AI">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#E53E3E;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">VA</div><span style="font-size:13px;font-weight:700;color:var(--navy);">Video AI</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">The video AI market has consolidated around four credible platforms: Runway, Google Veo, Kling AI, and Vidu. Runway is p…</div> </div>   </div> </details> <details class="category-section" data-category="Voice / Audio AI" >   <summary class="category-header">    <span class="category-header-label">Voice / Audio AI</span>    <span class="category-count">1</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'elevenlabs\')" style="border-top:3px solid #6B46C1" data-category="Voice / Audio AI">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#6B46C1;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">EL</div><span style="font-size:13px;font-weight:700;color:var(--navy);">ElevenLabs</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">ElevenLabs is the market leader in AI voice synthesis. It generates human-quality speech from text, supports voice cloni…</div> </div>   </div> </details> <details class="category-section" data-category="Agent Tooling" >   <summary class="category-header">    <span class="category-header-label">Agent Tooling</span>    <span class="category-count">1</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'openclaw\')" style="border-top:3px solid #2D3748" data-category="Agent Tooling">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#2D3748;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">OC</div><span style="font-size:13px;font-weight:700;color:var(--navy);">OpenClaw</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">OpenClaw is an open-source AI agent that connects large language models to personal messaging apps, productivity tools, …</div> </div>   </div> </details> <details class="category-section" data-category="Search & Research" >   <summary class="category-header">    <span class="category-header-label">Search & Research</span>    <span class="category-count">1</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'perplexity\')" style="border-top:3px solid #20B2AA" data-category="Search & Research">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#20B2AA;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">PX</div><span style="font-size:13px;font-weight:700;color:var(--navy);">Perplexity</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Perplexity is an AI-powered search and answer engine. Unlike ChatGPT or Claude, every response includes citations and pu…</div> </div>   </div> </details>'
+    + '<div class="filter-bar" id="category-filter"><button class="filter-btn active" data-filter="all" onclick="filterCategory(\'all\')">All</button><button class="filter-btn" data-filter="Frontier Labs" onclick="filterCategory(\'Frontier Labs\')">Frontier Labs</button><button class="filter-btn" data-filter="Cloud Platforms" onclick="filterCategory(\'Cloud Platforms\')">Cloud</button><button class="filter-btn" data-filter="Developer Infrastructure" onclick="filterCategory(\'Developer Infrastructure\')">Dev Infra</button><button class="filter-btn" data-filter="Hardware & Infrastructure" onclick="filterCategory(\'Hardware & Infrastructure\')">Hardware</button><button class="filter-btn" data-filter="Video AI" onclick="filterCategory(\'Video AI\')">Video AI</button><button class="filter-btn" data-filter="Voice / Audio AI" onclick="filterCategory(\'Voice / Audio AI\')">Voice AI</button><button class="filter-btn" data-filter="Agent Tooling" onclick="filterCategory(\'Agent Tooling\')">Agent</button><button class="filter-btn" data-filter="Search & Research" onclick="filterCategory(\'Search & Research\')">Search</button></div><details class="category-section" data-category="Frontier Labs" open>   <summary class="category-header">    <span class="category-header-label">Frontier Labs</span>    <span class="category-count">7</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'anthropic\')" style="border-top:3px solid #CC785C" data-category="Frontier Labs">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#CC785C;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">AN</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">Claude</span><span class="tier-badge" style="background:#EBF8FF;color:#2B6CB0">Core</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Anthropic is the fastest-growing AI platform company in the market as of April 2026, having reached a $350 billion pre-m…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'openai\')" style="border-top:3px solid #10a37f" data-category="Frontier Labs">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#10a37f;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">OA</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">ChatGPT</span><span class="tier-badge" style="background:#EBF8FF;color:#2B6CB0">Core</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">OpenAI is the most recognised name in AI and the creator of ChatGPT, still the default AI assistant for the majority of …</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'google\')" style="border-top:3px solid #4285F4" data-category="Frontier Labs">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#4285F4;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">G</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">Gemini</span><span class="tier-badge" style="background:#EBF8FF;color:#2B6CB0">Core</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Google runs its AI through Google DeepMind and is one of a very small handful of organisations able to compete across ev…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'meta\')" style="border-top:3px solid #0082FB" data-category="Frontier Labs">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#0082FB;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">ME</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">Llama / Meta AI</span><span class="tier-badge" style="background:#EBF8FF;color:#2B6CB0">Core</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Meta AI represents the world\'s largest AI deployment by sheer user access — embedded natively across WhatsApp, Instagram…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'xai\')" style="border-top:3px solid #222222" data-category="Frontier Labs">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#222222;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">XA</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">Grok</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">xAI is Elon Musk\'s artificial intelligence company, founded in 2023 and headquartered in Memphis, Tennessee. The company…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'deepseek\')" style="border-top:3px solid #4A90D9" data-category="Frontier Labs">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#4A90D9;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">DS</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">DeepSeek</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">DeepSeek is a Chinese AI research laboratory founded in 2023, backed by High-Flyer Capital Management — a quantitative h…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'mistral\')" style="border-top:3px solid #FF7000" data-category="Frontier Labs">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#FF7000;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">MI</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">Mistral</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Mistral is a French AI company focused on high-performance open and closed models. Its models are known for efficiency —…</div> </div>   </div> </details> <details class="category-section" data-category="Cloud Platforms" >   <summary class="category-header">    <span class="category-header-label">Cloud Platforms</span>    <span class="category-count">2</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'microsoft\')" style="border-top:3px solid #00A4EF" data-category="Cloud Platforms">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#00A4EF;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">MS</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">Copilot</span><span class="tier-badge" style="background:#EBF8FF;color:#2B6CB0">Core</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Microsoft is the largest enterprise AI distributor on the planet. It does not try to out-research OpenAI or Anthropic or…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'aws-bedrock\')" style="border-top:3px solid #FF9900" data-category="Cloud Platforms">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#FF9900;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">AB</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">AWS Bedrock</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">AWS Bedrock is Amazon Web Services\' managed AI model platform — a single, unified API through which enterprise customers…</div> </div>   </div> </details> <details class="category-section" data-category="Developer Infrastructure" >   <summary class="category-header">    <span class="category-header-label">Developer Infrastructure</span>    <span class="category-count">4</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'hugging-face\')" style="border-top:3px solid #FFD21E" data-category="Developer Infrastructure">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#FFD21E;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">HF</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">Hugging Face</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Hugging Face is the primary public repository for AI models, datasets, and demonstration applications — the closest thin…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'groq\')" style="border-top:3px solid #F55036" data-category="Developer Infrastructure">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#F55036;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">GQ</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">GroqCloud</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Groq is an AI inference company founded in 2016 by Jonathan Ross (formerly of Google Brain, where he co-created the TPU)…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'together-ai\')" style="border-top:3px solid #5B4CF6" data-category="Developer Infrastructure">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#5B4CF6;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">TG</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">Together AI</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Together AI is a San Francisco-based AI infrastructure company founded in 2022 by Vipul Ved Prakash (CEO), Chris Ré (Sta…</div> </div> <div class="platform-card" onclick="navigate(\'platform\',\'cohere\')" style="border-top:3px solid #39B5AC" data-category="Developer Infrastructure">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#39B5AC;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">CO</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">Cohere</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Cohere is a Canadian enterprise AI company founded in 2019 by Aidan Gomez (CEO), Nick Frosst, and Ivan Zhang, headquarte…</div> </div>   </div> </details> <details class="category-section" data-category="Hardware & Infrastructure" >   <summary class="category-header">    <span class="category-header-label">Hardware & Infrastructure</span>    <span class="category-count">1</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'nvidia\')" style="border-top:3px solid #76B900" data-category="Hardware & Infrastructure">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#76B900;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">NV</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">Nvidia NIM</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Nvidia is the dominant infrastructure layer of the global AI industry. While it is best known as a GPU manufacturer, its…</div> </div>   </div> </details> <details class="category-section" data-category="Video AI" >   <summary class="category-header">    <span class="category-header-label">Video AI</span>    <span class="category-count">1</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'video-ai\')" style="border-top:3px solid #E53E3E" data-category="Video AI">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#E53E3E;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">VA</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">Video AI</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">The video AI market has consolidated around four credible platforms: Runway, Google Veo, Kling AI, and Vidu. Runway is p…</div> </div>   </div> </details> <details class="category-section" data-category="Voice / Audio AI" >   <summary class="category-header">    <span class="category-header-label">Voice / Audio AI</span>    <span class="category-count">1</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'elevenlabs\')" style="border-top:3px solid #6B46C1" data-category="Voice / Audio AI">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#6B46C1;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">EL</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">ElevenLabs</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">ElevenLabs is the market leader in AI voice synthesis. It generates human-quality speech from text, supports voice cloni…</div> </div>   </div> </details> <details class="category-section" data-category="Agent Tooling" >   <summary class="category-header">    <span class="category-header-label">Agent Tooling</span>    <span class="category-count">1</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'openclaw\')" style="border-top:3px solid #2D3748" data-category="Agent Tooling">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#2D3748;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">OC</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">OpenClaw</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">OpenClaw is an open-source AI agent that connects large language models to personal messaging apps, productivity tools, …</div> </div>   </div> </details> <details class="category-section" data-category="Search & Research" >   <summary class="category-header">    <span class="category-header-label">Search & Research</span>    <span class="category-count">1</span>  </summary>   <div class="platform-grid"> <div class="platform-card" onclick="navigate(\'platform\',\'perplexity\')" style="border-top:3px solid #20B2AA" data-category="Search & Research">   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;background:#20B2AA;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;">PX</div><span style="font-size:13px;font-weight:700;color:var(--brand-navy);">Perplexity</span><span class="tier-badge" style="background:#F0FFF4;color:#276749">Specialist</span></div>   <div style="font-size:11px;color:var(--muted);line-height:1.4;">Perplexity is an AI-powered search and answer engine. Unlike ChatGPT or Claude, every response includes citations and pu…</div> </div>   </div> </details>'
     + '<h2 style="margin-top:28px;">Latest Developments</h2>'
     + DEVELOPMENTS.slice(0, 5).map(renderDevCard).join('')
-    + '<div class="generated-note">Last generated: 17 Apr 2026 16:37 · Source: Obsidian markdown wiki</div>';
+    + '<div class="generated-note">Last generated: 17 Apr 2026 18:06 · Source: Obsidian markdown wiki</div>';
 }
 
 // ── Main render dispatcher ─────────────────────────────────────────────────
 function renderContent() {
   var content = document.getElementById('content');
   var breadcrumb = document.getElementById('breadcrumb');
-  var homeLink = '<span onclick="navigate(\'home\')" style="cursor:pointer;color:var(--orange);">AI Intelligence</span>';
+  var homeLink = '<span onclick="navigate(\'home\')" style="cursor:pointer;color:var(--brand-navy);">AI Intelligence</span>';
 
   if (currentView === 'home') {
     content.innerHTML = renderHome();
@@ -691,6 +750,37 @@ function handleSearch(query) {
       + '<span style="width:8px;height:8px;border-radius:50%;background:' + p.color + ';flex-shrink:0;"></span>' + p.name + '</div>';
   }).join('');
 }
+
+// ── Sidebar drawer (mobile) ────────────────────────────────────────────────
+// The outer Next.js shell (WikiShell.tsx) posts messages of shape
+// { type: 'dt:set-sidebar', open: boolean } when the mobile hamburger
+// is tapped. This iframe reports state back with 'dt:sidebar-state'
+// so the outer button label and aria-expanded stay in sync.
+function dtSetSidebar(open) {
+  document.body.classList.toggle('sidebar-open', !!open);
+  try {
+    window.parent.postMessage({ type: 'dt:sidebar-state', open: !!open }, '*');
+  } catch (e) { /* cross-origin, non-fatal */ }
+}
+function dtCloseSidebar() { dtSetSidebar(false); }
+function dtOpenSidebar() { dtSetSidebar(true); }
+window.addEventListener('message', function(event) {
+  var msg = event.data;
+  if (!msg || typeof msg !== 'object') return;
+  if (msg.type === 'dt:set-sidebar') dtSetSidebar(msg.open);
+  if (msg.type === 'dt:toggle-sidebar') dtSetSidebar(!document.body.classList.contains('sidebar-open'));
+});
+// Close the drawer on nav-item tap (mobile only — desktop is a no-op)
+document.addEventListener('click', function(e) {
+  var t = e.target;
+  if (!t || window.innerWidth >= 768) return;
+  var navItem = t.closest ? t.closest('.nav-item') : null;
+  if (navItem) dtCloseSidebar();
+});
+// Close with Escape when open
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.body.classList.contains('sidebar-open')) dtCloseSidebar();
+});
 
 // ── Init ───────────────────────────────────────────────────────────────────
 updateNav();
