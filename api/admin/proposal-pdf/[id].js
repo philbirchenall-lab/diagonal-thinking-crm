@@ -100,10 +100,13 @@ export default async function handler(req, res) {
       }
     });
 
-    // Scroll to the bottom so intersection-observer-based lazy images (e.g.
-    // the Next.js <Image> signature in the closing page) receive a visibility
-    // event and start loading, then wait for every <img> to finish.
+    // Force lazy images eager, scroll to trigger intersection observers, then
+    // wait for every <img> to finish loading before capturing the PDF.
     await page.evaluate(async () => {
+      document.querySelectorAll('img[loading="lazy"]').forEach((img) => {
+        img.loading = "eager";
+        img.src = img.src; // re-trigger fetch after switching to eager
+      });
       window.scrollTo(0, document.body.scrollHeight);
       // Give intersection observers a tick to fire after the scroll
       await new Promise((resolve) => setTimeout(resolve, 200));
