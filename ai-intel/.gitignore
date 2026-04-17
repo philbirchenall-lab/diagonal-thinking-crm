@@ -16,3 +16,8 @@ out/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local caches and backups
+.npm-cache/
+tmp/
+*.bak
