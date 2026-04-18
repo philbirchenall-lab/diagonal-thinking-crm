@@ -17,9 +17,13 @@
   --border: #E5E7EB;
   --bg: #F7F8FA;
 
-  /* Type faces — loaded via next/font/google in layout.tsx */
+  /* Type faces — loaded via next/font/google in layout.tsx.
+     --font-oswald and --font-body are set on <html> by next/font;
+     do NOT redeclare them here (a self-referential var() resolves to
+     the guaranteed-invalid value and the browser falls back to the
+     UA default — Times/serif on Safari for <button>). */
   --font-display: var(--font-oswald), "Bebas Neue", Impact, "Arial Narrow", sans-serif;
-  --font-body: var(--font-body), "Omnes Pro", "Source Sans 3", "Inter",
+  --font-body-stack: "Omnes Pro", "Source Sans 3", "Inter",
     "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
@@ -38,7 +42,7 @@ html {
 }
 
 body {
-  font-family: var(--font-body);
+  font-family: var(--font-body), var(--font-body-stack);
   color: var(--ink);
   background: var(--paper);
   font-size: 16px;
@@ -68,11 +72,16 @@ a {
   color: var(--brand-navy);
 }
 
-/* Utility classes used by the app shell */
+/* Utility classes used by the app shell.
+   Header moved from Navy to Stone (brand v1 §2.2 — Navy can only hold
+   the logo as white-on-navy, and the white-out variant does not yet
+   exist). Text + controls flipped to Ink Black for AA contrast on
+   Stone (~8.6:1, passes AAA). */
 .dt-topbar-button {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: var(--paper);
+  font-family: inherit; /* belt-and-braces vs. UA <button> font reset */
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  color: var(--ink);
   border-radius: 4px;
   padding: 8px 14px;
   font-size: 14px;
@@ -83,14 +92,15 @@ a {
   transition: background 0.15s;
 }
 .dt-topbar-button:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.12);
 }
 
 .dt-hamburger {
+  font-family: inherit;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(0, 0, 0, 0.25);
   border-radius: 4px;
-  color: var(--paper);
+  color: var(--ink);
   width: 44px;
   height: 44px;
   display: none;

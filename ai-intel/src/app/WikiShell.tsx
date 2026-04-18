@@ -51,10 +51,16 @@ export default function WikiShell({ signOut }: { signOut: ReactNode }) {
         background: "var(--paper)",
       }}
     >
+      {/* Header runs Stone (brand v1 §2.2) rather than Navy: the
+          full-colour DT lockup has dark marks and reads poorly on a
+          Navy ground. Brand v1 allows the logo on Navy only as a
+          white-on-navy treatment; that asset does not exist yet
+          (flagged as PROP-LOGO-WHITEOUT-001 for Mae/Pix). Stone ground
+          + Ink Black type passes WCAG AAA (~8.6:1). */}
       <header
         style={{
-          background: "var(--brand-navy)",
-          color: "var(--paper)",
+          background: "var(--stone)",
+          color: "var(--ink)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
