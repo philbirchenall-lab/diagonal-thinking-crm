@@ -1,14 +1,24 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap");
+/* Brand fonts — Oswald (display) + Source Sans 3 (body) per Brand v1.2.
+   Newsreader kept for legacy `font-editorial` callers; to be removed in
+   Phase 4 cleanup (see tailwind.config.js). */
+@import url("https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Source+Sans+3:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap");
+
+/* Shared brand tokens — single source of truth. */
+@import "../packages/brand/src/tokens.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
-  color: #111111;
-  background: #f5f7fb;
+  font-family: var(--dt-body-stack);
+  color: var(--ink);
+  background: var(--bg);
   color-scheme: light;
+
+  /* Bind brand-tokens font variables for typography.css consumers. */
+  --font-display: var(--dt-display-stack);
+  --font-body: var(--dt-body-stack);
 }
 
 body {
@@ -16,9 +26,10 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
+  /* DT Navy (canonical #305DAB) — was the off-brand #183A73 pre-rebrand. */
   background:
-    linear-gradient(180deg, #183a73 0, #183a73 88px, #edf2fa 88px, #f5f7fb 220px, #f5f7fb 100%);
-  -webkit-tap-highlight-color: rgba(59, 92, 181, 0.16);
+    linear-gradient(180deg, var(--brand-navy) 0, var(--brand-navy) 88px, #EDF2FA 88px, var(--bg) 220px, var(--bg) 100%);
+  -webkit-tap-highlight-color: rgba(48, 93, 171, 0.16);
 }
 
 * {
@@ -47,8 +58,13 @@ a {
   min-height: 100vh;
 }
 
+/* ---------- Proposal document (in-CRM editor + preview) ----------
+   Fonts + navy hexes brought in line with Brand v1.2. The public
+   proposal rendering lives in dt-proposals (owned by Codi, Phase 2);
+   these rules govern the in-CRM tiptap preview only. */
+
 .proposal-document {
-  font-family: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  font-family: var(--dt-body-stack);
   font-size: 11pt;
   color: #333333;
   line-height: 1.6;
@@ -72,13 +88,16 @@ a {
 }
 
 .proposal-document h2 {
+  font-family: var(--dt-display-stack);
   font-size: 14pt;
-  font-weight: 700;
-  color: #1b4f8a;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--brand-navy);
   margin-top: 10mm;
   margin-bottom: 2mm;
   padding-bottom: 2mm;
-  border-bottom: 1px solid #1b4f8a;
+  border-bottom: 1px solid var(--brand-navy);
 }
 
 .proposal-document h2:first-child {
@@ -111,14 +130,14 @@ a {
 .proposal-document blockquote {
   margin: 12px 0;
   padding-left: 16px;
-  border-left: 3px solid rgba(27, 79, 138, 0.3);
+  border-left: var(--dt-border-accent) solid var(--brand-navy);
   color: #4c6075;
   font-style: italic;
 }
 
 .proposal-document hr {
   border: 0;
-  border-top: 1px solid rgba(27, 79, 138, 0.2);
+  border-top: 1px solid rgba(48, 93, 171, 0.2);
   margin: 20px 0;
 }
 
@@ -144,13 +163,16 @@ a {
 }
 
 .proposal-editor-wrapper .ProseMirror h2 {
+  font-family: var(--dt-display-stack);
   font-size: 14pt;
-  font-weight: 700;
-  color: #1b4f8a;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--brand-navy);
   margin-top: 10mm;
   margin-bottom: 2mm;
   padding-bottom: 2mm;
-  border-bottom: 1px solid #1b4f8a;
+  border-bottom: 1px solid var(--brand-navy);
 }
 
 .proposal-editor-wrapper .ProseMirror p {

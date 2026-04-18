@@ -1,32 +1,24 @@
 /* ============================================================
    AI Intelligence — Next.js wrapper global styles
-   Brand tokens per Diagonal Thinking brand guidelines v1
-   (Phil-approved 17 Apr 2026).
+   Brand tokens sourced from the shared @dt/brand-tokens package
+   (single source of truth across CRM, AI-Intel, client-area,
+   proposals). See packages/brand/README.md.
    ============================================================ */
 
+@import "../../../packages/brand/src/tokens.css";
+@import "../../../packages/brand/src/typography.css";
+
 :root {
-  /* DT brand canon */
-  --brand-navy: #305DAB;
-  --ink: #000000;
-  --paper: #FFFFFF;
-  --stone: #A7A59F;
-
-  /* Utility (not brand) */
-  --text: #111111;
-  --muted: #5A6372;
-  --border: #E5E7EB;
-  --bg: #F7F8FA;
-
-  /* Type faces — loaded via next/font/google in layout.tsx.
-     --font-oswald and --font-body are set on <html> by next/font;
-     do NOT redeclare them here (a self-referential var() resolves to
-     the guaranteed-invalid value and the browser falls back to the
-     UA default — Times/serif on Safari for <button>). */
-  --font-display: var(--font-oswald), "Bebas Neue", Impact, "Arial Narrow", sans-serif;
-  --font-body-stack: "Omnes Pro", "Source Sans 3", "Inter",
-    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* next/font assigns --font-oswald and --font-body on <html> (layout.tsx).
+     Bind them to the brand-tokens-expected --font-display / --font-body
+     names so the shared typography module picks up the real faces.
+     Keep the app-local utility colour (`--text`) for legacy topbar code. */
+  --font-display: var(--font-oswald), var(--dt-display-stack);
+  --font-body: var(--font-body), var(--dt-body-stack);
+  --text: var(--ink);
 }
 
+/* ----- Resets ----- */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -41,55 +33,20 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
-body {
-  font-family: var(--font-body), var(--font-body-stack);
-  color: var(--ink);
-  background: var(--paper);
-  font-size: 16px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Display type — Oswald, uppercase H1/H2 per brand v1 */
-h1, h2 {
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-h3 {
-  font-family: var(--font-display);
-  font-weight: 400;
-}
-
-button, input, select, textarea {
-  font-family: inherit;
-  font-size: inherit;
-}
-
-a {
-  color: var(--brand-navy);
-}
-
-/* Utility classes used by the app shell.
-   Header moved from Navy to Stone (brand v1 §2.2 — Navy can only hold
-   the logo as white-on-navy, and the white-out variant does not yet
-   exist). Text + controls flipped to Ink Black for AA contrast on
-   Stone (~8.6:1, passes AAA). */
+/* ----- Topbar (Stone per brand v1 §2.2) ----- */
 .dt-topbar-button {
-  font-family: inherit; /* belt-and-braces vs. UA <button> font reset */
+  font-family: inherit;
   background: rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(0, 0, 0, 0.25);
   color: var(--ink);
-  border-radius: 4px;
+  border-radius: var(--dt-radius-sm);
   padding: 8px 14px;
-  font-size: 14px;
+  font-size: var(--dt-small);
   font-weight: 500;
   cursor: pointer;
-  min-height: 44px;
-  min-width: 44px;
-  transition: background 0.15s;
+  min-height: var(--dt-touch-min);
+  min-width: var(--dt-touch-min);
+  transition: background var(--dt-transition-fast);
 }
 .dt-topbar-button:hover {
   background: rgba(0, 0, 0, 0.12);
@@ -99,10 +56,10 @@ a {
   font-family: inherit;
   background: transparent;
   border: 1px solid rgba(0, 0, 0, 0.25);
-  border-radius: 4px;
+  border-radius: var(--dt-radius-sm);
   color: var(--ink);
-  width: 44px;
-  height: 44px;
+  width: var(--dt-touch-min);
+  height: var(--dt-touch-min);
   display: none;
   align-items: center;
   justify-content: center;

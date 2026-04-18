@@ -1,0 +1,80 @@
+/* =============================================================
+   @dt/brand-tokens — typography.css
+   Heading + body type reset per Brand Guidelines v1.2 §2.3
+   and Format Standards v1 §3.1.
+
+   Import AFTER tokens.css and AFTER the per-app font wiring
+   (next/font for Next, @import url() for Vite). Setting
+   --font-display / --font-body in the consumer app makes this
+   module render Oswald / Source Sans 3 correctly. If unset it
+   falls back to the stacks defined in tokens.css.
+
+   Example (ai-intel/src/app/globals.css):
+     @import "../../../../packages/brand/src/tokens.css";
+     @import "../../../../packages/brand/src/typography.css";
+   ============================================================= */
+
+body {
+  font-family: var(--font-body, var(--dt-body-stack));
+  color: var(--ink);
+  background: var(--paper);
+  font-size: var(--dt-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2 {
+  font-family: var(--font-display, var(--dt-display-stack));
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+h3 {
+  font-family: var(--font-display, var(--dt-display-stack));
+  font-weight: 400;
+}
+
+a {
+  color: var(--brand-navy);
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* ---------- Primary button (Format Standards §13.1) ---------- */
+.dt-btn-primary {
+  background: var(--brand-navy);
+  color: var(--paper);
+  border: none;
+  border-radius: var(--dt-radius-md);
+  min-height: var(--dt-touch-min);
+  padding: 14px 18px;
+  font-size: var(--dt-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dt-transition-fast);
+}
+.dt-btn-primary:hover:not(:disabled) {
+  background: var(--brand-navy-hover);
+}
+.dt-btn-primary:disabled {
+  background: var(--stone);
+  cursor: not-allowed;
+}
+.dt-btn-primary:focus-visible {
+  outline: none;
+  box-shadow: var(--dt-focus-ring);
+  outline-offset: var(--dt-focus-offset);
+}
+
+/* ---------- Eyebrow label (Format Standards §3.1) ---------- */
+.dt-eyebrow {
+  font-size: var(--dt-eyebrow);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--dt-eyebrow-tracking);
+}
