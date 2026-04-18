@@ -4,6 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+/**
+ * Login — dark-first treatment per brand guidelines v1 §2.6
+ * and Tes scope v2 Ambiguity B (navy full-bleed, centred logo,
+ * Oswald H1, single sign-in card).
+ *
+ * UI copy follows Register A per brand v1 §4.2 and Tes scope.
+ */
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -23,7 +30,7 @@ export default function LoginPage() {
     });
 
     if (signInError) {
-      setError("Invalid email or password.");
+      setError("That did not work. Check your details and try again.");
       setLoading(false);
       return;
     }
@@ -35,97 +42,87 @@ export default function LoginPage() {
   return (
     <div
       style={{
-        minHeight: "100vh",
-        background: "#f7f8fa",
+        minHeight: "100dvh",
+        background: "var(--brand-navy)",
+        color: "var(--paper)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        padding: "24px 20px",
       }}
     >
-      <div
-        style={{
-          background: "white",
-          border: "1px solid #e2e8f0",
-          borderRadius: "10px",
-          padding: "40px 36px",
-          width: "100%",
-          maxWidth: "380px",
-        }}
-      >
-        {/* Logo */}
+      <div style={{ width: "100%", maxWidth: "420px" }}>
+        {/* Centred logo — full lockup >= 480px, icon below */}
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            marginBottom: "28px",
+            justifyContent: "center",
+            marginBottom: "32px",
           }}
         >
-          <div
-            style={{
-              width: "36px",
-              height: "36px",
-              background: "#E8552A",
-              borderRadius: "7px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "white",
-              fontWeight: 700,
-              fontSize: "12px",
-              letterSpacing: "-0.02em",
-              flexShrink: 0,
-            }}
-          >
-            D//T
-          </div>
-          <div>
-            <div
-              style={{ fontSize: "14px", fontWeight: 700, color: "#1d2d44" }}
-            >
-              AI Intelligence
-            </div>
-            <div style={{ fontSize: "11px", color: "#718096" }}>
-              Diagonal Thinking — Internal
-            </div>
-          </div>
+          <picture>
+            <source
+              media="(max-width: 479px)"
+              srcSet="/brand/logo-icon.png"
+            />
+            <img
+              src="/brand/logo-full.png"
+              alt="Diagonal Thinking"
+              style={{
+                height: "54px",
+                width: "auto",
+                display: "block",
+                filter: "brightness(0) invert(1)",
+              }}
+            />
+          </picture>
         </div>
 
         <h1
           style={{
-            fontSize: "18px",
-            fontWeight: 700,
-            color: "#1d2d44",
-            marginBottom: "6px",
+            fontSize: "40px",
+            lineHeight: 1.05,
+            textAlign: "center",
+            marginBottom: "10px",
+            color: "var(--paper)",
           }}
         >
-          Sign in
+          AI Intelligence
         </h1>
         <p
           style={{
-            fontSize: "13px",
-            color: "#718096",
-            marginBottom: "24px",
+            textAlign: "center",
+            fontSize: "16px",
+            color: "rgba(255,255,255,0.8)",
+            marginBottom: "32px",
           }}
         >
-          Use your Diagonal Thinking account credentials.
+          Diagonal Thinking internal wiki. Sign in to continue.
         </p>
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "14px" }}>
+        <div
+          style={{
+            background: "var(--paper)",
+            color: "var(--ink)",
+            borderRadius: "8px",
+            padding: "28px 24px",
+            boxShadow: "0 8px 28px rgba(0,0,0,0.22)",
+          }}
+        >
+          <form onSubmit={handleSubmit} noValidate>
             <label
+              htmlFor="login-email"
               style={{
                 display: "block",
-                fontSize: "12px",
+                fontSize: "14px",
                 fontWeight: 600,
-                color: "#2d3748",
-                marginBottom: "5px",
+                marginBottom: "6px",
               }}
             >
               Email
             </label>
             <input
+              id="login-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -134,35 +131,40 @@ export default function LoginPage() {
               placeholder="you@diagonalthinking.co"
               style={{
                 width: "100%",
-                padding: "9px 12px",
-                border: "1px solid #e2e8f0",
+                padding: "12px 14px",
+                border: "1px solid var(--border)",
                 borderRadius: "6px",
-                fontSize: "14px",
-                color: "#2d3748",
+                fontSize: "16px",
+                color: "var(--ink)",
+                background: "var(--paper)",
                 outline: "none",
+                marginBottom: "16px",
+                minHeight: "44px",
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = "#E8552A";
+                e.currentTarget.style.borderColor = "var(--brand-navy)";
+                e.currentTarget.style.boxShadow =
+                  "0 0 0 3px rgba(48, 93, 171, 0.18)";
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = "#e2e8f0";
+                e.currentTarget.style.borderColor = "var(--border)";
+                e.currentTarget.style.boxShadow = "none";
               }}
             />
-          </div>
 
-          <div style={{ marginBottom: "20px" }}>
             <label
+              htmlFor="login-password"
               style={{
                 display: "block",
-                fontSize: "12px",
+                fontSize: "14px",
                 fontWeight: 600,
-                color: "#2d3748",
-                marginBottom: "5px",
+                marginBottom: "6px",
               }}
             >
               Password
             </label>
             <input
+              id="login-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -170,58 +172,65 @@ export default function LoginPage() {
               autoComplete="current-password"
               style={{
                 width: "100%",
-                padding: "9px 12px",
-                border: "1px solid #e2e8f0",
+                padding: "12px 14px",
+                border: "1px solid var(--border)",
                 borderRadius: "6px",
-                fontSize: "14px",
-                color: "#2d3748",
+                fontSize: "16px",
+                color: "var(--ink)",
+                background: "var(--paper)",
                 outline: "none",
+                marginBottom: "20px",
+                minHeight: "44px",
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = "#E8552A";
+                e.currentTarget.style.borderColor = "var(--brand-navy)";
+                e.currentTarget.style.boxShadow =
+                  "0 0 0 3px rgba(48, 93, 171, 0.18)";
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = "#e2e8f0";
+                e.currentTarget.style.borderColor = "var(--border)";
+                e.currentTarget.style.boxShadow = "none";
               }}
             />
-          </div>
 
-          {error && (
-            <div
+            {error && (
+              <div
+                role="alert"
+                style={{
+                  background: "#FFF5F5",
+                  border: "1px solid #FED7D7",
+                  borderRadius: "6px",
+                  color: "#9B2C2C",
+                  fontSize: "14px",
+                  padding: "10px 12px",
+                  marginBottom: "16px",
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
               style={{
-                background: "#FFF5F5",
-                border: "1px solid #FED7D7",
+                width: "100%",
+                padding: "14px",
+                background: loading ? "var(--stone)" : "var(--brand-navy)",
+                color: "var(--paper)",
+                border: "none",
                 borderRadius: "6px",
-                color: "#C53030",
-                fontSize: "13px",
-                padding: "10px 12px",
-                marginBottom: "16px",
+                fontSize: "16px",
+                fontWeight: 600,
+                cursor: loading ? "not-allowed" : "pointer",
+                transition: "background 0.15s",
+                minHeight: "44px",
               }}
             >
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: "100%",
-              padding: "10px",
-              background: loading ? "#c0c0c0" : "#E8552A",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              fontSize: "14px",
-              fontWeight: 600,
-              cursor: loading ? "not-allowed" : "pointer",
-              fontFamily: "inherit",
-              transition: "background 0.15s",
-            }}
-          >
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
+              {loading ? "Signing in." : "Sign in"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
