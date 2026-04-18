@@ -60,19 +60,22 @@ export default function LoginPage() {
             marginBottom: "32px",
           }}
         >
+          {/* Dedicated white-out assets from Pix (PIX-LOGO-WHITE-001).
+              Responsive swap at Format Standards §5.5 200px threshold.
+              Full-colour fallback paths remain for any consumer that
+              renders the logo on a non-navy surface. */}
           <picture>
             <source
               media="(max-width: 479px)"
-              srcSet="/brand/logo-icon.png"
+              srcSet="/brand/logo-icon-white.png"
             />
             <img
-              src="/brand/logo-full.png"
+              src="/brand/logo-full-white.png"
               alt="Diagonal Thinking"
               style={{
                 height: "54px",
                 width: "auto",
                 display: "block",
-                filter: "brightness(0) invert(1)",
               }}
             />
           </picture>

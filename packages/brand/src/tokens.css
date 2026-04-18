@@ -1,0 +1,85 @@
+/* =============================================================
+   @dt/brand-tokens — tokens.css
+   Single source of truth for Diagonal Thinking CSS custom
+   properties across CRM, AI-Intel, client-area, proposals.
+
+   Consumed via relative @import from each app's global stylesheet.
+   Example (ai-intel/src/app/globals.css):
+     @import "../../../../packages/brand/src/tokens.css";
+
+   Canon: Brand Guidelines v1.2 (Phil-approved 17 Apr 2026)
+          + Format Standards v1 §2.1, §2.3, §13.1.
+   ============================================================= */
+
+:root {
+  /* ---------- Palette (Brand v1.2 §2.1 — DT colour canon) ---------- */
+  --brand-navy: #305DAB;          /* DT Navy. The canonical primary. */
+  --brand-navy-hover: #2A528E;    /* Button hover / pressed (Format Standards §13.1). */
+  --ink: #111111;                 /* Body text. */
+  --ink-soft: #2A2A2A;            /* Secondary body copy. */
+  --paper: #FFFFFF;               /* Surface base. */
+  --stone: #A7A59F;               /* Muted accent (topbar, dividers). */
+
+  /* ---------- Utility colours (non-brand; support tokens) ---------- */
+  --bg: #F7F8FA;
+  --border: #E5E7EB;
+  --muted: #5A6372;
+
+  /* ---------- Semantic status colours (Format Standards §17.2) ---------- */
+  --high: #B91C1C;
+  --medium: #B45309;
+  --low: #2F855A;
+
+  /* ---------- Typography face variables ----------
+     --font-display and --font-body are set by next/font (Next apps)
+     or by `@import url(...)` (Vite/CRM). Consumers wire them up per app;
+     this file just defines the fallback stacks. */
+  --dt-display-stack: "Oswald", "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+  --dt-body-stack: "Source Sans 3", Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  /* ---------- Spacing (Format Standards §2.1 — 8px rhythm + 4px half-step) ---------- */
+  --dt-space-tight: 4px;          /* Tight — adjacent text + icon */
+  --dt-space-compact: 8px;        /* Compact — label + field */
+  --dt-space-default: 12px;       /* Default — card internals */
+  --dt-space-comfortable: 16px;   /* Comfortable — sibling rows */
+  --dt-space-section: 24px;       /* Section — between major blocks */
+  --dt-space-generous: 28px;      /* Generous — card padding */
+  --dt-space-hero: 40px;          /* Hero — logo → H1 gap on hero surfaces */
+
+  /* ---------- Radius (Format Standards §2.3) ---------- */
+  --dt-radius-sm: 4px;
+  --dt-radius-md: 6px;
+  --dt-radius-lg: 8px;            /* Card canon. */
+
+  /* ---------- Border widths ---------- */
+  --dt-border-hairline: 1px;
+  --dt-border-accent: 3px;        /* Top-border stripes, capability-card pattern §7. */
+
+  /* ---------- Shadow (Format Standards §2.4) ---------- */
+  --dt-shadow-card: 0 4px 14px rgba(0, 0, 0, 0.09);
+  --dt-shadow-lifted: 0 8px 28px rgba(0, 0, 0, 0.22);   /* Dark-first card over navy. */
+
+  /* ---------- Motion (Format Standards §2.4, Pix §10.5) ---------- */
+  --dt-transition-fast: 150ms ease-out;
+  --dt-hover-elevation: translateY(-1px);
+
+  /* ---------- Focus ring (Pix §10.5) ---------- */
+  --dt-focus-ring: 0 0 0 2px var(--brand-navy);
+  --dt-focus-offset: 2px;
+  --dt-focus-ring-soft: 0 0 0 3px rgba(48, 93, 171, 0.18);
+
+  /* ---------- Touch target minimum (Format Standards §13.1) ---------- */
+  --dt-touch-min: 44px;
+
+  /* ---------- Type scale (Format Standards §3.1 — hero / reading) ---------- */
+  --dt-h1-hero-desktop: 40px;
+  --dt-h1-hero-mobile: 30px;
+  --dt-h1-session-desktop: 48px;  /* Client-area session hero (Pix §10.7.2). */
+  --dt-h1-reading: 30px;
+  --dt-h2: 22px;
+  --dt-h3: 18px;
+  --dt-body: 16px;
+  --dt-small: 14px;
+  --dt-eyebrow: 11px;
+  --dt-eyebrow-tracking: 0.09em;
+}
