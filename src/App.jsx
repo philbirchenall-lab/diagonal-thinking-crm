@@ -102,10 +102,10 @@ const TYPE_STYLES = {
   },
 };
 const TYPE_COLORS = {
-  Client: "#10b981",
-  "Warm Lead": "#3B5CB5",
-  "Cold Lead": "#0ea5e9",
-  "Mailing List": "#94a3b8",
+  Client: "#305DAB",
+  "Warm Lead": "rgba(48, 93, 171, 0.7)",
+  "Cold Lead": "rgba(48, 93, 171, 0.4)",
+  "Mailing List": "#A7A59F",
 };
 
 const STAGES = ["Identified", "Qualifying", "Proposal", "Negotiating", "Won", "Lost"];
@@ -496,13 +496,13 @@ function ModalShell({ title, subtitle, onClose, children }) {
       <div className="w-full max-w-5xl rounded-t-xl border border-line bg-white shadow-panel sm:rounded-xl">
         <div className="flex items-start justify-between border-b border-line px-5 py-4 sm:px-6 sm:py-5">
           <div>
-            <h2 className="font-display text-2xl font-bold text-ink sm:text-3xl">{title}</h2>
+            <h2 className="font-display text-2xl font-normal uppercase tracking-[0.02em] text-ink sm:text-3xl">{title}</h2>
             {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[44px] min-w-[44px] rounded-md border border-line p-2 text-slate-500 transition hover:border-black hover:text-ink"
+            className="min-h-[44px] min-w-[44px] rounded-md border border-line p-2 text-slate-500 transition hover:border-brand hover:text-ink"
           >
             <X size={18} />
           </button>
@@ -1677,7 +1677,7 @@ function OpportunityForm({ initial = null, contactId, onSave, onCancel }) {
         <button
           type="submit"
           disabled={saving}
-          className="rounded-md bg-black px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-inkSoft disabled:opacity-50"
+          className="rounded-md bg-brand px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-brandHover disabled:opacity-50"
         >
           {saving ? "Saving…" : (initial ? "Update" : "Create")}
         </button>
@@ -1976,7 +1976,7 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
       {/* Pipeline value hero */}
       <div className="mb-6 border border-line bg-white p-5 shadow-panel sm:p-6">
         <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Active Pipeline</div>
-        <div className="mt-2 font-display text-4xl font-semibold text-ink">
+        <div className="mt-2 font-display text-4xl font-normal tracking-[0.02em] text-brand">
           {formatCurrency(totalPipelineValue)}
         </div>
         <div className="mt-1 text-xs text-slate-400">
@@ -2253,7 +2253,7 @@ function ContactResearchIntelPanel({ contact, onResearchSaved }) {
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="inline-flex items-center rounded border border-black bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-inkSoft disabled:opacity-50"
+              className="inline-flex items-center rounded border border-brand bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brandHover disabled:opacity-50"
             >
               {saving ? "Saving…" : "Save"}
             </button>
@@ -2341,7 +2341,7 @@ function ProposalsTab({ contacts }) {
       {/* Proposals header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-2xl font-bold text-ink">Proposals</h2>
+          <h2 className="font-display text-2xl font-normal uppercase tracking-[0.02em] text-ink">PROPOSALS</h2>
           <p className="mt-1 text-sm text-slate-500">
             {isSupabaseMode() ? `${proposals.length} proposal${proposals.length !== 1 ? "s" : ""}` : "Connect to Supabase to manage proposals"}
           </p>
@@ -3168,7 +3168,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-transparent">
       <div className="mx-auto max-w-7xl px-0 py-0 sm:px-4 sm:py-6 lg:px-8">
-        <header className="overflow-hidden rounded-none border-y border-black bg-white shadow-panel sm:rounded-xl sm:border sm:border-line">
+        <header className="overflow-hidden rounded-none border-y border-line bg-white shadow-panel sm:rounded-xl sm:border sm:border-line">
           {/* Top brand bar */}
           <div className="border-b border-brand bg-brand px-5 py-3 sm:px-6">
             <div className="flex items-center justify-between">
@@ -3225,18 +3225,18 @@ export default function App() {
           <div className="bg-brand px-5 py-6 text-white sm:px-6 sm:py-9">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h1 className="font-display text-3xl font-bold leading-none text-balance sm:text-5xl">
-                  Diagonal Thinking CRM
+                <h1 className="font-display text-3xl font-normal uppercase tracking-[0.02em] leading-none text-balance sm:text-5xl">
+                  DIAGONAL THINKING CRM
                 </h1>
               </div>
-              <div className="border border-white/25 bg-black px-4 py-3 sm:shrink-0">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
+              <div className="border-t-[3px] border-t-brand border-x border-b border-line bg-white px-4 py-3 sm:shrink-0">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink">
                   Pipeline Summary
                 </div>
-                <div className="mt-1 text-xl font-bold tabular-nums text-white">
+                <div className="mt-1 font-display text-[28px] font-normal leading-none tracking-[0.02em] tabular-nums text-brand">
                   {stats.counts["Warm Lead"]} Warm Leads
                 </div>
-                <div className="mt-0.5 text-sm tabular-nums text-white/70">
+                <div className="mt-1 text-sm tabular-nums text-slate-500">
                   {formatCurrency(stats.warmLeadValue)} projected
                 </div>
               </div>
@@ -3323,7 +3323,7 @@ export default function App() {
           <div className="border border-line bg-white p-5 shadow-panel sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Dashboard</h2>
+                <h2 className="font-display text-2xl font-normal uppercase tracking-[0.02em] text-ink sm:text-3xl">DASHBOARD</h2>
                 <p className="mt-1 text-sm text-slate-500">
                   Live overview of pipeline health and recent additions.
                 </p>
@@ -3411,7 +3411,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => triggerImport("initial")}
-                    className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-md bg-black px-4 py-2 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-inkSoft"
+                    className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-brandHover"
                   >
                     <FileSpreadsheet size={16} />
                     Load CRM data
@@ -3522,7 +3522,7 @@ export default function App() {
         {activeTab === "crm" && <section ref={contactsListRef} className="mt-6 border border-line bg-white shadow-panel">
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
             <div>
-              <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Contact List</h2>
+              <h2 className="font-display text-2xl font-normal uppercase tracking-[0.02em] text-ink sm:text-3xl">CONTACT LIST</h2>
               <p className="mt-1 text-sm text-slate-500">
                 {filteredContacts.length} contacts in the current view.
               </p>
@@ -3667,7 +3667,7 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => openExistingContact(contact)}
-                            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-black hover:text-ink"
+                            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-brand hover:text-ink"
                           >
                             Edit
                           </button>
@@ -3769,7 +3769,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => openExistingContact(contact)}
-                        className="min-h-[44px] flex-1 rounded-md border border-line px-3 py-2 text-sm font-medium text-slate-600 hover:border-black hover:text-ink"
+                        className="min-h-[44px] flex-1 rounded-md border border-line px-3 py-2 text-sm font-medium text-slate-600 hover:border-brand hover:text-ink"
                       >
                         Edit
                       </button>
@@ -3921,7 +3921,7 @@ export default function App() {
                           className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
                             active
                               ? "border-brand bg-brand text-white"
-                              : "border-line bg-white text-slate-600 hover:border-black hover:bg-mist"
+                              : "border-line bg-white text-slate-600 hover:border-brand hover:bg-mist"
                           }`}
                         >
                           {service}
@@ -3942,7 +3942,7 @@ export default function App() {
                           className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
                             active
                               ? "border-brand bg-brand text-white"
-                              : "border-line bg-white text-slate-600 hover:border-black hover:bg-mist"
+                              : "border-line bg-white text-slate-600 hover:border-brand hover:bg-mist"
                           }`}
                         >
                           {platform}
@@ -3971,7 +3971,7 @@ export default function App() {
                   <div className="border-t border-line pt-3">
                     <div className="flex items-end justify-between gap-4">
                       <span className="text-sm font-medium text-slate-500">Total invoiced</span>
-                      <span className="font-display text-3xl font-semibold leading-none text-ink">
+                      <span className="font-display text-3xl font-normal tracking-[0.02em] leading-none text-brand">
                         {formatCurrencyOrDash(activeContact.totalClientValue)}
                       </span>
                     </div>
@@ -4072,14 +4072,14 @@ export default function App() {
                   setActiveContact(null);
                   setIsNewContact(false);
                 }}
-                className="min-h-[44px] flex-1 rounded-md border border-line px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-slate-600 transition hover:border-black hover:text-ink sm:flex-none"
+                className="min-h-[44px] flex-1 rounded-md border border-line px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-slate-600 transition hover:border-brand hover:text-ink sm:flex-none"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={saveActiveContact}
-                className="min-h-[44px] flex-1 rounded-md bg-black px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-inkSoft sm:flex-none"
+                className="min-h-[44px] flex-1 rounded-md bg-brand px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-brandHover sm:flex-none"
               >
                 Save Contact
               </button>
@@ -4145,7 +4145,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={buildImportPreview}
-                  className="rounded-md bg-black px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-inkSoft"
+                  className="rounded-md bg-brand px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-brandHover"
                 >
                   Build Import Preview
                 </button>
@@ -4228,8 +4228,8 @@ export default function App() {
                                 }
                                 className={`rounded-md border px-4 py-2 text-sm font-medium uppercase tracking-[0.08em] transition ${
                                   item.action === action
-                                    ? "border-black bg-black text-white"
-                                    : "border-line bg-white text-slate-600 hover:border-black hover:bg-mist"
+                                    ? "border-brand bg-brand text-white"
+                                    : "border-line bg-white text-slate-600 hover:border-brand hover:bg-mist"
                                 }`}
                               >
                                 {action}
@@ -4251,14 +4251,14 @@ export default function App() {
                         preview: null,
                       }))
                     }
-                    className="rounded-md border border-line px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-black hover:text-ink"
+                    className="rounded-md border border-line px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-brand hover:text-ink"
                   >
                     Back to Mapping
                   </button>
                   <button
                     type="button"
                     onClick={applyImport}
-                    className="rounded-md bg-black px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-inkSoft"
+                    className="rounded-md bg-brand px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-brandHover"
                   >
                     Apply Import
                   </button>
@@ -4283,7 +4283,7 @@ export default function App() {
                 type="button"
                 onClick={() => setConfirmDeleteId(null)}
                 disabled={isDeleting}
-                className="rounded-md border border-line px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-black hover:text-ink disabled:opacity-40"
+                className="rounded-md border border-line px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-brand hover:text-ink disabled:opacity-40"
               >
                 Cancel
               </button>
@@ -4332,7 +4332,7 @@ function SummaryCard({ label, value, className = "", onClick }) {
       <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
         {label}
       </div>
-      <div className="mt-1 font-display text-3xl font-semibold leading-none text-ink">
+      <div className="mt-1 font-display text-[28px] font-normal tracking-[0.02em] leading-none text-brand">
         {value}
       </div>
     </div>
@@ -4342,8 +4342,8 @@ function SummaryCard({ label, value, className = "", onClick }) {
 function ActionButton({ children, onClick, icon, variant = "primary", className = "" }) {
   const styles =
     variant === "primary"
-      ? "bg-black text-white hover:bg-inkSoft"
-      : "border border-line bg-white text-slate-700 hover:border-black hover:bg-mist";
+      ? "bg-brand text-white hover:bg-brandHover"
+      : "border border-brand bg-white text-brand hover:bg-brandSoft";
 
   return (
     <button
@@ -4381,7 +4381,7 @@ function PreviewCard({ label, value }) {
       <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
         {label}
       </div>
-      <div className="mt-2 font-display text-3xl font-semibold leading-none text-ink">
+      <div className="mt-2 font-display text-[28px] font-normal tracking-[0.02em] leading-none text-brand">
         {value}
       </div>
     </div>
