@@ -109,6 +109,7 @@ export default function LoginPage() {
             color: "var(--ink)",
             borderRadius: "8px",
             padding: "28px 24px",
+            borderTop: "3px solid #305DAB",
             boxShadow: "0 8px 28px rgba(0,0,0,0.22)",
           }}
         >
