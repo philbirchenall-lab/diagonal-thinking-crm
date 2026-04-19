@@ -1,7 +1,5 @@
-/* Brand fonts — Oswald (display) + Source Sans 3 (body) per Brand v1.2.
-   Newsreader kept for legacy `font-editorial` callers; to be removed in
-   Phase 4 cleanup (see tailwind.config.js). */
-@import url("https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Source+Sans+3:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap");
+/* Brand fonts: Oswald (display) + Source Sans 3 (body) per Brand v1.6. Newsreader removed 19 April 2026 after the CRM-wide brand hotfix sweep. */
+@import url("https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Source+Sans+3:wght@400;500;600;700&display=swap");
 
 /* Shared brand tokens — single source of truth. */
 @import "../packages/brand/src/tokens.css";
