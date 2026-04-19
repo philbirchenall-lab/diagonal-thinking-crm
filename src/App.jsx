@@ -3170,7 +3170,7 @@ export default function App() {
       <div className="mx-auto max-w-7xl px-0 py-0 sm:px-4 sm:py-6 lg:px-8">
         <header className="overflow-hidden rounded-none border-y border-black bg-white shadow-panel sm:rounded-xl sm:border sm:border-line">
           {/* Top brand bar */}
-        <div className="border-b border-brand bg-brand px-5 py-3 sm:px-6">
+          <div className="border-b border-brand bg-brand px-5 py-3 sm:px-6">
             <div className="flex items-center justify-between">
               <div className="flex min-w-0 items-center">
                 <img
@@ -3178,26 +3178,6 @@ export default function App() {
                   alt="Diagonal Thinking"
                   className="h-8 w-auto sm:h-10"
                 />
-              </div>
-              <div className="flex items-center gap-3">
-                <SyncDot status={syncStatus} />
-                {isSupabaseMode() && (
-                  <button
-                    type="button"
-                    onClick={signOut}
-                    className="text-xs text-white/55 transition hover:text-white"
-                    title="Sign out"
-                  >
-                    Sign out
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-                  <div className="truncate text-sm font-semibold uppercase tracking-[0.28em] text-white sm:text-base">
-                    Diagonal // Thinking
-                  </div>
-                </div>
               </div>
               <div className="flex items-center gap-3">
                 <SyncDot status={syncStatus} />
