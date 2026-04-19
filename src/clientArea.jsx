@@ -184,14 +184,14 @@ function SessionShell({ title, subtitle, onClose, children }) {
       <div className="w-full max-w-6xl rounded-t-xl border border-line bg-white shadow-panel sm:rounded-xl">
         <div className="sticky top-0 z-10 flex items-start justify-between border-b border-line bg-white px-5 py-4 sm:px-6 sm:py-5">
           <div>
-            <h2 className="font-editorial text-2xl font-bold text-ink sm:text-3xl">{title}</h2>
+            <h2 className="font-display text-2xl font-normal uppercase tracking-[0.02em] text-ink sm:text-3xl">{title}</h2>
             {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close session editor"
-            className="min-h-[44px] min-w-[44px] rounded-md border border-line p-2 text-slate-500 transition hover:border-black hover:text-ink"
+            className="min-h-[44px] min-w-[44px] rounded-md border border-line p-2 text-slate-500 transition hover:border-brand hover:text-ink"
           >
             <X size={18} />
           </button>
@@ -347,7 +347,7 @@ function ResourceEditor({ resources, onChange }) {
       <button
         type="button"
         onClick={addRow}
-        className="inline-flex min-h-[44px] items-center gap-2 rounded-md border border-line px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-black hover:bg-mist"
+        className="inline-flex min-h-[44px] items-center gap-2 rounded-md border border-line px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-brand hover:bg-mist"
       >
         <Plus size={16} />
         Add resource
@@ -640,7 +640,7 @@ function SessionEditorModal({ contacts, initialSession, launchEmail, onClose, on
                     <button
                       type="button"
                       onClick={() => navigator.clipboard.writeText(landingUrl)}
-                      className="inline-flex min-h-[44px] items-center gap-2 rounded-md border border-line px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-black hover:bg-white"
+                      className="inline-flex min-h-[44px] items-center gap-2 rounded-md border border-line px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-brand hover:bg-white"
                     >
                       <Copy size={15} />
                       Copy link
@@ -649,7 +649,7 @@ function SessionEditorModal({ contacts, initialSession, launchEmail, onClose, on
                       href={landingUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex min-h-[44px] items-center gap-2 rounded-md border border-line px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-black hover:bg-white"
+                      className="inline-flex min-h-[44px] items-center gap-2 rounded-md border border-line px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-brand hover:bg-white"
                     >
                       <ExternalLink size={15} />
                       View page
@@ -673,7 +673,7 @@ function SessionEditorModal({ contacts, initialSession, launchEmail, onClose, on
                 <button
                   type="submit"
                   disabled={sending}
-                  className="inline-flex min-h-[44px] items-center gap-2 rounded-md bg-black px-4 py-2 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-inkSoft disabled:opacity-60"
+                  className="inline-flex min-h-[44px] items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-brandHover disabled:opacity-60"
                 >
                   <Mail size={15} />
                   {sending ? "Sending…" : "Send magic link"}
@@ -719,7 +719,7 @@ function SessionEditorModal({ contacts, initialSession, launchEmail, onClose, on
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[44px] flex-1 rounded-md border border-line px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:border-black hover:text-ink sm:flex-none"
+            className="min-h-[44px] flex-1 rounded-md border border-line px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:border-brand hover:text-ink sm:flex-none"
           >
             Close
           </button>
@@ -727,7 +727,7 @@ function SessionEditorModal({ contacts, initialSession, launchEmail, onClose, on
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="min-h-[44px] flex-1 rounded-md bg-black px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-inkSoft disabled:opacity-60 sm:flex-none"
+            className="min-h-[44px] flex-1 rounded-md bg-brand px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-brandHover disabled:opacity-60 sm:flex-none"
           >
             {saving ? "Saving…" : "Save session"}
           </button>
@@ -784,7 +784,7 @@ export function ClientAreaTab({ contacts, launchContact, onLaunchConsumed }) {
     <div className="mt-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-editorial text-2xl font-bold text-ink">Client Area</h2>
+          <h2 className="font-display text-2xl font-normal uppercase tracking-[0.02em] text-ink">CLIENT AREA</h2>
           <p className="mt-1 text-sm text-slate-500">
             Manage client session pages, resources, registrations, and magic links.
           </p>
@@ -792,7 +792,7 @@ export function ClientAreaTab({ contacts, launchContact, onLaunchConsumed }) {
         <button
           type="button"
           onClick={() => setEditingSession(emptySession())}
-          className="inline-flex min-h-[44px] items-center gap-2 rounded-md bg-black px-4 py-2 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-inkSoft"
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-brandHover"
         >
           <Plus size={16} />
           New session
@@ -810,7 +810,7 @@ export function ClientAreaTab({ contacts, launchContact, onLaunchConsumed }) {
             <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
               {item.label}
             </div>
-            <div className="mt-2 text-2xl font-semibold text-ink">{item.value}</div>
+            <div className="mt-2 font-display text-[28px] font-normal tracking-[0.02em] leading-none text-brand">{item.value}</div>
           </div>
         ))}
       </div>
@@ -869,7 +869,7 @@ export function ClientAreaTab({ contacts, launchContact, onLaunchConsumed }) {
                           <button
                             type="button"
                             onClick={() => setEditingSession(session)}
-                            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-black hover:bg-mist"
+                            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-brand hover:bg-mist"
                           >
                             Magic link
                           </button>
@@ -877,14 +877,14 @@ export function ClientAreaTab({ contacts, launchContact, onLaunchConsumed }) {
                             href={sessionLandingUrl(session.slug)}
                             target="_blank"
                             rel="noreferrer"
-                            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-black hover:bg-mist"
+                            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-brand hover:bg-mist"
                           >
                             View page
                           </a>
                           <button
                             type="button"
                             onClick={() => downloadQR(sessionLandingUrl(session.slug), session.organisationName || session.name)}
-                            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-black hover:bg-mist"
+                            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-brand hover:bg-mist"
                           >
                             ⬇ QR
                           </button>
@@ -934,21 +934,21 @@ export function ClientAreaTab({ contacts, launchContact, onLaunchConsumed }) {
                         href={sessionLandingUrl(session.slug)}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-black hover:bg-mist"
+                        className="rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-brand hover:bg-mist"
                       >
                         View
                       </a>
                       <button
                         type="button"
                         onClick={() => downloadQR(sessionLandingUrl(session.slug), session.organisationName || session.name)}
-                        className="rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-black hover:bg-mist"
+                        className="rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-brand hover:bg-mist"
                       >
                         ⬇ QR
                       </button>
                       <button
                         type="button"
                         onClick={() => setEditingSession(session)}
-                        className="rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-black hover:bg-mist"
+                        className="rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-brand hover:bg-mist"
                       >
                         Open
                       </button>
