@@ -496,7 +496,7 @@ function ModalShell({ title, subtitle, onClose, children }) {
       <div className="w-full max-w-5xl rounded-t-xl border border-line bg-white shadow-panel sm:rounded-xl">
         <div className="flex items-start justify-between border-b border-line px-5 py-4 sm:px-6 sm:py-5">
           <div>
-            <h2 className="font-editorial text-2xl font-bold text-ink sm:text-3xl">{title}</h2>
+            <h2 className="font-display text-2xl font-bold text-ink sm:text-3xl">{title}</h2>
             {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
           </div>
           <button
@@ -1976,7 +1976,7 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
       {/* Pipeline value hero */}
       <div className="mb-6 border border-line bg-white p-5 shadow-panel sm:p-6">
         <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Active Pipeline</div>
-        <div className="mt-2 font-editorial text-4xl font-semibold text-ink">
+        <div className="mt-2 font-display text-4xl font-semibold text-ink">
           {formatCurrency(totalPipelineValue)}
         </div>
         <div className="mt-1 text-xs text-slate-400">
@@ -2341,7 +2341,7 @@ function ProposalsTab({ contacts }) {
       {/* Proposals header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-editorial text-2xl font-bold text-ink">Proposals</h2>
+          <h2 className="font-display text-2xl font-bold text-ink">Proposals</h2>
           <p className="mt-1 text-sm text-slate-500">
             {isSupabaseMode() ? `${proposals.length} proposal${proposals.length !== 1 ? "s" : ""}` : "Connect to Supabase to manage proposals"}
           </p>
@@ -3170,16 +3170,30 @@ export default function App() {
       <div className="mx-auto max-w-7xl px-0 py-0 sm:px-4 sm:py-6 lg:px-8">
         <header className="overflow-hidden rounded-none border-y border-black bg-white shadow-panel sm:rounded-xl sm:border sm:border-line">
           {/* Top brand bar */}
-          <div className="border-b border-[#183a73] bg-[#183a73] px-5 py-3 sm:px-6">
+        <div className="border-b border-brand bg-brand px-5 py-3 sm:px-6">
             <div className="flex items-center justify-between">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white">
-                  <img src="/favicon.png" alt="Diagonal Thinking mark" className="h-full w-full object-cover" />
-                </span>
-                <div className="min-w-0">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/55">
-                    Phil Birchenall
-                  </div>
+              <div className="flex min-w-0 items-center">
+                <img
+                  src="/brand/logo-full-white.png"
+                  alt="Diagonal Thinking"
+                  className="h-8 w-auto sm:h-10"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <SyncDot status={syncStatus} />
+                {isSupabaseMode() && (
+                  <button
+                    type="button"
+                    onClick={signOut}
+                    className="text-xs text-white/55 transition hover:text-white"
+                    title="Sign out"
+                  >
+                    Sign out
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
                   <div className="truncate text-sm font-semibold uppercase tracking-[0.28em] text-white sm:text-base">
                     Diagonal // Thinking
                   </div>
@@ -3231,7 +3245,7 @@ export default function App() {
           <div className="bg-brand px-5 py-6 text-white sm:px-6 sm:py-9">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h1 className="font-editorial text-3xl font-bold leading-none text-balance sm:text-5xl">
+                <h1 className="font-display text-3xl font-bold leading-none text-balance sm:text-5xl">
                   Diagonal Thinking CRM
                 </h1>
               </div>
@@ -3329,7 +3343,7 @@ export default function App() {
           <div className="border border-line bg-white p-5 shadow-panel sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-editorial text-2xl font-semibold text-ink sm:text-3xl">Dashboard</h2>
+                <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Dashboard</h2>
                 <p className="mt-1 text-sm text-slate-500">
                   Live overview of pipeline health and recent additions.
                 </p>
@@ -3528,7 +3542,7 @@ export default function App() {
         {activeTab === "crm" && <section ref={contactsListRef} className="mt-6 border border-line bg-white shadow-panel">
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
             <div>
-              <h2 className="font-editorial text-2xl font-semibold text-ink sm:text-3xl">Contact List</h2>
+              <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Contact List</h2>
               <p className="mt-1 text-sm text-slate-500">
                 {filteredContacts.length} contacts in the current view.
               </p>
@@ -3977,7 +3991,7 @@ export default function App() {
                   <div className="border-t border-line pt-3">
                     <div className="flex items-end justify-between gap-4">
                       <span className="text-sm font-medium text-slate-500">Total invoiced</span>
-                      <span className="font-editorial text-3xl font-semibold leading-none text-ink">
+                      <span className="font-display text-3xl font-semibold leading-none text-ink">
                         {formatCurrencyOrDash(activeContact.totalClientValue)}
                       </span>
                     </div>
@@ -4338,7 +4352,7 @@ function SummaryCard({ label, value, className = "", onClick }) {
       <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
         {label}
       </div>
-      <div className="mt-1 font-editorial text-3xl font-semibold leading-none text-ink">
+      <div className="mt-1 font-display text-3xl font-semibold leading-none text-ink">
         {value}
       </div>
     </div>
@@ -4387,7 +4401,7 @@ function PreviewCard({ label, value }) {
       <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
         {label}
       </div>
-      <div className="mt-2 font-editorial text-3xl font-semibold leading-none text-ink">
+      <div className="mt-2 font-display text-3xl font-semibold leading-none text-ink">
         {value}
       </div>
     </div>
