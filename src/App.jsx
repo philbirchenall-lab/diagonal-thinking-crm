@@ -28,7 +28,7 @@ import {
   Tooltip,
 } from "recharts";
 
-// LOCAL_API_URL is managed by db.js — use loadContacts/saveAllContacts instead
+// LOCAL_API_URL is managed by db.js - use loadContacts/saveAllContacts instead
 const TYPE_OPTIONS = ["Client", "Warm Lead", "Cold Lead", "Mailing List"];
 const PLATFORM_OPTIONS = [
   "ChatGPT",
@@ -103,7 +103,7 @@ const TYPE_STYLES = {
 };
 const TYPE_COLORS = {
   Client: "#305DAB",
-  "Warm Lead": "rgba(48, 93, 171, 0.7)",
+  "Warm Lead": "#305DAB",
   "Cold Lead": "rgba(48, 93, 171, 0.4)",
   "Mailing List": "#A7A59F",
 };
@@ -167,11 +167,11 @@ function formatCurrency(value) {
 }
 
 function formatCurrencyOrDash(value) {
-  return Number(value) ? formatCurrency(value) : "—";
+  return Number(value) ? formatCurrency(value) : "-";
 }
 
 function formatDate(value) {
-  if (!value) return "—";
+  if (!value) return "-";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return new Intl.DateTimeFormat("en-GB", {
@@ -222,7 +222,7 @@ function matchesCompanyQuery(query, companyName) {
   const name = companyName.toLowerCase();
   // Substring match (most common case)
   if (name.includes(q)) return true;
-  // Acronym match — e.g. "MM" or "GMC" (2+ chars, no spaces)
+  // Acronym match - e.g. "MM" or "GMC" (2+ chars, no spaces)
   if (q.length >= 2 && !q.includes(" ")) {
     const acronym = companyAcronym(companyName).toLowerCase();
     if (acronym.startsWith(q)) return true;
@@ -926,7 +926,7 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
     return buildGenericProposalDoc(proposal?.program_title);
   });
   const [contactSearch, setContactSearch] = useState(
-    proposal?.contacts ? `${proposal.contacts.contact_name ?? ""} — ${proposal.contacts.company ?? ""}` : ""
+    proposal?.contacts ? `${proposal.contacts.contact_name ?? ""} - ${proposal.contacts.company ?? ""}` : ""
   );
   const [showContactDropdown, setShowContactDropdown] = useState(false);
   const [viewMode, setViewMode] = useState("write");
@@ -974,7 +974,7 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
     if (parsed.form.contactId) {
       const selectedContact = contacts.find((contact) => contact.id === parsed.form.contactId);
       if (selectedContact) {
-        setContactSearch(`${selectedContact.contactName} — ${selectedContact.company}`);
+        setContactSearch(`${selectedContact.contactName} - ${selectedContact.company}`);
       }
     }
     setRestoredDraft(true);
@@ -999,7 +999,7 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
       clientName: c.company || c.contactName,
       preparedFor: [c.contactName, c.company].filter(Boolean).join(", "),
     }));
-    setContactSearch(`${c.contactName} — ${c.company}`);
+    setContactSearch(`${c.contactName} - ${c.company}`);
     setShowContactDropdown(false);
   }
 
@@ -1634,7 +1634,7 @@ function OpportunityForm({ initial = null, contactId, onSave, onCancel }) {
             <option value="">None</option>
             {proposals.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.proposal_code ? `${p.proposal_code} — ${p.program_title}` : p.program_title}
+                {p.proposal_code ? `${p.proposal_code} - ${p.program_title}` : p.program_title}
               </option>
             ))}
           </select>
@@ -1788,7 +1788,7 @@ function ContactOpportunitiesPanel({ contact, onOppChange }) {
 
       {opportunities !== null && opportunities.length === 0 && !showForm && (
         <div className="mt-3 space-y-2">
-          <p className="text-xs italic text-slate-400">No opportunities yet — add the first one.</p>
+          <p className="text-xs italic text-slate-400">No opportunities yet - add the first one.</p>
           {isSupabaseMode() && (
             <button
               type="button"
@@ -1840,7 +1840,7 @@ function ContactOpportunitiesPanel({ contact, onOppChange }) {
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="text-xs font-medium text-slate-600">
-                      {Number(opp.value) > 0 ? formatCurrency(opp.value) : "£—"}
+                      {Number(opp.value) > 0 ? formatCurrency(opp.value) : "£-"}
                     </span>
                     <span className="text-xs text-slate-400">
                       {opp.close_date
@@ -2049,7 +2049,7 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
           <div className="px-6 py-10 text-center">
             <p className="text-sm text-slate-400 italic">
               {(opportunities ?? []).length === 0
-                ? "No active opportunities — add one from a contact record."
+                ? "No active opportunities - add one from a contact record."
                 : "No opportunities match the current filters."}
             </p>
           </div>
@@ -2094,16 +2094,16 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
                       } ${terminal ? "opacity-50" : ""}`}
                     >
                       <td className="px-4 py-3 text-ink font-medium">
-                        {opp.contacts?.company || "—"}
+                        {opp.contacts?.company || "-"}
                       </td>
                       <td className="px-4 py-3 text-slate-600">
-                        {opp.contacts?.contact_name || "—"}
+                        {opp.contacts?.contact_name || "-"}
                       </td>
                       <td className="px-4 py-3 text-ink">
                         {opp.title}
                       </td>
                       <td className="px-4 py-3 text-right font-medium text-ink tabular-nums">
-                        {Number(opp.value) > 0 ? formatCurrency(opp.value) : "—"}
+                        {Number(opp.value) > 0 ? formatCurrency(opp.value) : "-"}
                       </td>
                       <td className="px-4 py-3">
                         <StageBadge stage={opp.stage} />
@@ -2111,7 +2111,7 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
                       <td className="px-4 py-3 text-slate-500 text-xs">
                         {opp.close_date
                           ? new Date(opp.close_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
-                          : "—"}
+                          : "-"}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button
@@ -2238,7 +2238,7 @@ function ContactResearchIntelPanel({ contact, onResearchSaved }) {
             type="text"
             value={source}
             onChange={(e) => setSource(e.target.value)}
-            placeholder="Source (e.g. Sol call prep — 9 Apr 2026)"
+            placeholder="Source (e.g. Sol call prep - 9 Apr 2026)"
             className="w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand"
           />
           <input
@@ -2375,7 +2375,7 @@ function ProposalsTab({ contacts }) {
 
       {isSupabaseMode() && !loading && proposals.length > 0 && (
         <div className="border border-line bg-white">
-          {/* Desktop table — hidden on small screens */}
+          {/* Desktop table - hidden on small screens */}
           <div className="hidden sm:block">
             <table className="w-full text-left text-sm">
               <thead>
@@ -2402,7 +2402,7 @@ function ProposalsTab({ contacts }) {
                           <div className="text-xs text-slate-400">{p.contacts.company}</div>
                         </div>
                       ) : (
-                        <span className="text-slate-300 italic">—</span>
+                        <span className="text-slate-300 italic">-</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -2476,7 +2476,7 @@ function ProposalsTab({ contacts }) {
             </table>
           </div>
 
-          {/* Mobile card list — visible only on small screens */}
+          {/* Mobile card list - visible only on small screens */}
           <div className="space-y-0 sm:hidden">
             {proposals.map((p) => (
               <div key={p.id} className="border-b border-line p-4 last:border-b-0">
@@ -2585,7 +2585,7 @@ function normalizeCompanyName(name) {
 export default function App() {
   const [activeTab, setActiveTab] = useState("crm");
   const [contacts, setContacts] = useState([]);
-  // CRM-012: Map<contact_id, total active opp value> — derived from opportunities table.
+  // CRM-012: Map<contact_id, total active opp value> - derived from opportunities table.
   // Used for pipeline stat, contact Snapshot, and contacts list sort.
   const [oppTotals, setOppTotals] = useState(new Map());
   const [syncStatus, setSyncStatus] = useState("syncing");
@@ -2716,7 +2716,7 @@ export default function App() {
       {},
     );
 
-    // CRM-012: Projected Pipeline — sum of all active opportunity values across all contacts.
+    // CRM-012: Projected Pipeline - sum of all active opportunity values across all contacts.
     // "Active" = non-Won, non-Lost. No company-level deduplication (each opp counts individually).
     const projected = Array.from(oppTotals.values()).reduce((sum, val) => sum + val, 0);
     const warmLeadValue = projected;
@@ -2823,7 +2823,7 @@ export default function App() {
     let updatedCount = 0;
 
     // Immediately persist the primary contact to Supabase.
-    // This direct upsert is the reliable save path — it does not depend on the
+    // This direct upsert is the reliable save path - it does not depend on the
     // batch saveAllContacts effect and cannot be blocked by URL-size issues or
     // race conditions in the bulk-sync flow.
     if (isSupabaseMode()) {
@@ -2970,12 +2970,12 @@ export default function App() {
             .update({ last_synced_at: now })
             .in("id", data.syncedIds);
         } catch {
-          // Non-fatal — column may not exist yet
+          // Non-fatal - column may not exist yet
         }
       }
 
       showMailchimpToast(
-        `Mailchimp sync complete — ${data.added} added, ${data.updated} updated, ${data.skipped} skipped`
+        `Mailchimp sync complete - ${data.added} added, ${data.updated} updated, ${data.skipped} skipped`
       );
     } catch (err) {
       showMailchimpToast(`Mailchimp sync failed: ${err.message}`);
@@ -3220,7 +3220,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Blue hero section — CRM tab only */}
+          {/* Blue hero section - CRM tab only */}
           {activeTab === "crm" && (<>
           <div className="bg-brand px-5 py-6 text-white sm:px-6 sm:py-9">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -3529,7 +3529,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Desktop table — hidden on small screens */}
+          {/* Desktop table - hidden on small screens */}
           <div className="hidden sm:block">
             <table className="w-full table-fixed text-left">
               <thead className="bg-mist text-xs uppercase tracking-[0.16em] text-slate-500">
@@ -3656,7 +3656,7 @@ export default function App() {
                             )}
                           </div>
                         ) : (
-                          <span className="text-sm text-slate-400">—</span>
+                          <span className="text-sm text-slate-400">-</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">
@@ -3693,7 +3693,7 @@ export default function App() {
             </table>
           </div>
 
-          {/* Mobile card list — visible only on small screens */}
+          {/* Mobile card list - visible only on small screens */}
           <div className="space-y-3 p-4 sm:hidden">
             {filteredContacts.length ? (
               filteredContacts.map((contact) => (
@@ -3837,7 +3837,7 @@ export default function App() {
                 >
                   {potentialDuplicate.contactName || potentialDuplicate.company}
                 </button>
-                {potentialDuplicate.company ? ` at ${potentialDuplicate.company}` : ""}{" "}— view
+                {potentialDuplicate.company ? ` at ${potentialDuplicate.company}` : ""}{" "} - view
               </span>
             </div>
           )}
@@ -4399,7 +4399,7 @@ function SyncDot({ status }) {
     local: "Local only",
     syncing: "Saving…",
     synced: "Saved to local file",
-    error: "Save error — is the CRM server running?",
+    error: "Save error - is the CRM server running?",
   };
   return (
     <span
