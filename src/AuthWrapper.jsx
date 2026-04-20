@@ -6,12 +6,13 @@
  *
  * Login screen rebuilt Phase 1 brand audit (Rex, 18 Apr 2026) to the AI-Intel
  * dark-first pattern per Tes scope §2.3 + Pix §10.3. Tokens sourced from
- * packages/brand (@dt/brand-tokens) — single source of truth.
+ * packages/brand (@dt/brand-tokens), single source of truth.
  */
 
 import { useState, useEffect } from "react";
 import { getSupabaseClient, isSupabaseMode } from "./db.js";
 import { CTA_COPY, LOGO_ALT } from "../packages/brand/src/index.js";
+import DTLogo from "../packages/brand-ui/src/DTLogo";
 
 function LoginScreen({ onLogin }) {
   const [email, setEmail] = useState("");
@@ -71,17 +72,7 @@ function LoginScreen({ onLogin }) {
             marginBottom: "var(--dt-space-hero)",
           }}
         >
-          <picture>
-            <source
-              media="(max-width: 479px)"
-              srcSet="/brand/logo-icon-white.png"
-            />
-            <img
-              src="/brand/logo-full-white.png"
-              alt={LOGO_ALT}
-              style={{ height: "54px", width: "auto", display: "block" }}
-            />
-          </picture>
+          <DTLogo variant="full" width={108} onDark alt={LOGO_ALT} />
         </div>
 
         <h1
@@ -341,7 +332,7 @@ export default function AuthWrapper({ children }) {
     return <LoginScreen onLogin={() => {}} />;
   }
 
-  // Signed in — render the app with a sign-out function injected via context
+  // Signed in, render the app with a sign-out function injected via context
   return children;
 }
 
