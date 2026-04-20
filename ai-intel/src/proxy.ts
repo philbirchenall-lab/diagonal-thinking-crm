@@ -62,6 +62,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Run on all paths except Next.js internals
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|brand/).*)",
+        "/((?!_next/static|_next/image|favicon.ico|favicon-16.png|favicon-32.png|favicon-64.png|apple-touch-icon.png|maskable-512.png|brand/).*)",
   ],
 };
