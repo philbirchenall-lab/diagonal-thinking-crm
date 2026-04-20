@@ -338,16 +338,58 @@ export async function loadProposalAccesses(proposalId) {
   return data ?? [];
 }
 
-// Upsert a single contact to Supabase by primary key.
-// Use this for individual creates/updates — more reliable than saveAllContacts
+// Upsert a single contact to Supabase.
+// Use this for individual creates/updates, more reliable than saveAllContacts
 // for single rows and avoids the large-batch URL-length pitfall.
+//
+// Conflict handling:
+//   1. First attempt matches on primary key (id), the common edit case.
+//   2. If Postgres raises 23505 on contacts_email_unique (the row being saved
+//      carries an email that already sits under a different id, typically from
+//      a Squarespace webhook insert), we look the existing row up by email,
+//      copy its id into the payload, and retry the upsert by id. This
+//      preserves the existing row's UUID and any foreign-key relationships.
+//   3. If the retry still fails, we surface a structured error so the caller
+//      can show a friendly toast instead of the dashboard-wide sync banner.
 export async function upsertContact(contact) {
   if (!USE_SUPABASE) return;
   const row = toSnake(contact);
-  const { error } = await supabase
+
+  const attempt = await supabase
     .from("contacts")
     .upsert(row, { onConflict: "id" });
-  if (error) throw new Error(`Supabase contact save failed: ${error.message}`);
+
+  if (!attempt.error) return;
+
+  const isDuplicateEmail =
+    attempt.error.code === "23505" ||
+    /contacts_email_unique/i.test(attempt.error.message || "") ||
+    /duplicate key/i.test(attempt.error.message || "");
+
+  if (isDuplicateEmail && row.email) {
+    const emailKey = String(row.email).toLowerCase().trim();
+    const { data: existing, error: lookupErr } = await supabase
+      .from("contacts")
+      .select("id")
+      .ilike("email", emailKey)
+      .maybeSingle();
+
+    if (!lookupErr && existing?.id) {
+      const merged = { ...row, id: existing.id };
+      const retry = await supabase
+        .from("contacts")
+        .upsert(merged, { onConflict: "id" });
+      if (!retry.error) return;
+    }
+  }
+
+  const err = new Error(
+    `Supabase contact save failed: ${attempt.error.message}`
+  );
+  err.code = attempt.error.code;
+  err.isDuplicateEmail = isDuplicateEmail;
+  err.cause = attempt.error;
+  throw err;
 }
 
 export async function saveAllContacts(contacts) {
@@ -537,7 +579,7 @@ export async function saveOpportunity(opportunity) {
     if (error) {
       if (error.code === "23503") {
         throw new Error(
-          "Could not link this opportunity to the contact — the contact may not be saved yet. " +
+          "Could not link this opportunity to the contact. The contact may not be saved yet. " +
           "Try refreshing the page (⌘R) and adding the opportunity again."
         );
       }
@@ -567,7 +609,7 @@ export async function saveOpportunity(opportunity) {
       // page is stale. Give a clear, actionable message instead of the raw constraint error.
       if (error.code === "23503") {
         throw new Error(
-          "Could not link this opportunity to the contact — the contact may not be saved yet. " +
+          "Could not link this opportunity to the contact. The contact may not be saved yet. " +
           "Try refreshing the page (⌘R) and adding the opportunity again."
         );
       }
@@ -612,7 +654,7 @@ export async function requestClientMagicLink(payload) {
     return {
       ok: true,
       mode: "local",
-      message: `Local preview only — a real magic link would be sent to ${payload.email}.`,
+      message: `Local preview only. A real magic link would be sent to ${payload.email}.`,
     };
   }
 
