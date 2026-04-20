@@ -492,7 +492,7 @@ function TextArea(props) {
 
 function ModalShell({ title, subtitle, onClose, children }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-950/50 sm:items-start sm:px-4 sm:py-8">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 sm:px-4 sm:py-8">
       <div className="w-full max-w-5xl rounded-t-xl border border-line bg-white shadow-panel sm:rounded-xl">
         <div className="flex items-start justify-between border-b border-line px-5 py-4 sm:px-6 sm:py-5">
           <div>
@@ -926,7 +926,7 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
     return buildGenericProposalDoc(proposal?.program_title);
   });
   const [contactSearch, setContactSearch] = useState(
-    proposal?.contacts ? `${proposal.contacts.contact_name ?? ""} - ${proposal.contacts.company ?? ""}` : ""
+    proposal?.contacts ? `${proposal.contacts.contact_name ?? ""}, ${proposal.contacts.company ?? ""}` : ""
   );
   const [showContactDropdown, setShowContactDropdown] = useState(false);
   const [viewMode, setViewMode] = useState("write");
@@ -974,7 +974,7 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
     if (parsed.form.contactId) {
       const selectedContact = contacts.find((contact) => contact.id === parsed.form.contactId);
       if (selectedContact) {
-        setContactSearch(`${selectedContact.contactName} - ${selectedContact.company}`);
+        setContactSearch(`${selectedContact.contactName}, ${selectedContact.company}`);
       }
     }
     setRestoredDraft(true);
@@ -999,7 +999,7 @@ function ProposalForm({ proposal, contacts, onSave, onClose }) {
       clientName: c.company || c.contactName,
       preparedFor: [c.contactName, c.company].filter(Boolean).join(", "),
     }));
-    setContactSearch(`${c.contactName} - ${c.company}`);
+    setContactSearch(`${c.contactName}, ${c.company}`);
     setShowContactDropdown(false);
   }
 
@@ -1634,7 +1634,7 @@ function OpportunityForm({ initial = null, contactId, onSave, onCancel }) {
             <option value="">None</option>
             {proposals.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.proposal_code ? `${p.proposal_code} - ${p.program_title}` : p.program_title}
+                {p.proposal_code ? `${p.proposal_code} · ${p.program_title}` : p.program_title}
               </option>
             ))}
           </select>
@@ -1788,7 +1788,7 @@ function ContactOpportunitiesPanel({ contact, onOppChange }) {
 
       {opportunities !== null && opportunities.length === 0 && !showForm && (
         <div className="mt-3 space-y-2">
-          <p className="text-xs italic text-slate-400">No opportunities yet - add the first one.</p>
+          <p className="text-xs italic text-slate-400">No opportunities yet. Add the first one.</p>
           {isSupabaseMode() && (
             <button
               type="button"
@@ -2049,7 +2049,7 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
           <div className="px-6 py-10 text-center">
             <p className="text-sm text-slate-400 italic">
               {(opportunities ?? []).length === 0
-                ? "No active opportunities - add one from a contact record."
+                ? "No active opportunities. Add one from a contact record."
                 : "No opportunities match the current filters."}
             </p>
           </div>
@@ -2238,7 +2238,7 @@ function ContactResearchIntelPanel({ contact, onResearchSaved }) {
             type="text"
             value={source}
             onChange={(e) => setSource(e.target.value)}
-            placeholder="Source (e.g. Sol call prep - 9 Apr 2026)"
+            placeholder="Source (e.g. Sol call prep, 9 Apr 2026)"
             className="w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand"
           />
           <input
@@ -2823,11 +2823,21 @@ export default function App() {
     let updatedCount = 0;
 
     // Immediately persist the primary contact to Supabase.
-    // This direct upsert is the reliable save path - it does not depend on the
+    // This direct upsert is the reliable save path, it does not depend on the
     // batch saveAllContacts effect and cannot be blocked by URL-size issues or
     // race conditions in the bulk-sync flow.
     if (isSupabaseMode()) {
       upsertContact(nextRecord).catch((err) => {
+        if (err?.isDuplicateEmail) {
+          // Silent merge path handled a Squarespace-webhook row. If we still
+          // surface 23505 here, another contact genuinely owns this email.
+          setCompanyToast("A contact with this email already exists.");
+          if (companyToastTimerRef.current) clearTimeout(companyToastTimerRef.current);
+          companyToastTimerRef.current = setTimeout(() => setCompanyToast(null), 4000);
+          console.warn("Duplicate email on contact save", err);
+          return;
+        }
+        console.error("Contact save failed", err);
         setSyncError(err?.message || "Contact save failed");
         setSyncStatus("error");
       });
@@ -2975,7 +2985,7 @@ export default function App() {
       }
 
       showMailchimpToast(
-        `Mailchimp sync complete - ${data.added} added, ${data.updated} updated, ${data.skipped} skipped`
+        `Mailchimp sync complete. ${data.added} added, ${data.updated} updated, ${data.skipped} skipped.`
       );
     } catch (err) {
       showMailchimpToast(`Mailchimp sync failed: ${err.message}`);
@@ -3292,20 +3302,8 @@ export default function App() {
 
         {activeTab === "crm" && syncStatus === "error" && (
           <div className="mt-6 border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
-            {isSupabaseMode() ? (
-              <>
-                <span className="font-semibold">Could not sync with the database.</span>{" "}
-                Check your network connection and try refreshing.
-                {syncError && <div className="mt-1 font-mono text-xs opacity-75">{syncError}</div>}
-              </>
-            ) : (
-              <>
-                <span className="font-semibold">Could not connect to the local CRM server.</span>{" "}
-                Make sure the Express server is running:{" "}
-                <code className="font-mono">node server.js</code> in the project folder, then refresh.
-                Double-clicking <code className="font-mono">Open CRM.command</code> starts both servers automatically.
-              </>
-            )}
+            <span className="font-semibold">Could not sync with the database.</span>{" "}
+            Check your connection and try refreshing.
           </div>
         )}
 
@@ -3837,7 +3835,7 @@ export default function App() {
                 >
                   {potentialDuplicate.contactName || potentialDuplicate.company}
                 </button>
-                {potentialDuplicate.company ? ` at ${potentialDuplicate.company}` : ""}{" "} - view
+                {potentialDuplicate.company ? ` at ${potentialDuplicate.company}` : ""}. View.
               </span>
             </div>
           )}
@@ -4061,10 +4059,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6 sm:py-5">
-            <div className="text-sm text-slate-500">
-              {"Changes are saved to a local JSON file via the CRM server."}
-            </div>
+          <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:px-6 sm:py-5">
             <div className="flex gap-3">
               <button
                 type="button"
@@ -4399,7 +4394,7 @@ function SyncDot({ status }) {
     local: "Local only",
     syncing: "Saving…",
     synced: "Saved to local file",
-    error: "Save error - is the CRM server running?",
+    error: "Save failed. Check your connection and try again.",
   };
   return (
     <span

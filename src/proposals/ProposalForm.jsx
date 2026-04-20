@@ -55,7 +55,7 @@ export default function ProposalForm({ proposal, contacts, onSave, onClose }) {
   const [form, setForm] = useState(initialForm);
   const [doc, setDoc] = useState(initialDoc);
   const [contactSearch, setContactSearch] = useState(
-    proposal?.contacts ? `${proposal.contacts.contact_name ?? ""} — ${proposal.contacts.company ?? ""}` : ""
+    proposal?.contacts ? `${proposal.contacts.contact_name ?? ""}, ${proposal.contacts.company ?? ""}` : ""
   );
   const [showContactDropdown, setShowContactDropdown] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -99,7 +99,7 @@ export default function ProposalForm({ proposal, contacts, onSave, onClose }) {
       clientName: current.clientName || contact.company || contact.contactName,
       preparedFor: [contact.contactName, contact.company].filter(Boolean).join(", "),
     }));
-    setContactSearch(`${contact.contactName} — ${contact.company}`);
+    setContactSearch(`${contact.contactName}, ${contact.company}`);
     setShowContactDropdown(false);
   }
 

@@ -856,7 +856,7 @@ export function ClientAreaTab({ contacts, launchContact, onLaunchConsumed }) {
                           <div className="text-xs text-slate-500">{session.sessionType === "in_house" ? "In-house" : "Open event"}</div>
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-slate-600">{session.organisationName || "—"}</td>
+                      <td className="px-4 py-3 text-slate-600">{session.organisationName || "-"}</td>
                       <td className="px-4 py-3 text-slate-600">{formatSessionDate(session.date)}</td>
                       <td className="px-4 py-3">
                         <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${getStatusClasses(session.status)}`}>
