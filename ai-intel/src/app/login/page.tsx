@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import DTLogo from "../../../../packages/brand-ui/src/DTLogo";
 
 /**
- * Login — dark-first treatment per brand guidelines v1 §2.6
+ * Login, dark-first treatment per brand guidelines v1 §2.6
  * and Tes scope v2 Ambiguity B (navy full-bleed, centred logo,
  * Oswald H1, single sign-in card).
  *
@@ -52,7 +53,7 @@ export default function LoginPage() {
       }}
     >
       <div style={{ width: "100%", maxWidth: "420px" }}>
-        {/* Centred logo — full lockup >= 480px, icon below */}
+        {/* Centred logo, full lockup on this surface */}
         <div
           style={{
             display: "flex",
@@ -60,25 +61,7 @@ export default function LoginPage() {
             marginBottom: "32px",
           }}
         >
-          {/* Dedicated white-out assets from Pix (PIX-LOGO-WHITE-001).
-              Responsive swap at Format Standards §5.5 200px threshold.
-              Full-colour fallback paths remain for any consumer that
-              renders the logo on a non-navy surface. */}
-          <picture>
-            <source
-              media="(max-width: 479px)"
-              srcSet="/brand/logo-icon-white.png"
-            />
-            <img
-              src="/brand/logo-full-white.png"
-              alt="Diagonal Thinking"
-              style={{
-                height: "54px",
-                width: "auto",
-                display: "block",
-              }}
-            />
-          </picture>
+          <DTLogo variant="full" width={108} onDark />
         </div>
 
         <h1
