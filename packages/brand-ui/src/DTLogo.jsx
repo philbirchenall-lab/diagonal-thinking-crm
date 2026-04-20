@@ -1,16 +1,6 @@
 "use client";
 
-import { type CSSProperties, useEffect, useRef, useState } from "react";
-
-export type DTLogoVariant = "full" | "icon" | "auto";
-
-export type DTLogoProps = {
-  variant?: DTLogoVariant;
-  onDark?: boolean;
-  width?: number;
-  alt?: string;
-  className?: string;
-};
+import { useEffect, useRef, useState } from "react";
 
 const ASSET_PATHS = {
   full: {
@@ -21,7 +11,7 @@ const ASSET_PATHS = {
     light: "/brand/logo-icon.png",
     dark: "/brand/logo-icon-white.png",
   },
-} as const;
+};
 
 const FULL_MIN_WIDTH = 200;
 const ICON_MIN_WIDTH = 96;
@@ -32,7 +22,7 @@ const DEFAULT_WIDTH_ICON = 64;
 const FULL_ASPECT_RATIO = 2000 / 1000;
 const ICON_ASPECT_RATIO = 690 / 684;
 
-function isValidVariant(value: string): value is DTLogoVariant {
+function isValidVariant(value) {
   return value === "full" || value === "icon" || value === "auto";
 }
 
@@ -42,10 +32,12 @@ export default function DTLogo({
   width,
   alt = "Diagonal Thinking",
   className = "",
-}: DTLogoProps) {
+}) {
   const safeVariant = isValidVariant(variant) ? variant : "auto";
-  const containerRef = useRef<HTMLSpanElement | null>(null);
-  const [containerWidth, setContainerWidth] = useState(width ?? DEFAULT_WIDTH_FULL);
+  const containerRef = useRef(null);
+  const [containerWidth, setContainerWidth] = useState(
+    width ?? DEFAULT_WIDTH_FULL,
+  );
   const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
@@ -85,7 +77,7 @@ export default function DTLogo({
     return () => window.removeEventListener("resize", measure);
   }, [safeVariant]);
 
-  const effectiveVariant: Exclude<DTLogoVariant, "auto"> =
+  const effectiveVariant =
     safeVariant === "auto"
       ? containerWidth >= AUTO_SWAP_THRESHOLD
         ? "full"
@@ -127,7 +119,7 @@ export default function DTLogo({
     width: `${renderedWidth}px`,
     height: `${renderedHeight}px`,
     lineHeight: 0,
-  } as CSSProperties;
+  };
 
   if (imageFailed) {
     const fallbackText =

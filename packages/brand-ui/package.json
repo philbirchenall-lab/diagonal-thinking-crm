@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Shared Diagonal Thinking brand UI primitives. Consumed via plain relative path imports (no workspace and no build step).",
-  "main": "./src/DTLogo.tsx",
+  "main": "./src/DTLogo.jsx",
   "exports": {
-    "./DTLogo": "./src/DTLogo.tsx"
+    "./DTLogo": "./src/DTLogo.jsx"
   },
   "files": [
     "src/"
