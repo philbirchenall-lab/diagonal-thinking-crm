@@ -23,11 +23,23 @@ const sourceSans = Source_Sans_3({
 export const metadata: Metadata = {
   title: "AI Intelligence | Diagonal Thinking",
   description: "Diagonal Thinking internal wiki. Sign in to continue.",
-  icons: {
-    icon: "/favicon.png",
-    shortcut: "/favicon.png",
-    apple: "/favicon.png",
-  },
+    icons: {
+          icon: [
+            { url: "/favicon.ico", sizes: "32x32" },
+            { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+            { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+            { url: "/favicon-64.png", sizes: "64x64", type: "image/png" },
+                ],
+          apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+          other: [
+            {
+                      rel: "icon",
+                      url: "/maskable-512.png",
+                      sizes: "512x512",
+                      type: "image/png",
+            },
+                ],
+    },
 };
 
 export default function RootLayout({
