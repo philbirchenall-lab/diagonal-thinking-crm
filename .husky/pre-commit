@@ -1,0 +1,73 @@
+set -eu
+
+FAIL=0
+EMDASH_CHAR=$(printf '\342\200\224')
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR -- \
+  | grep -v -E '^(node_modules/|\.next/|dist/|build/|\.claude/worktrees/)' \
+  | grep -E '\.(ts|tsx|js|jsx|mjs|cjs|md|mdx|css|scss|json)$' || true)
+
+if [ -z "$STAGED" ]; then
+  exec npx --no-install lint-staged
+fi
+
+OLD_IFS=$IFS
+IFS='
+'
+
+for FILE in $STAGED; do
+  [ -f "$FILE" ] || continue
+
+  LINES=$(grep -n "$EMDASH_CHAR" "$FILE" 2>/dev/null | cut -d: -f1 || true)
+  [ -z "$LINES" ] && continue
+
+  EXT=${FILE##*.}
+  BYPASS=""
+
+  case "$EXT" in
+    ts|tsx|js|jsx|mjs|cjs)
+      BYPASS='// brand:allow-emdash'
+      ;;
+    md|mdx)
+      BYPASS='<!-- brand:allow-emdash -->'
+      ;;
+    css|scss)
+      BYPASS='/* brand:allow-emdash */'
+      ;;
+    json)
+      BYPASS=""
+      ;;
+  esac
+
+  for LINE in $LINES; do
+    PREV=$((LINE - 1))
+
+    if [ -n "$BYPASS" ] && [ "$PREV" -gt 0 ]; then
+      PREV_CONTENT=$(sed -n "${PREV}p" "$FILE")
+      case "$PREV_CONTENT" in
+        *"brand:allow-emdash"*)
+          continue
+          ;;
+      esac
+    fi
+
+    printf '\033[31m[dt-brand] Em-dash (U+2014) detected in %s on line %s\033[0m\n' "$FILE" "$LINE" >&2
+    printf '           Fix: replace with an ASCII hyphen (-) or add the approved bypass comment on the preceding line.\n' >&2
+    if [ -n "$BYPASS" ]; then
+      printf '           Bypass syntax for this file type: %s\n' "$BYPASS" >&2
+    else
+      printf '           File type %s does not accept a bypass comment.\n' "$EXT" >&2
+    fi
+    FAIL=1
+  done
+done
+
+IFS=$OLD_IFS
+
+if [ "$FAIL" -eq 1 ]; then
+  printf '\n\033[31mCommit blocked by DT brand guard.\033[0m\n' >&2
+  printf 'See Brand Guidelines v1.6.2 section 10.6.4 for bypass syntax.\n' >&2
+  exit 1
+fi
+
+exec npx --no-install lint-staged
