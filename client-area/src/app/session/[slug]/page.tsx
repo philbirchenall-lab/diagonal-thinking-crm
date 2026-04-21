@@ -10,6 +10,11 @@ function buildSessionStartHref(slug: string) {
   return `/?${params.toString()}`;
 }
 
+function buildLogoutHref(slug: string) {
+  const params = new URLSearchParams({ session: slug });
+  return `/logout?${params.toString()}`;
+}
+
 export async function generateMetadata({ params }: PageProps<"/session/[slug]">) {
   const { slug } = await params;
   const session = await getClientSessionBySlug(slug);
@@ -38,37 +43,46 @@ export default async function SessionPage({ params }: PageProps<"/session/[slug]
     redirect(buildSessionStartHref(slug));
   }
 
+  const heroMeta = [
+    session.organisationName,
+    session.date ? formatSessionDate(session.date) : null,
+    session.sessionType === "open_event" ? "Open event" : "In-house session",
+  ].filter(Boolean);
+
   return (
-    <main className="min-h-screen bg-[#3B5CB5]">
-      <header className="border-b border-white/10 bg-[#3B5CB5] text-white">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <BrandWordmark />
-        </div>
-      </header>
+    <main className="dt-shell">
+      <a href={buildLogoutHref(slug)} className="dt-logout-link">
+        Log out
+      </a>
 
-      <section className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
-        <div className="rounded-[1.5rem] border border-white/10 bg-white p-6 shadow-[0_18px_50px_rgba(0,0,0,0.15)]">
-          <h1 className="text-3xl font-semibold tracking-tight text-[#1a1a2e] sm:text-4xl">
-            {session.name}
-          </h1>
-
-          <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-500">
-            <span>{formatSessionDate(session.date)}</span>
+      <section className="dt-session-shell">
+        <div className="dt-hero">
+          <div className="dt-hero__logo">
+            <BrandWordmark />
           </div>
-
-          <p className="mt-4 text-sm text-slate-600">Here are your session materials.</p>
+          <p className="dt-hero__eyebrow">Client Area</p>
+          <h1 className="dt-hero__title">{session.name}</h1>
+          {heroMeta.length ? (
+            <div className="dt-hero__meta">
+              {heroMeta.map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
+          ) : null}
+          <p className="dt-hero__sub">
+            Your session materials are ready below. Each resource opens in a new tab so
+            you can keep this page to hand.
+          </p>
         </div>
 
-        <div className="mt-6">
-          <SessionResources sessionSlug={session.slug} resources={session.resources} />
-        </div>
+        <SessionResources sessionSlug={session.slug} resources={session.resources} />
 
-        <footer className="mt-10 border-t border-white/20 pb-6 pt-6 text-center">
+        <footer className="dt-footer">
           <a
             href="https://www.diagonalthinking.co"
             target="_blank"
             rel="noreferrer"
-            className="text-sm text-white/70 hover:text-white transition"
+            className="dt-footer-link"
           >
             diagonalthinking.co
           </a>

@@ -100,9 +100,12 @@ export function RegistrationForm({ sessionSlug, session }: RegistrationFormProps
 
   if (status === "sent") {
     return (
-      <div className="rounded-[1.25rem] border border-[#3B5CB5]/20 bg-white p-6 shadow-[0_18px_50px_rgba(59,92,181,0.08)]">
-        <h2 className="text-2xl font-semibold text-[#1a1a2e]">Check your inbox</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">{message}</p>
+      <div className="dt-panel dt-panel--compact">
+        <div className="dt-panel__header">
+          <p className="dt-card-eyebrow">Access requested</p>
+          <h2 className="dt-card-title">Check your inbox</h2>
+          <p className="dt-card-copy">{message}</p>
+        </div>
       </div>
     );
   }
@@ -110,23 +113,19 @@ export function RegistrationForm({ sessionSlug, session }: RegistrationFormProps
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-[1.25rem] border border-[#3B5CB5]/20 bg-white p-6 shadow-[0_18px_50px_rgba(59,92,181,0.08)]"
+      className="dt-panel dt-panel--compact"
     >
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#3B5CB5]">
-          Client Portal
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#1a1a2e]">
-          {session?.name ? session.name : "Session access"}
-        </h1>
-        <p className="mt-2 text-sm text-slate-500">
-          Enter your details below and we&apos;ll send you a secure access link.
+      <div className="dt-panel__header">
+        <p className="dt-card-eyebrow">{session ? "Request access" : "Get your link"}</p>
+        <h2 className="dt-card-title">{session ? "Your details" : "Start here"}</h2>
+        <p className="dt-card-copy">
+          Enter your details below and we will send you a secure access link.
         </p>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="firstName" className="text-sm font-medium text-slate-700">
+      <div className="dt-form-grid" style={{ marginTop: "24px" }}>
+        <div className="dt-form-field">
+          <label htmlFor="firstName" className="dt-label">
             First name
           </label>
           <input
@@ -134,13 +133,13 @@ export function RegistrationForm({ sessionSlug, session }: RegistrationFormProps
             required
             value={form.firstName}
             onChange={(event) => updateField("firstName", event.target.value)}
-            className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base text-[#1a1a2e] outline-none transition focus:border-[#3B5CB5]"
+            className="dt-input"
             placeholder="First name"
           />
         </div>
 
-        <div>
-          <label htmlFor="lastName" className="text-sm font-medium text-slate-700">
+        <div className="dt-form-field">
+          <label htmlFor="lastName" className="dt-label">
             Last name
           </label>
           <input
@@ -148,14 +147,14 @@ export function RegistrationForm({ sessionSlug, session }: RegistrationFormProps
             required
             value={form.lastName}
             onChange={(event) => updateField("lastName", event.target.value)}
-            className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base text-[#1a1a2e] outline-none transition focus:border-[#3B5CB5]"
+            className="dt-input"
             placeholder="Last name"
           />
         </div>
       </div>
 
-      <div className="mt-4">
-        <label htmlFor="email" className="text-sm font-medium text-slate-700">
+      <div className="dt-form-field" style={{ marginTop: "16px" }}>
+        <label htmlFor="email" className="dt-label">
           Email address
         </label>
         <input
@@ -164,14 +163,14 @@ export function RegistrationForm({ sessionSlug, session }: RegistrationFormProps
           required
           value={form.email}
           onChange={(event) => updateField("email", event.target.value)}
-          className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base text-[#1a1a2e] outline-none transition focus:border-[#3B5CB5]"
+          className="dt-input"
           placeholder="you@company.com"
         />
       </div>
 
       {isOpenEvent ? (
-        <div className="mt-4">
-          <label htmlFor="companyName" className="text-sm font-medium text-slate-700">
+        <div className="dt-form-field" style={{ marginTop: "16px" }}>
+          <label htmlFor="companyName" className="dt-label">
             Company name
           </label>
           <input
@@ -179,27 +178,27 @@ export function RegistrationForm({ sessionSlug, session }: RegistrationFormProps
             required
             value={form.companyName}
             onChange={(event) => updateField("companyName", event.target.value)}
-            className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base text-[#1a1a2e] outline-none transition focus:border-[#3B5CB5]"
+            className="dt-input"
             placeholder="Your organisation"
           />
         </div>
       ) : null}
 
-      <div className="mt-4">
-        <label htmlFor="jobTitle" className="text-sm font-medium text-slate-700">
-          Job title <span className="text-slate-400">(optional)</span>
+      <div className="dt-form-field" style={{ marginTop: "16px" }}>
+        <label htmlFor="jobTitle" className="dt-label">
+          Job title <span className="dt-label__optional">(optional)</span>
         </label>
         <input
           id="jobTitle"
           value={form.jobTitle}
           onChange={(event) => updateField("jobTitle", event.target.value)}
-          className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base text-[#1a1a2e] outline-none transition focus:border-[#3B5CB5]"
+          className="dt-input"
           placeholder="Head of Innovation"
         />
       </div>
 
       {message ? (
-        <p className={`mt-4 text-sm ${status === "error" ? "text-red-600" : "text-slate-600"}`}>
+        <p className={`dt-status ${status === "error" ? "dt-status--error" : ""}`}>
           {message}
         </p>
       ) : null}
@@ -207,9 +206,10 @@ export function RegistrationForm({ sessionSlug, session }: RegistrationFormProps
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="mt-6 inline-flex w-full items-center justify-center rounded-md bg-[#3B5CB5] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2d4a9a] disabled:cursor-not-allowed disabled:opacity-70"
+        className="dt-btn-primary dt-btn-primary--full"
+        style={{ marginTop: "24px" }}
       >
-        {status === "submitting" ? "Sending…" : "Send access link"}
+        {status === "submitting" ? "Sending..." : "Send access link"}
       </button>
     </form>
   );

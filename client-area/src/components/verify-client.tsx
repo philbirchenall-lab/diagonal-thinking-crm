@@ -53,24 +53,26 @@ export function VerifyClient({ token }: VerifyClientProps) {
   }, [router, token]);
 
   return (
-    <>
-      <h1 className="mt-6 text-3xl font-semibold tracking-tight text-[#1a1a2e]">
-        Verify access
-      </h1>
-      <p className="mt-3 text-sm leading-6 text-slate-600">{message}</p>
+    <div>
+      <div className="dt-panel__header">
+        <p className="dt-card-eyebrow">Client Area</p>
+        <h2 className="dt-card-title">Verify access</h2>
+        <p className="dt-card-copy">{message}</p>
+      </div>
       {status === "error" ? (
         <button
           type="button"
           onClick={() => router.replace("/")}
-          className="mt-6 inline-flex items-center justify-center rounded-md bg-[#3B5CB5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#2d4a9a]"
+          className="dt-btn-primary"
+          style={{ marginTop: "24px" }}
         >
           Back to start
         </button>
       ) : (
-        <div className="mt-6 h-1.5 overflow-hidden rounded-full bg-slate-100">
-          <div className="h-full w-1/2 animate-pulse rounded-full bg-[#3B5CB5]" />
+        <div className="dt-progress">
+          <div className="dt-progress__bar" />
         </div>
       )}
-    </>
+    </div>
   );
 }
