@@ -1,15 +1,46 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Oswald, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const oswald = Oswald({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["400", "500"],
+  variable: "--font-oswald",
+  display: "swap",
+});
+
+const sourceSans = Source_Sans_3({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-source-sans",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "Diagonal Thinking Client Area",
   description: "Private client resource pages for Diagonal Thinking.",
+  icons: {
+    icon: [
+      { url: "/favicon.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-64.png", sizes: "64x64", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    other: [
+      {
+        rel: "icon",
+        url: "/maskable-512.png",
+        sizes: "512x512",
+        type: "image/png",
+      },
+    ],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#305DAB",
 };
 
 export default function RootLayout({
@@ -18,8 +49,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full bg-[#3B5CB5] text-[#111827]">{children}</body>
+    <html lang="en" className={`${oswald.variable} ${sourceSans.variable} h-full antialiased`}>
+      <body className="dt-body">{children}</body>
     </html>
   );
 }

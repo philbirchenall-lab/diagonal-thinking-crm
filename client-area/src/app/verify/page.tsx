@@ -10,11 +10,22 @@ export default async function VerifyPage({
   const token = typeof params.token === "string" ? params.token : null;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#3B5CB5] px-4 py-10">
-      <div className="w-full max-w-md rounded-[1.5rem] border border-white/10 bg-white p-6 shadow-[0_18px_50px_rgba(0,0,0,0.15)]">
-        <BrandWordmark />
+    <main className="dt-shell">
+      <section className="dt-auth-shell">
+        <div className="dt-hero">
+          <div className="dt-hero__logo">
+            <BrandWordmark />
+          </div>
+          <p className="dt-hero__eyebrow">Client Area</p>
+          <h1 className="dt-hero__title">Verify Access</h1>
+          <p className="dt-hero__sub">
+            We are checking your secure link and routing you to the right session.
+          </p>
+        </div>
+        <div className="dt-panel dt-panel--compact">
         <VerifyClient token={token} />
-      </div>
+        </div>
+      </section>
     </main>
   );
 }

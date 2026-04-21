@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { BrandWordmark } from "@/components/brand";
 import { RegistrationForm } from "@/components/registration-form";
 import { readSessionCookie } from "@/lib/auth";
-import { getClientSessionBySlug } from "@/lib/client-data";
+import { formatSessionDate, getClientSessionBySlug } from "@/lib/client-data";
 
 export default async function Home({
   searchParams,
@@ -18,19 +18,35 @@ export default async function Home({
   }
 
   const session = requestedSessionSlug ? await getClientSessionBySlug(requestedSessionSlug) : null;
+  const heroMeta = [
+    session?.organisationName,
+    session?.date ? formatSessionDate(session.date) : null,
+    session?.sessionType === "open_event" ? "Open event" : null,
+  ].filter(Boolean);
 
   return (
-    <main className="min-h-screen bg-[#3B5CB5]">
-      <header className="border-b border-white/10 bg-[#3B5CB5] text-white">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <BrandWordmark />
+    <main className="dt-shell">
+      <section className="dt-auth-shell">
+        <div className="dt-hero">
+          <div className="dt-hero__logo">
+            <BrandWordmark />
+          </div>
+          <p className="dt-hero__eyebrow">Client Area</p>
+          <h1 className="dt-hero__title">{session?.name ?? "Secure Session Access"}</h1>
+          {heroMeta.length ? (
+            <div className="dt-hero__meta">
+              {heroMeta.map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
+          ) : null}
+          <p className="dt-hero__sub">
+            {session
+              ? "Use the email address tied to this session and we will send you a secure access link."
+              : "Enter your details and we will send you a secure access link to your session materials."}
+          </p>
         </div>
-      </header>
-
-      <section className="mx-auto flex w-full max-w-3xl justify-center px-4 py-8 sm:px-6 lg:py-14">
-        <div className="w-full">
-          <RegistrationForm sessionSlug={requestedSessionSlug} session={session} />
-        </div>
+        <RegistrationForm sessionSlug={requestedSessionSlug} session={session} />
       </section>
     </main>
   );

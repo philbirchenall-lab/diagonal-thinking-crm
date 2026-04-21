@@ -1,14 +1,11 @@
 import DTLogo from "../../../packages/brand-ui/src/DTLogo";
 
-export function BrandWordmark() {
+type BrandWordmarkProps = {
+  className?: string;
+};
+
+export function BrandWordmark({ className = "" }: BrandWordmarkProps) {
   return (
-    <>
-      <span className="sm:hidden">
-        <DTLogo variant="full" width={80} onDark />
-      </span>
-      <span className="hidden sm:inline-flex">
-        <DTLogo variant="full" width={96} onDark />
-      </span>
-    </>
+    <DTLogo variant="full" width={200} onDark className={className} />
   );
 }

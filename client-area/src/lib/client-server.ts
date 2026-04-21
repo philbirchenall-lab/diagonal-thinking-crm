@@ -220,16 +220,17 @@ export async function sendMagicLinkEmail(email: string, sessionName: string, tok
       to: [email],
       subject: `${sessionName} - your access link`,
       html: `
-        <div style="font-family: Inter, Arial, sans-serif; color: #111827; line-height: 1.6;">
-          <h1 style="margin: 0 0 16px; font-size: 24px; color: #1a1a2e;">Your session link</h1>
+        <div style="font-family: 'Source Sans 3', Arial, sans-serif; color: #111111; line-height: 1.6;">
+          <p style="margin: 0 0 12px; font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: #305DAB; font-weight: 600;">Client Area</p>
+          <h1 style="margin: 0 0 16px; font-family: Oswald, 'Arial Narrow', sans-serif; font-size: 28px; line-height: 1.1; letter-spacing: 0.02em; text-transform: uppercase; color: #305DAB;">Your session link</h1>
           <p style="margin: 0 0 16px;">Click below to open your Diagonal Thinking session resources.</p>
           <p style="margin: 24px 0;">
-            <a href="${verifyUrl.toString()}" style="display:inline-block;background:#3B5CB5;color:#ffffff;padding:12px 18px;text-decoration:none;border-radius:6px;font-weight:600;">
+            <a href="${verifyUrl.toString()}" style="display:inline-block;background:#305DAB;color:#ffffff;padding:12px 18px;text-decoration:none;border-radius:8px;font-weight:600;">
               Open session
             </a>
           </p>
           <p style="margin: 16px 0 0; font-size: 14px; color: #6b7280;">If the button does not work, use this link:</p>
-          <p style="word-break: break-all; font-size: 14px; color: #3B5CB5;">${verifyUrl.toString()}</p>
+          <p style="word-break: break-all; font-size: 14px; color: #305DAB;">${verifyUrl.toString()}</p>
         </div>
       `,
     }),

@@ -27,6 +27,7 @@ export function SessionResources({ sessionSlug, resources }: SessionResourcesPro
   const [activeResourceId, setActiveResourceId] = useState<string | null>(null);
 
   async function openResource(resource: SessionResource) {
+    const popup = window.open(resource.url, "_blank", "noopener,noreferrer");
     setActiveResourceId(resource.id);
 
     try {
@@ -47,50 +48,53 @@ export function SessionResources({ sessionSlug, resources }: SessionResourcesPro
       setActiveResourceId(null);
     }
 
-    if (!isEmbed(resource)) {
-      window.open(resource.url, "_blank", "noopener,noreferrer");
+    if (!popup) {
+      window.location.href = resource.url;
     }
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="dt-resource-grid">
       {resources.map((resource) => (
-        <article
-          key={resource.id}
-          className="rounded-[1.15rem] border border-[#3B5CB5]/10 bg-white p-4 shadow-[0_18px_40px_rgba(59,92,181,0.05)]"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[#3B5CB5]">
-                {resourceKindLabel(resource)}
-              </p>
-              <h3 className="mt-2 text-lg font-semibold text-[#1a1a2e]">{resource.label}</h3>
-            </div>
-            {activeResourceId === resource.id ? (
-              <span className="text-xs text-slate-500">Opening</span>
-            ) : null}
+        <article key={resource.id} className="dt-resource-card">
+          <div>
+            <p className="dt-resource-card__eyebrow">{resourceKindLabel(resource)}</p>
+            <h2 className="dt-resource-card__title" style={{ marginTop: "10px" }}>
+              {resource.label}
+            </h2>
           </div>
 
+          {resource.description ? (
+            <p className="dt-resource-card__body">{resource.description}</p>
+          ) : null}
+
           {isEmbed(resource) ? (
-            <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            <div className="dt-resource-card__embed">
               <iframe
                 src={resource.url}
                 title={resource.label}
-                className="h-72 w-full"
                 loading="lazy"
               />
             </div>
-          ) : resource.description ? (
-            <p className="mt-4 text-sm leading-6 text-slate-600">{resource.description}</p>
           ) : null}
 
-          <button
-            type="button"
-            onClick={() => void openResource(resource)}
-            className="mt-5 inline-flex items-center justify-center rounded-md bg-[#3B5CB5] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#2d4a9a]"
-          >
-            {isEmbed(resource) ? "Track view" : isFile(resource) ? "Download" : "Open resource"}
-          </button>
+          <div className="dt-resource-card__footer">
+            <button
+              type="button"
+              onClick={() => void openResource(resource)}
+              disabled={activeResourceId === resource.id}
+              className="dt-btn-primary"
+            >
+              {activeResourceId === resource.id ? "Opening..." : "View resource"}
+            </button>
+            {activeResourceId === resource.id ? (
+              <span className="dt-resource-card__status">Opening in a new tab...</span>
+            ) : (
+              <span className="dt-resource-card__status">
+                {isFile(resource) ? "File download or document link" : "Opens in a new tab"}
+              </span>
+            )}
+          </div>
         </article>
       ))}
     </div>
