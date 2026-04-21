@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
     const payload = await verifyClientSessionToken(token);
 
     if (payload.sessionSlug && requestedSlug && payload.sessionSlug !== requestedSlug) {
-      return NextResponse.redirect(buildStartUrl(request, payload.sessionSlug));
+      return NextResponse.redirect(buildStartUrl(request, requestedSlug));
     }
 
     return NextResponse.next();

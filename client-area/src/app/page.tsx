@@ -13,7 +13,10 @@ export default async function Home({
   const sessionFromCookie = await readSessionCookie(cookieStore);
   const requestedSessionSlug = typeof params.session === "string" ? params.session : undefined;
 
-  if (sessionFromCookie?.sessionSlug) {
+  if (
+    sessionFromCookie?.sessionSlug &&
+    (!requestedSessionSlug || requestedSessionSlug === sessionFromCookie.sessionSlug)
+  ) {
     redirect(`/session/${sessionFromCookie.sessionSlug}`);
   }
 
