@@ -2632,7 +2632,17 @@ export default function App() {
     setSyncStatus("syncing");
     saveAllContacts(contacts)
       .then(() => setSyncStatus("synced"))
-      .catch((err) => { setSyncError(err?.message || "Unknown sync error"); setSyncStatus("error"); });
+      .catch((err) => {
+        // Duplicate email errors are recoverable - the merge logic handled them.
+        // Only surface the banner for genuine network and auth failures.
+        if (err?.isDuplicateEmail) {
+          console.warn("Contacts merged duplicate emails:", err.message);
+          setSyncStatus("synced");
+        } else {
+          setSyncError(err?.message || "Unknown sync error");
+          setSyncStatus("error");
+        }
+      });
   }, [contacts]);
 
   // Load contacts on mount

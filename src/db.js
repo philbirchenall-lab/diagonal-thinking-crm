@@ -1,5 +1,5 @@
 /**
- * db.js — Data access layer for the Diagonal Thinking CRM
+ * db.js - Data access layer for the Diagonal Thinking CRM
  *
  * When VITE_SUPABASE_URL is set (deployed to Vercel), uses Supabase.
  * When not set (running locally via Open CRM.command), uses the local Express API.
@@ -311,7 +311,7 @@ export async function updateActivityStatus(activityId, status) {
 
 // ─── Research & Intel ─────────────────────────────────────────────────────────
 
-// Targeted update for research intel fields only — never overwrites other contact data.
+// Targeted update for research intel fields only - never overwrites other contact data.
 // research shape: { notes, source, updatedBy }
 export async function saveContactResearch(contactId, research) {
   if (!USE_SUPABASE) return;
@@ -357,7 +357,7 @@ export async function upsertContact(contact) {
 
   const attempt = await supabase
     .from("contacts")
-    .upsert(row, { onConflict: "id" });
+    .upsert(row, { onConflict: "email" });
 
   if (!attempt.error) return;
 
@@ -378,7 +378,7 @@ export async function upsertContact(contact) {
       const merged = { ...row, id: existing.id };
       const retry = await supabase
         .from("contacts")
-        .upsert(merged, { onConflict: "id" });
+        .upsert(merged, { onConflict: "email" });
       if (!retry.error) return;
     }
   }
@@ -394,7 +394,7 @@ export async function upsertContact(contact) {
 
 export async function saveAllContacts(contacts) {
   if (USE_SUPABASE) {
-    // Deduplicate by email before upserting — prevents unique-constraint violations
+    // Deduplicate by email before upserting - prevents unique-constraint violations
     // when a contact-form submission creates a record with a different UUID but the
     // same email as a row already in the local state. Keep the most recently updated
     // version (by last_updated, falling back to date_added).
@@ -413,7 +413,7 @@ export async function saveAllContacts(contacts) {
     // Remove DB rows whose email matches a contact in this batch but whose ID
     // differs (ghost rows from Sol API or contact-form that would block the upsert's
     // email unique constraint). We fetch only the email-matched DB rows (small result
-    // set), then filter client-side — this avoids putting hundreds of UUIDs into the
+    // set), then filter client-side - this avoids putting hundreds of UUIDs into the
     // URL query string, which exceeds PostgREST's request-size limits.
     const emailedContacts = deduped.filter((c) => c.email);
     if (emailedContacts.length > 0) {
@@ -444,11 +444,17 @@ export async function saveAllContacts(contacts) {
       }
     }
 
-    // Upsert all current contacts, matching on primary key (id)
-    const { error: upsertErr } = await supabase.from("contacts").upsert(rows, { onConflict: "id" });
-    if (upsertErr) throw new Error(`Supabase upsert failed: ${upsertErr.message}`);
+    // Upsert all current contacts, matching on email to merge duplicates
+    const { error: upsertErr } = await supabase.from("contacts").upsert(rows, { onConflict: "email" });
+    if (upsertErr) {
+      const err = new Error(`Supabase upsert failed: ${upsertErr.message}`);
+      err.code = upsertErr.code;
+      err.isDuplicateEmail = upsertErr.code === "23505" || /contacts_email_unique/i.test(upsertErr.message || "");
+      err.cause = upsertErr;
+      throw err;
+    }
 
-    // Note: explicit contact deletes go through deleteContact(id) — we do NOT
+    // Note: explicit contact deletes go through deleteContact(id) - we do NOT
     // do a "delete orphans" pass here because that approach is unsafe (a stale
     // local state would silently wipe contacts added via Sol API or contact forms).
   } else {
@@ -620,12 +626,12 @@ export async function saveOpportunity(opportunity) {
 }
 
 // Update just the stage of an opportunity (used for quick stage-change in the panel).
-// Sets won_at when transitioning to Won (only on first transition — won_at is not overwritten once set).
+// Sets won_at when transitioning to Won (only on first transition - won_at is not overwritten once set).
 export async function updateOpportunityStage(opportunityId, stage) {
   if (!USE_SUPABASE) return;
   const updates = { stage };
   if (stage === "Won") {
-    // Only stamp won_at if not already set — fetch current value first
+    // Only stamp won_at if not already set - fetch current value first
     const { data: current } = await supabase
       .from("opportunities")
       .select("won_at")
