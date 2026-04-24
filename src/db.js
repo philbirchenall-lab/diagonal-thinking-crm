@@ -1,17 +1,38 @@
 /**
  * db.js - Data access layer for the Diagonal Thinking CRM
  *
- * When VITE_SUPABASE_URL is set (deployed to Vercel), uses Supabase.
- * When not set (running locally via Open CRM.command), uses the local Express API.
+ * Production (Vercel): uses Supabase. VITE_SUPABASE_URL and
+ *   VITE_SUPABASE_ANON_KEY are inlined at build time by Vite.
+ * Local dev (Open CRM.command): falls back to the Express API on
+ *   http://localhost:3001, but ONLY when import.meta.env.DEV is true.
  *
- * This lets the local setup work as a fully self-contained fallback with no
- * internet required.
+ * Fix 2026-04-24 (P2, Tes-flagged during PR #43 preview verification):
+ * production builds previously fell back to http://localhost:3001 silently
+ * whenever VITE_SUPABASE_URL was empty at build time (e.g. stale Vercel
+ * build cache). We now:
+ *   1. Throw at module init in production if the Supabase env var is missing.
+ *   2. Gate the LOCAL_API string behind import.meta.env.DEV so Vite's
+ *      dead-code elimination strips the "localhost:3001" literal from
+ *      production bundles entirely.
  */
 
 // ─── Mode detection ─────────────────────────────────────────────────────────
 
-const USE_SUPABASE = Boolean(import.meta.env.VITE_SUPABASE_URL);
-const LOCAL_API = "http://localhost:3001/api/contacts";
+const HAS_SUPABASE_ENV = Boolean(import.meta.env.VITE_SUPABASE_URL);
+const IS_DEV = Boolean(import.meta.env.DEV);
+
+if (!HAS_SUPABASE_ENV && !IS_DEV) {
+  throw new Error(
+    "CRM misconfigured: VITE_SUPABASE_URL missing from production build. " +
+    "Check Vercel env vars and redeploy with 'Use existing Build Cache' OFF."
+  );
+}
+
+const USE_SUPABASE = HAS_SUPABASE_ENV;
+// IS_DEV is a Vite compile-time constant. In prod builds this line is
+// tree-shaken to `const LOCAL_API = null`, removing the literal
+// "localhost:3001" string from production output.
+const LOCAL_API = IS_DEV ? "http://localhost:3001/api/contacts" : null;
 const LOCAL_CLIENT_SESSIONS_KEY = "diagonal-thinking-crm:client-sessions";
 
 // ─── Supabase client (only initialised when env vars present) ───────────────
@@ -144,6 +165,9 @@ export async function loadContacts() {
     if (error) throw new Error(`Supabase load failed: ${error.message}`);
     return data.map(toCamel);
   } else {
+    if (!LOCAL_API) {
+      throw new Error("Local Express fallback unavailable in production build");
+    }
     const res = await fetch(LOCAL_API);
     if (!res.ok) throw new Error(`Local API load failed: ${res.status}`);
     return res.json();
@@ -459,6 +483,9 @@ export async function saveAllContacts(contacts) {
     // local state would silently wipe contacts added via Sol API or contact forms).
   } else {
     // Local mode: POST the full array to Express
+    if (!LOCAL_API) {
+      throw new Error("Local Express fallback unavailable in production build");
+    }
     const res = await fetch(LOCAL_API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
