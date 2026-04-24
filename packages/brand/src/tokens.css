@@ -82,4 +82,115 @@
   --dt-small: 14px;
   --dt-eyebrow: 11px;
   --dt-eyebrow-tracking: 0.09em;
+
+  /* =============================================================
+     CRM-DM-001 SCAFFOLD - dark-mode palette placeholders
+     -------------------------------------------------------------
+     Added 23 Apr 2026 (Rex). Final hex values land on Phil
+     sign-off of Pix's Brand Guidelines v1.6.8 patch at
+     outputs/brand-guidelines-v1.6.8-patch.md, section 2.7.
+
+     PLACEHOLDER STRATEGY: #FF00FF (loud magenta) is used for
+     every dark-mode override so any accidental production use
+     fails loudly in visual QA rather than silently shipping a
+     half-wired theme. Light-mode defaults below are the current
+     production values.
+
+     Token slots map 1:1 to Pix's section 2.7 list:
+       shadow, night, dusk, navy-light, navy-mist,
+       pewter, mist-dark, graphite
+     plus the chart-contact-* semantic slots consumed by the
+     dashboard pie chart (CRM-DM-PIE).
+     ============================================================= */
+
+  /* ---------- Dark-mode surfaces (Pix 2.7.1) ---------- */
+  --dt-surface-page: var(--bg);           /* light default: page chrome */
+  --dt-surface-card: var(--paper);        /* light default: card surface */
+  --dt-surface-accent: #E7EEF8;           /* light default: brandSoft */
+  --dt-shadow: #FF00FF;                   /* PLACEHOLDER dark "shadow" (primary card). v1.6.8. */
+  --dt-night: #FF00FF;                    /* PLACEHOLDER dark "night" (page chrome). v1.6.8. */
+  --dt-dusk: #FF00FF;                     /* PLACEHOLDER dark "dusk" (accent). v1.6.8. */
+
+  /* ---------- Navy accents (Pix 2.7.2) ---------- */
+  --dt-navy-light: #FF00FF;               /* PLACEHOLDER "navy's voice on dark". v1.6.8. */
+  --dt-navy-mist: #FF00FF;                /* PLACEHOLDER softest navy-family. v1.6.8. */
+
+  /* ---------- Dark-mode type stack (Pix 2.7.3) ---------- */
+  --dt-text-primary: var(--ink);          /* light default */
+  --dt-text-secondary: #5A6372;           /* light default: muted */
+  --dt-text-tertiary: #94A3B8;            /* light default: slate-400 */
+  --dt-text-disabled: #A7A59F;            /* light default: stone */
+  --dt-pewter: #FF00FF;                   /* PLACEHOLDER dark secondary text. v1.6.8. */
+  --dt-mist-dark: #FF00FF;                /* PLACEHOLDER dark tertiary text. v1.6.8. */
+  --dt-graphite: #FF00FF;                 /* PLACEHOLDER dark disabled caption. v1.6.8. */
+
+  /* ---------- Dark-mode borders (Pix 2.7.5) ---------- */
+  --dt-border-default: var(--border);     /* light default */
+  --dt-border-hover: #CBD5E1;             /* light default: slate-300 */
+  --dt-border-focus: var(--brand-navy);   /* light default */
+  --dt-border-brand: var(--brand-navy);   /* light default */
+  --dt-border-emphatic: #000000;          /* light default */
+
+  /* ---------- Identity beat, the 3 px top stripe (Pix 2.7.4) ---------- */
+  --dt-identity-beat: var(--brand-navy);  /* light: DT Navy. Dark flips to navy-light. */
+
+  /* ---------- Chart contact-type colours (CRM-DM-PIE scaffold) ----------
+     These semantic slots power the dashboard PieChart (src/App.jsx).
+     TYPE_COLORS in App.jsx reads from these CSS variables, so a
+     theme change swaps chart colours without re-render logic. */
+  --chart-contact-client: #10B981;        /* PLACEHOLDER light emerald-500 per Pix 2.7.6. v1.6.8. */
+  --chart-contact-warm-lead: #305DAB;     /* light: DT Navy (current prod value) */
+  --chart-contact-cold-lead: #0EA5E9;     /* PLACEHOLDER light sky-500 per Pix 2.7.6. v1.6.8. */
+  --chart-contact-mailing-list: #A7A59F;  /* light: Stone (current prod value) */
+
+  /* ---------- Chart series palette (Pix 2.7.7, dark-mode chart rules) ---------- */
+  --chart-series-1: var(--brand-navy);    /* light default: DT Navy 100 */
+  --chart-series-2: rgba(48, 93, 171, 0.7);   /* light default: Navy 70% */
+  --chart-series-3: rgba(48, 93, 171, 0.4);   /* light default: Navy 40% */
+  --chart-series-4: var(--stone);         /* light default: Stone */
+}
+
+/* =============================================================
+   Dark-mode overrides (Pix 2.7, Brand Guidelines v1.6.8 SCAFFOLD)
+   -------------------------------------------------------------
+   Applied when <html class="dark"> is set by the useTheme hook.
+   ALL values below are PLACEHOLDERS until Phil signs off the
+   v1.6.8 patch. Final hex values will replace #FF00FF in a
+   follow-up commit. DO NOT ship to production while this block
+   contains placeholder magenta.
+   ============================================================= */
+
+.dark {
+  /* Surfaces */
+  --dt-surface-page: var(--dt-night);
+  --dt-surface-card: var(--dt-shadow);
+  --dt-surface-accent: var(--dt-dusk);
+
+  /* Text */
+  --dt-text-primary: var(--paper);
+  --dt-text-secondary: var(--dt-pewter);
+  --dt-text-tertiary: var(--dt-mist-dark);
+  --dt-text-disabled: var(--dt-graphite);
+
+  /* Borders */
+  --dt-border-default: rgba(255, 255, 255, 0.08);
+  --dt-border-hover: rgba(255, 255, 255, 0.16);
+  --dt-border-focus: var(--dt-navy-light);
+  --dt-border-brand: var(--dt-navy-light);
+  --dt-border-emphatic: var(--paper);
+
+  /* Identity beat flips to navy-light per section 2.7.4 */
+  --dt-identity-beat: var(--dt-navy-light);
+
+  /* Contact-type chart slots (Pix 2.7.6 TYPE_COLORS_DARK) */
+  --chart-contact-client: #FF00FF;        /* PLACEHOLDER dark emerald-400 in v1.6.8. */
+  --chart-contact-warm-lead: var(--dt-navy-light);
+  --chart-contact-cold-lead: #FF00FF;     /* PLACEHOLDER dark sky-400 in v1.6.8. */
+  --chart-contact-mailing-list: var(--dt-pewter);
+
+  /* Chart series (Pix 2.7.7, lightness-stepped rather than opacity-stepped) */
+  --chart-series-1: var(--paper);
+  --chart-series-2: var(--dt-navy-light);
+  --chart-series-3: var(--dt-navy-mist);
+  --chart-series-4: var(--stone);
 }

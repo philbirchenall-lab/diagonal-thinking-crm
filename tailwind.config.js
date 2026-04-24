@@ -1,6 +1,11 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx}"],
+  // CRM-DM-001 scaffold (23 Apr 2026, Rex).
+  // Class-based dark mode: html.dark is toggled by the useTheme hook
+  // at src/hooks/useTheme.js. Final colour tokens land in v1.6.8
+  // after Phil sign-off of Pix's brand-guidelines patch.
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
