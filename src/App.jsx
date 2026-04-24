@@ -101,11 +101,19 @@ const TYPE_STYLES = {
     chip: "bg-slate-400",
   },
 };
+// CRM-DM-PIE scaffold (23 Apr 2026, Rex).
+// Pie chart contact-type colours read from CSS custom properties
+// defined in packages/brand/src/tokens.css. The .dark override in
+// tokens.css swaps these for the dark-mode palette without any
+// re-render logic on this side. Final hex values land in v1.6.8
+// after Phil signs off Pix's brand-guidelines patch; current slots
+// carry the existing production values in light mode and #FF00FF
+// placeholders in dark mode.
 const TYPE_COLORS = {
-  Client: "#305DAB",
-  "Warm Lead": "#305DAB",
-  "Cold Lead": "rgba(48, 93, 171, 0.4)",
-  "Mailing List": "#A7A59F",
+  Client: "var(--chart-contact-client)",
+  "Warm Lead": "var(--chart-contact-warm-lead)",
+  "Cold Lead": "var(--chart-contact-cold-lead)",
+  "Mailing List": "var(--chart-contact-mailing-list)",
 };
 
 const STAGES = ["Identified", "Qualifying", "Proposal", "Negotiating", "Won", "Lost"];
@@ -3354,7 +3362,7 @@ export default function App() {
                         dataKey="value"
                       >
                         {stats.chart.map((entry) => (
-                          <Cell key={entry.name} fill={entry.color} />
+                          <Cell key={entry.name} style={{ fill: entry.color }} />
                         ))}
                       </Pie>
                       <Tooltip />
