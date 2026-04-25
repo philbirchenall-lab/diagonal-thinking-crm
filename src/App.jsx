@@ -392,8 +392,8 @@ function inferMapping(headers) {
 
 function DetailField({ label, children }) {
   return (
-    <label className="space-y-2">
-      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+    <label className="block min-w-0 space-y-2">
+      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 break-words">
         {label}
       </div>
       {children}
@@ -501,16 +501,16 @@ function TextArea(props) {
 function ModalShell({ title, subtitle, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 sm:px-4 sm:py-8">
-      <div className="w-full max-w-5xl rounded-t-xl border border-line bg-white shadow-panel sm:rounded-xl">
-        <div className="flex items-start justify-between border-b border-line px-5 py-4 sm:px-6 sm:py-5">
-          <div>
-            <h2 className="font-display text-2xl font-normal uppercase tracking-[0.02em] text-ink sm:text-3xl">{title}</h2>
-            {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
+      <div className="w-full max-w-full overflow-x-hidden rounded-t-xl border border-line bg-white shadow-panel sm:rounded-xl sm:max-w-5xl">
+        <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4 sm:px-6 sm:py-5">
+          <div className="min-w-0 flex-1">
+            <h2 className="font-display text-2xl font-normal uppercase tracking-[0.02em] text-ink break-words sm:text-3xl">{title}</h2>
+            {subtitle ? <p className="mt-1 text-sm text-slate-500 break-words">{subtitle}</p> : null}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[44px] min-w-[44px] rounded-md border border-line p-2 text-slate-500 transition hover:border-brand hover:text-ink"
+            className="min-h-[44px] min-w-[44px] flex-shrink-0 rounded-md border border-line p-2 text-slate-500 transition hover:border-brand hover:text-ink"
           >
             <X size={18} />
           </button>
@@ -3857,8 +3857,8 @@ export default function App() {
               </span>
             </div>
           )}
-          <div className="grid gap-6 px-5 py-5 lg:grid-cols-[1.2fr_0.8fr] sm:px-6 sm:py-6">
-            <div className="space-y-4">
+          <div className="grid min-w-0 gap-6 px-5 py-5 lg:grid-cols-[1.2fr_0.8fr] sm:px-6 sm:py-6">
+            <div className="min-w-0 space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <DetailField label="Company / Organisation">
                   <CompanyAutocomplete
@@ -3977,7 +3977,7 @@ export default function App() {
               </DetailField>
             </div>
 
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               <div className="border border-line bg-mist p-5">
                 <div className="text-sm font-semibold text-ink">Snapshot</div>
                 <div className="mt-4 space-y-3 text-sm text-slate-600">
