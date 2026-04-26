@@ -1,13 +1,13 @@
 /**
- * mailchimp-sync — Supabase Edge Function
+ * mailchimp-sync (Supabase Edge Function)
  *
  * Triggered by a Supabase Database Webhook on the `contacts` table.
  * Keeps Mailchimp in sync whenever a contact is inserted, updated, or deleted.
  *
  * Environment secrets required:
- *   MAILCHIMP_API_KEY       — e.g. xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-us8
- *   MAILCHIMP_AUDIENCE_ID   — e.g. d89fc8d69c
- *   MAILCHIMP_SERVER        — e.g. us8
+ *   MAILCHIMP_API_KEY       (e.g. xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-us8)
+ *   MAILCHIMP_AUDIENCE_ID   (e.g. d89fc8d69c)
+ *   MAILCHIMP_SERVER        (e.g. us8)
  */
 
 import { createHash } from "https://deno.land/std@0.224.0/crypto/mod.ts";
@@ -24,6 +24,10 @@ interface ContactRecord {
   services?: string[] | null;
   network_partner?: boolean | null;
   source?: string | null;
+  // MAIL-SYNC-001: marketing opt-in is the outbound guard. Mailchimp opt-out
+  // is GROUND TRUTH; the inbound webhook flips this on every unsubscribe and
+  // the outbound sync MUST short-circuit when it is false.
+  email_marketing_opt_in?: boolean | null;
   [key: string]: unknown;
 }
 
@@ -37,7 +41,7 @@ interface WebhookPayload {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** MD5 hash of a lowercase email — required by Mailchimp as the subscriber ID */
+/** MD5 hash of a lowercase email (required by Mailchimp as the subscriber ID). */
 async function subscriberHash(email: string): Promise<string> {
   const normalized = email.toLowerCase().trim();
   const msgBuffer = new TextEncoder().encode(normalized);
@@ -73,7 +77,18 @@ async function upsertMember(
 ): Promise<void> {
   if (!contact.email) {
     console.log(
-      `Skipping upsert for contact ${contact.id} — no email address.`
+      `Skipping upsert for contact ${contact.id}, no email address.`
+    );
+    return;
+  }
+
+  // MAIL-SYNC-001 outbound opt-out guard. If a contact has been
+  // unsubscribed in Mailchimp (the inbound webhook flips this column),
+  // the outbound sync must NOT re-add them. Spec ref: section 5.5.
+  // Acceptance criteria: section 8.2.
+  if (contact.email_marketing_opt_in === false) {
+    console.log(
+      `[mailchimp-sync] opt-out guard: skipping upsert for ${contact.email} (id=${contact.id}), email_marketing_opt_in=false.`
     );
     return;
   }
@@ -99,7 +114,7 @@ async function upsertMember(
       PHONE: contact.phone ?? "",
       CRM_TYPE: contact.type ?? "",
       SERVICES: servicesStr,
-      // NOTE: Mailchimp merge field tags max 10 chars — NETPARTNER not NETWORK_PARTNER
+      // NOTE: Mailchimp merge field tags max 10 chars; use NETPARTNER not NETWORK_PARTNER.
       NETPARTNER: networkStr,
       SOURCE: contact.source ?? "",
     },
@@ -130,7 +145,7 @@ async function archiveMember(
 ): Promise<void> {
   if (!contact.email) {
     console.log(
-      `Skipping archive for contact ${contact.id} — no email address.`
+      `Skipping archive for contact ${contact.id} (no email address).`
     );
     return;
   }
@@ -144,7 +159,7 @@ async function archiveMember(
     },
   });
 
-  // 204 = success, 404 = subscriber didn't exist — both are fine
+  // 204 = success, 404 = subscriber did not exist (both are fine).
   if (!res.ok && res.status !== 404) {
     const err = await res.text();
     throw new Error(`Mailchimp archive failed (${res.status}): ${err}`);
