@@ -392,8 +392,8 @@ function inferMapping(headers) {
 
 function DetailField({ label, children }) {
   return (
-    <label className="space-y-2">
-      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+    <label className="block min-w-0 space-y-2">
+      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 break-words">
         {label}
       </div>
       {children}
@@ -3857,8 +3857,8 @@ export default function App() {
               </span>
             </div>
           )}
-          <div className="grid gap-6 px-5 py-5 lg:grid-cols-[1.2fr_0.8fr] sm:px-6 sm:py-6">
-            <div className="space-y-4">
+          <div className="grid min-w-0 gap-6 px-5 py-5 lg:grid-cols-[1.2fr_0.8fr] sm:px-6 sm:py-6">
+            <div className="min-w-0 space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <DetailField label="Company / Organisation">
                   <CompanyAutocomplete
@@ -3977,7 +3977,7 @@ export default function App() {
               </DetailField>
             </div>
 
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               <div className="border border-line bg-mist p-5">
                 <div className="text-sm font-semibold text-ink">Snapshot</div>
                 <div className="mt-4 space-y-3 text-sm text-slate-600">
