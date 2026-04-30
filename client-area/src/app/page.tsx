@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { BrandWordmark } from "@/components/brand";
 import { RegistrationForm } from "@/components/registration-form";
 import { readSessionCookie } from "@/lib/auth";
-import { formatSessionDate, getClientSessionBySlug } from "@/lib/client-data";
+import { formatSessionDate, getClientEntryData } from "@/lib/client-data";
 
 export default async function Home({
   searchParams,
@@ -20,11 +20,11 @@ export default async function Home({
     redirect(`/session/${sessionFromCookie.sessionSlug}`);
   }
 
-  const session = requestedSessionSlug ? await getClientSessionBySlug(requestedSessionSlug) : null;
+  const sessionMeta = requestedSessionSlug ? await getClientEntryData(requestedSessionSlug) : null;
   const heroMeta = [
-    session?.organisationName,
-    session?.date ? formatSessionDate(session.date) : null,
-    session?.sessionType === "open_event" ? "Open event" : null,
+    sessionMeta?.organisationName,
+    sessionMeta?.date ? formatSessionDate(sessionMeta.date) : null,
+    sessionMeta?.sessionType === "open_event" ? "Open event" : null,
   ].filter(Boolean);
 
   return (
@@ -35,7 +35,7 @@ export default async function Home({
             <BrandWordmark />
           </div>
           <p className="dt-hero__eyebrow">Client Area</p>
-          <h1 className="dt-hero__title">{session?.name ?? "Secure Session Access"}</h1>
+          <h1 className="dt-hero__title">{sessionMeta?.name ?? "Secure Session Access"}</h1>
           {heroMeta.length ? (
             <div className="dt-hero__meta">
               {heroMeta.map((item) => (
@@ -44,12 +44,12 @@ export default async function Home({
             </div>
           ) : null}
           <p className="dt-hero__sub">
-            {session
+            {sessionMeta
               ? "Use the email address tied to this session and we will send you a secure access link."
               : "Enter your details and we will send you a secure access link to your session materials."}
           </p>
         </div>
-        <RegistrationForm sessionSlug={requestedSessionSlug} session={session} />
+        <RegistrationForm sessionSlug={requestedSessionSlug} sessionMeta={sessionMeta} />
       </section>
     </main>
   );
