@@ -105,6 +105,24 @@ export function isSupabaseMode() {
   return USE_SUPABASE;
 }
 
+/**
+ * Build the Authorization header for a CRM API call using the current
+ * Supabase user's access token. Required by every gated /api/* route since
+ * SEC-API-001 (30 Apr 2026 risk register). Returns an empty object if no
+ * session — the API will respond 401, which the SPA surfaces as "session
+ * expired, please sign in again".
+ */
+async function getAuthHeader() {
+  if (!USE_SUPABASE || !supabase) return {};
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
 async function readJson(response, fallbackMessage) {
   const data = await response.json().catch(() => null);
   if (!response.ok) {
@@ -501,7 +519,9 @@ export async function loadClientSessions() {
   if (!USE_SUPABASE) {
     return readLocalClientSessions();
   }
-  const response = await fetch("/api/client/sessions");
+  const response = await fetch("/api/client/sessions", {
+    headers: { ...(await getAuthHeader()) },
+  });
   const data = await readJson(response, "Failed to load client sessions.");
   return data.sessions ?? [];
 }
@@ -529,6 +549,7 @@ export async function saveClientSession(session) {
     method,
     headers: {
       "Content-Type": "application/json",
+      ...(await getAuthHeader()),
     },
     body: JSON.stringify(session),
   });
