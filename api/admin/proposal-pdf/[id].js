@@ -13,6 +13,11 @@
  * The /p/[slug]/print route never writes to proposal_access_log, so this admin
  * download is completely invisible to client-facing analytics.
  *
+ * Auth: gated by the `admin_session` cookie (same pattern as the dt-proposals
+ * admin layer fixed 29 April 2026 — wiki/security/risk-register-2026-04-30.md
+ * §API-007). Cookie absent or empty -> 401 with no body. The check runs BEFORE
+ * any database read or Chromium launch.
+ *
  * Required env vars (same as other API routes):
  *   SUPABASE_URL or VITE_SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_KEY or VITE_SUPABASE_ANON_KEY
@@ -21,6 +26,35 @@
 import { createClient } from "@supabase/supabase-js";
 import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
+
+/**
+ * Parse the request Cookie header into a plain object.
+ * Returns the value of `admin_session` if present and non-empty, else null.
+ *
+ * Standalone helper (no extra dependency) — small enough to inline and avoids
+ * pulling `cookie` into a route that previously had no parser. Same shape as
+ * the canonical `cookies().get('admin_session')?.value` check used in the
+ * dt-proposals Next.js admin pages.
+ */
+function readAdminSessionCookie(req) {
+  const header = req.headers?.cookie;
+  if (!header || typeof header !== "string") return null;
+  const parts = header.split(";");
+  for (const part of parts) {
+    const idx = part.indexOf("=");
+    if (idx === -1) continue;
+    const name = part.slice(0, idx).trim();
+    if (name !== "admin_session") continue;
+    const raw = part.slice(idx + 1).trim();
+    if (!raw) return null;
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  }
+  return null;
+}
 
 const PROPOSALS_APP_URL = "https://proposals.diagonalthinking.co";
 
@@ -51,6 +85,15 @@ function getSupabase() {
 }
 
 export default async function handler(req, res) {
+  // SEC-API-007: admin auth gate. Runs BEFORE any database read or Chromium
+  // launch, per Hex's 30 Apr 2026 risk register §API-007. Missing or empty
+  // `admin_session` cookie -> 401, no body, no leak. Closes the unauth path
+  // that compounded yesterday's proposals admin SSR UUID leak.
+  const adminSession = readAdminSessionCookie(req);
+  if (!adminSession) {
+    return res.status(401).end();
+  }
+
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
