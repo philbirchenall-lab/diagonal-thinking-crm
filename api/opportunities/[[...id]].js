@@ -11,6 +11,12 @@
  * PATCH  /api/opportunities/:id           — update any field on an opportunity
  * DELETE /api/opportunities/:id           — delete an opportunity
  *
+ * Security (SEC-API-004, Hex 30 Apr 2026 risk register):
+ *   Every method handler now requires a valid admin_session cookie before
+ *   any database call. Unauthenticated callers receive 401 with no body.
+ *   The frontend talks to Supabase directly (see src/db.js), so this
+ *   endpoint had no legitimate caller today — it was a pure attack surface.
+ *
  * Required env vars:
  *   SUPABASE_URL or VITE_SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_ANON_KEY
@@ -31,7 +37,47 @@ function getSupabase() {
   });
 }
 
+/**
+ * Parse the Cookie header and return the value of the named cookie, or null.
+ */
+function readCookie(req, name) {
+  const header = req.headers?.cookie;
+  if (!header || typeof header !== "string") return null;
+  const parts = header.split(";");
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    const k = trimmed.slice(0, eq).trim();
+    if (k !== name) continue;
+    const v = trimmed.slice(eq + 1).trim();
+    return v.length > 0 ? v : null;
+  }
+  return null;
+}
+
+/**
+ * Gate: every request must carry a non-empty admin_session cookie.
+ * Returns true if the gate sent a 401 response (caller should stop).
+ */
+function rejectIfUnauthenticated(req, res) {
+  const token = readCookie(req, "admin_session");
+  if (!token) {
+    // 401 with no body — never echo why the gate rejected.
+    res.status(401).end();
+    return true;
+  }
+  return false;
+}
+
 export default async function handler(req, res) {
+  // Auth gate — runs before ANY database call on every method (GET/POST/PATCH/DELETE).
+  // SEC-API-004: previously this endpoint was completely unauthenticated against the
+  // master database key, so any browser visitor could read, create, modify or delete
+  // any row in the opportunities table.
+  if (rejectIfUnauthenticated(req, res)) return;
+
   // [[...id]] gives req.query.id as undefined (no segment) or ['uuid'] (one segment)
   const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
 
