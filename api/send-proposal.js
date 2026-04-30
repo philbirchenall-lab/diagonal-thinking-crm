@@ -125,8 +125,11 @@ export default async function handler(req, res) {
   });
 
   if (!emailRes.ok) {
-    const err = await emailRes.text();
-    return res.status(500).json({ error: `Email send failed: ${err}` });
+    // SEC-API-008 — Resend error bodies can echo the API key in some failure
+    // modes. Log the raw body server-side only; return a generic message.
+    const rawBody = await emailRes.text();
+    console.error(`[send-proposal] Resend send failed (${emailRes.status}):`, rawBody);
+    return res.status(500).json({ error: "Email send failed" });
   }
 
   const now = new Date().toISOString();

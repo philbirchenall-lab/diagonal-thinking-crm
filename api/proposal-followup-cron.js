@@ -26,7 +26,8 @@
 
 function verifyAuth(req) {
   const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) return true; // if no secret configured, allow (dev only)
+  // SEC-API-009 — fail-closed: never allow if CRON_SECRET is unset
+  if (!cronSecret) return false;
   const authHeader = req.headers["authorization"] ?? "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
   return token === cronSecret;
@@ -221,8 +222,12 @@ async function sendEmail({ to, subject, text, html }) {
     }),
   });
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Resend error (${res.status}): ${err}`);
+    // SEC-API-008 — Resend error bodies can echo the API key in some failure
+    // modes. Log the raw body server-side only; throw a sanitised message that
+    // surfaces only the HTTP status to callers.
+    const rawBody = await res.text();
+    console.error(`[proposal-followup-cron] Resend send failed (${res.status}):`, rawBody);
+    throw new Error(`Email send failed (status ${res.status})`);
   }
 }
 
@@ -286,7 +291,9 @@ export default async function handler(req, res) {
   try {
     proposals = await fetchActiveProposals(supabaseUrl, supabaseKey);
   } catch (err) {
-    return res.status(500).json({ error: `Failed to fetch proposals: ${err.message}` });
+    // SEC-API-006 — log details server-side, return generic message to caller.
+    console.error("[proposal-followup-cron] fetchActiveProposals failed:", err);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 
   for (const proposal of proposals) {
