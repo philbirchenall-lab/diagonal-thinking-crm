@@ -129,7 +129,21 @@ function snakeToCamel(r) {
 
 // ─── Express setup ───────────────────────────────────────────────────────────
 
-app.use(cors());
+// SEC-API-011 — restrict CORS to localhost dev origins only. Production is
+// Vercel serverless and unaffected by this dev server. Allow any localhost or
+// 127.0.0.1 origin on any port (Vite, Next.js, ai-intel, client-area can all
+// run on different local ports during dev).
+const LOCALHOST_ORIGIN_RE = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Same-origin / curl / server-to-server requests have no Origin header.
+      if (!origin) return callback(null, true);
+      if (LOCALHOST_ORIGIN_RE.test(origin)) return callback(null, true);
+      return callback(new Error(`CORS: origin not allowed (${origin})`));
+    },
+  })
+);
 app.use(express.json({ limit: "10mb" }));
 
 // GET /api/contacts — return all contacts
@@ -189,8 +203,11 @@ app.post("/api/contacts/:id", async (req, res) => {
 
 await initSupabase();
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Diagonal Thinking CRM local server running on port ${PORT}`);
+// SEC-API-011 — bind explicitly to loopback so the dev server is never
+// reachable from other hosts on the LAN/Tailnet, even if a future change
+// loosened CORS. Production deploys are Vercel serverless and unaffected.
+app.listen(PORT, "127.0.0.1", () => {
+  console.log(`Diagonal Thinking CRM local server running on http://127.0.0.1:${PORT}`);
   if (supabase) {
     console.log("Two-way Supabase sync active — local writes will push to cloud");
   } else {

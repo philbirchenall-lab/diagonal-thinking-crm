@@ -54,7 +54,8 @@ const SHEETS_READ_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly
 
 function verifyAuth(req) {
   const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) return true; // no secret configured → allow (dev only)
+  // SEC-API-009 — fail-closed: never allow if CRON_SECRET is unset
+  if (!cronSecret) return false;
   const authHeader = req.headers["authorization"] ?? "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
   return token === cronSecret;
@@ -345,7 +346,9 @@ export default async function handler(req, res) {
   try {
     sheetRows = await fetchIESheetRows();
   } catch (err) {
-    return res.status(500).json({ error: `Failed to fetch I&E sheet: ${err.message}` });
+    // SEC-API-006 — log details server-side, return generic message to caller.
+    console.error("[ie-crm-gap-check] fetchIESheetRows failed:", err);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 
   // Parse rows; skip blanks
@@ -366,7 +369,9 @@ export default async function handler(req, res) {
   try {
     crmRows = await supabaseFetch(supabaseUrl, supabaseKey, "contacts?select=id,company");
   } catch (err) {
-    return res.status(500).json({ error: `Failed to fetch CRM contacts: ${err.message}` });
+    // SEC-API-006 — log details server-side, return generic message to caller.
+    console.error("[ie-crm-gap-check] fetch CRM contacts failed:", err);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 
   const crmCompanyNames = (crmRows ?? []).map((c) => c.company).filter(Boolean);
