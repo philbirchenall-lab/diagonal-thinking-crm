@@ -787,12 +787,18 @@ function handleSearch(query) {
 function dtSetSidebar(open) {
   document.body.classList.toggle('sidebar-open', !!open);
   try {
-    window.parent.postMessage({ type: 'dt:sidebar-state', open: !!open }, '*');
+    // SEC-AI-002: scope target origin to our own. WikiShell embeds this
+    // page same-origin, so window.location.origin is the parent's origin
+    // too. Sending to '*' would let any framing site read sidebar state.
+    window.parent.postMessage({ type: 'dt:sidebar-state', open: !!open }, window.location.origin);
   } catch (e) { /* cross-origin, non-fatal */ }
 }
 function dtCloseSidebar() { dtSetSidebar(false); }
 function dtOpenSidebar() { dtSetSidebar(true); }
 window.addEventListener('message', function(event) {
+  // SEC-AI-002: drop messages from foreign origins. Parent shell is
+  // same-origin so any mismatch is hostile.
+  if (event.origin !== window.location.origin) return;
   var msg = event.data;
   if (!msg || typeof msg !== 'object') return;
   if (msg.type === 'dt:set-sidebar') dtSetSidebar(msg.open);
