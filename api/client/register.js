@@ -4,10 +4,28 @@ import {
   getSupabaseAdmin,
   logRegistrationIfNeeded,
 } from "../_lib/client-area.js";
+import { applyRateLimit } from "../_lib/rate-limit.js";
+
+// SEC-API-002: 3 registrations per IP per hour. Tighter than the auth-request
+// limit because legitimate users register a session once, not five times in
+// ten minutes.
+const RATE_LIMIT_MAX = 3;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  // Run BEFORE any DB read.
+  if (
+    applyRateLimit(req, res, {
+      bucket: "client-register",
+      max: RATE_LIMIT_MAX,
+      windowMs: RATE_LIMIT_WINDOW_MS,
+    })
+  ) {
+    return;
   }
 
   try {

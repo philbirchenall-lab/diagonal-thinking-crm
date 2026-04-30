@@ -5,10 +5,29 @@ import {
   getSupabaseAdmin,
   sendMagicLinkEmail,
 } from "../../_lib/client-area.js";
+import { applyRateLimit } from "../../_lib/rate-limit.js";
+
+// SEC-API-002: 5 magic-link requests per IP per 10 minutes. Defaults sized
+// for legitimate UX (occasional re-send, multiple devices) while shutting
+// down enumeration/Resend-spam attacks.
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  // Run BEFORE any DB read or Resend call. Returning early on 429 is the
+  // whole point of this fix.
+  if (
+    applyRateLimit(req, res, {
+      bucket: "client-auth-request",
+      max: RATE_LIMIT_MAX,
+      windowMs: RATE_LIMIT_WINDOW_MS,
+    })
+  ) {
+    return;
   }
 
   try {
