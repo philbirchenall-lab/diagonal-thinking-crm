@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { ClientSession } from "@/lib/client-data";
+import type { EntryPageData } from "@/lib/client-data";
 
 type RegistrationFormProps = {
   sessionSlug?: string;
-  session?: ClientSession | null;
+  sessionMeta?: EntryPageData | null;
 };
 
 type FormState = {
@@ -24,12 +24,12 @@ const EMPTY_FORM: FormState = {
   jobTitle: "",
 };
 
-export function RegistrationForm({ sessionSlug, session }: RegistrationFormProps) {
+export function RegistrationForm({ sessionSlug, sessionMeta }: RegistrationFormProps) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [status, setStatus] = useState<"idle" | "submitting" | "sent" | "error">("idle");
   const [message, setMessage] = useState("");
 
-  const isOpenEvent = session?.sessionType === "open_event";
+  const isOpenEvent = sessionMeta?.sessionType === "open_event";
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -116,8 +116,8 @@ export function RegistrationForm({ sessionSlug, session }: RegistrationFormProps
       className="dt-panel dt-panel--compact"
     >
       <div className="dt-panel__header">
-        <p className="dt-card-eyebrow">{session ? "Request access" : "Get your link"}</p>
-        <h2 className="dt-card-title">{session ? "Your details" : "Start here"}</h2>
+        <p className="dt-card-eyebrow">{sessionMeta ? "Request access" : "Get your link"}</p>
+        <h2 className="dt-card-title">{sessionMeta ? "Your details" : "Start here"}</h2>
         <p className="dt-card-copy">
           Enter your details below and we will send you a secure access link.
         </p>

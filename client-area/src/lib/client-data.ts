@@ -28,6 +28,13 @@ export type ClientSession = {
   resourceCount?: number;
 };
 
+export type EntryPageData = {
+  name: string;
+  organisationName: string | null;
+  date: string | null;
+  sessionType: SessionType;
+};
+
 function pickString(row: Record<string, unknown>, key: string) {
   const value = row[key];
   return typeof value === "string" && value.trim() ? value : null;
@@ -98,6 +105,40 @@ function normalizeSession(
     status: state.status,
     sessionType: inferSessionType(row),
     resources,
+  };
+}
+
+// Minimal projection for the pre-auth entry page (`/?session=<slug>`).
+// MUST NOT return session id, organisation id, or resources - those ship in the
+// SSR payload and would leak to unauthenticated visitors. See Hex spec
+// `outputs/hex-fix-spec-ssr-preauth-client-area-2026-04-29.md`.
+export async function getClientEntryData(slug: string): Promise<EntryPageData | null> {
+  const supabase = createServiceClient();
+
+  const { data: session, error } = await supabase
+    .from("sessions")
+    .select("name, organisation_id, date, status, session_type")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error || !session) {
+    return null;
+  }
+
+  const state = decodeSessionState(session.status);
+  if (state.status !== "active") {
+    return null;
+  }
+
+  const organisationName = await resolveOrganisationName(
+    typeof session.organisation_id === "string" ? session.organisation_id : null,
+  );
+
+  return {
+    name: pickString(session as Record<string, unknown>, "name") ?? "Client session",
+    organisationName,
+    date: pickString(session as Record<string, unknown>, "date"),
+    sessionType: inferSessionType(session as Record<string, unknown>),
   };
 }
 
