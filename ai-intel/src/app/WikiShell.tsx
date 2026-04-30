@@ -23,16 +23,24 @@ export default function WikiShell({ signOut }: { signOut: ReactNode }) {
   const toggleSidebar = useCallback(() => {
     const next = !sidebarOpen;
     setSidebarOpen(next);
+    // SEC-AI-002: scope postMessage target to our own origin. The iframe
+    // src is /wiki.html (same origin), so equality holds. Sending to '*'
+    // would let any site that frames us read the message.
     iframeRef.current?.contentWindow?.postMessage(
       { type: "dt:set-sidebar", open: next },
-      "*",
+      window.location.origin,
     );
   }, [sidebarOpen]);
 
   // Close the outer state when the iframe reports its sidebar closed
   // (e.g. user tapped a nav item or the backdrop).
   useEffect(() => {
+    const expectedOrigin = window.location.origin;
     function onMessage(event: MessageEvent) {
+      // SEC-AI-002: drop messages that did not originate from our own
+      // origin. The iframe is same-origin, so a mismatch here means a
+      // cross-origin sender is trying to inject sidebar state.
+      if (event.origin !== expectedOrigin) return;
       const data = event.data;
       if (data && typeof data === "object" && data.type === "dt:sidebar-state") {
         setSidebarOpen(Boolean(data.open));
