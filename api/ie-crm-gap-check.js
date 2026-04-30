@@ -91,19 +91,41 @@ async function supabaseFetch(url, key, path, options = {}) {
 }
 
 // ─── Google service account ───────────────────────────────────────────────────
+//
+// SEC-API-010 (Hex risk register, 30 Apr 2026): the service account JSON key
+// lives in a Vercel env var. Per the rotation runbook in the PR that
+// introduced these checks, the value should be stored as a Sensitive
+// environment variable in Vercel (so it is masked in the dashboard and not
+// returned by the Vercel API), and rotated quarterly via the Google Cloud
+// Console. See: wiki/security/risk-register-2026-04-30.md#api-010.
+//
+// The fail-fast checks below are deliberate: if the env var is missing,
+// empty, malformed, or shaped wrong, we throw a clear error here rather
+// than letting cryptic JSON / PEM / OAuth errors surface several layers
+// deeper inside google-auth-library.
 
 /**
  * Parse GOOGLE_SERVICE_ACCOUNT_JSON into a credentials object.
  * Accepts the raw JSON string pasted from a downloaded service account key.
  * Handles the common \\n → \n conversion required when the private_key field
  * is stored flat as an env var.
+ *
+ * Throws a clear, actionable Error if the env var is missing, empty,
+ * malformed, or missing required fields. Callers should let the error
+ * propagate — it is intended to surface in the cron run log so Phil sees
+ * "rotate the key, the new one is broken" rather than an opaque OAuth
+ * failure 200ms later.
  */
 function parseServiceAccountCredentials() {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  if (!raw) {
+
+  // Treat both unset and whitespace-only as "not set". Vercel sometimes
+  // round-trips an empty string when an env var is "removed but not deleted".
+  if (!raw || raw.trim() === "") {
     throw new Error(
-      "GOOGLE_SERVICE_ACCOUNT_JSON env var is not set. Add the stringified " +
-        "JSON of a Google Cloud service account key with Viewer access on the I&E sheet."
+      "GOOGLE_SERVICE_ACCOUNT_JSON env var is not set (or is empty). " +
+        "Add the stringified JSON of a Google Cloud service account key with " +
+        "Viewer access on the I&E sheet. See SEC-API-010 rotation runbook."
     );
   }
 
@@ -111,12 +133,34 @@ function parseServiceAccountCredentials() {
   try {
     parsed = JSON.parse(raw);
   } catch (err) {
-    throw new Error(`GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON: ${err.message}`);
+    throw new Error(
+      `GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON: ${err.message}. ` +
+        `Re-export the key from Google Cloud Console and paste the full file contents into Vercel.`
+    );
+  }
+
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error(
+      "GOOGLE_SERVICE_ACCOUNT_JSON parsed to a non-object. Expected a service account key JSON object."
+    );
   }
 
   if (!parsed.client_email || !parsed.private_key) {
     throw new Error(
-      "GOOGLE_SERVICE_ACCOUNT_JSON is missing client_email or private_key fields."
+      "GOOGLE_SERVICE_ACCOUNT_JSON is missing client_email or private_key fields. " +
+        "Confirm the value pasted into Vercel is a service account key (not an OAuth client secret)."
+    );
+  }
+
+  if (typeof parsed.client_email !== "string" || !parsed.client_email.includes("@")) {
+    throw new Error(
+      "GOOGLE_SERVICE_ACCOUNT_JSON client_email is not a valid email string."
+    );
+  }
+
+  if (typeof parsed.private_key !== "string") {
+    throw new Error(
+      "GOOGLE_SERVICE_ACCOUNT_JSON private_key is not a string."
     );
   }
 
@@ -125,6 +169,13 @@ function parseServiceAccountCredentials() {
   // line breaks. Normalise so the PEM parser is happy.
   if (parsed.private_key.includes("\\n")) {
     parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
+  }
+
+  if (!parsed.private_key.includes("BEGIN PRIVATE KEY") && !parsed.private_key.includes("BEGIN RSA PRIVATE KEY")) {
+    throw new Error(
+      "GOOGLE_SERVICE_ACCOUNT_JSON private_key does not look like a PEM block. " +
+        "Expected a string containing '-----BEGIN PRIVATE KEY-----'. Re-export the key from Google Cloud Console."
+    );
   }
 
   return parsed;
