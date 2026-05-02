@@ -18,6 +18,28 @@ async function subscriberHash(email: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+// SEC-SUP-003: gibberish-name guard ported from contact-form/index.ts.
+// Bot fillers like "asDFGHjkLM" pass minimum-length checks but are
+// recognisable by run-of-uppercase or scattered-uppercase patterns in
+// non-leading positions. Surname prefixes (Mc, Mac, De, Von, Le, La,
+// O') are excluded so legitimate names pass.
+function isGibberishName(name: string): boolean {
+  const words = name.trim().split(/[\s\-']+/).filter((w) => w.length > 0);
+
+  for (const word of words) {
+    if (word.length < 2) continue;
+    if (/^(mc|mac|de|von|le|la|o'?)/i.test(word)) continue;
+
+    const nonLeading = word.slice(1);
+    if (/[A-Z]{4,}/.test(nonLeading)) return true;
+
+    const nonLeadingUpperCount = (nonLeading.match(/[A-Z]/g) ?? []).length;
+    if (nonLeadingUpperCount >= 3) return true;
+  }
+
+  return false;
+}
+
 async function syncToMailchimp(
   email: string,
   firstName: string,
@@ -48,7 +70,15 @@ async function syncToMailchimp(
 
   if (!res.ok) {
     const err = await res.text();
-    console.error(`Mailchimp sync failed (${res.status}): ${err}`);
+    // SEC-SUP-004 (extended): scrub credentials from Mailchimp error
+    // bodies before logging. Mailchimp occasionally echoes the
+    // Authorization header back. See mailchimp-sync/index.ts for the
+    // canonical scrubSecrets helper; this is the inline equivalent.
+    const scrubbed = err
+      .replace(/\b(Bearer|Basic|Token)\s+[A-Za-z0-9._\-+/=]{8,}/gi, "$1 [REDACTED]")
+      .replace(/\b(api[_-]?key|key|password|secret|token)\s*[:=]\s*[A-Za-z0-9._\-+/=]{6,}/gi, "$1=[REDACTED]")
+      .replace(/\b[a-f0-9]{32}-[a-z]{2}\d+\b/gi, "[REDACTED-MC-KEY]");
+    console.error(`Mailchimp sync failed (${res.status}): ${scrubbed}`);
   } else {
     console.log(`Mailchimp sync OK for ${email}`);
   }
@@ -98,6 +128,17 @@ serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ error: "Invalid email address" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    // SEC-SUP-003: reject gibberish names before they hit the contacts
+    // table. Matches the contact-form policy: bots filling random keys
+    // get a 422 instead of polluting the warm-leads list.
+    const fullName = `${first_name.trim()} ${last_name.trim()}`;
+    if (isGibberishName(fullName)) {
+      return new Response(
+        JSON.stringify({ error: "Please provide a valid name." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 422 }
       );
     }
 

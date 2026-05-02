@@ -3030,6 +3030,22 @@ export default function App() {
 
   function handleImportFile(file, sourceLabel) {
     if (!file) return;
+
+    // SEC-API-012: cap import file size before invoking xlsx / papaparse.
+    // Above 10 MB the parsers can hang the browser tab on pathological inputs
+    // (deeply nested cells, runaway shared-strings tables, malformed CSV
+    // delimiters). Reject early with a user-visible alert instead of locking
+    // the UI. Real-world DT imports are well under 1 MB.
+    const MAX_IMPORT_BYTES = 10 * 1024 * 1024;
+    if (file.size > MAX_IMPORT_BYTES) {
+      alert(
+        `Import file is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). ` +
+        `Maximum is ${MAX_IMPORT_BYTES / 1024 / 1024} MB. ` +
+        `Split the file into smaller chunks and try again.`
+      );
+      return;
+    }
+
     const reader = new FileReader();
 
     reader.onload = async (event) => {
