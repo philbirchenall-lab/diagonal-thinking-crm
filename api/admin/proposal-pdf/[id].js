@@ -7,7 +7,7 @@
  *
  * Strategy: launch headless Chromium via @sparticuz/chromium-min and navigate
  * to the proposal's print page on proposals.diagonalthinking.co. That page is
- * server-side rendered directly from Supabase — no auth gate, no access log —
+ * server-side rendered directly from Supabase - no auth gate, no access log -
  * so the PDF is pixel-identical to what the client sees.
  *
  * The /p/[slug]/print route never writes to proposal_access_log, so this admin
@@ -20,7 +20,7 @@
  * PROP-PDF-002 v2 (25 Apr 2026): comprehensive brand and design fix at PDF
  * capture.
  *
- * v1 (held, never deployed) was fonts-only — injected Oswald + Source Sans 3
+ * v1 (held, never deployed) was fonts-only - injected Oswald + Source Sans 3
  * via Google Fonts to recover from the Sparticuz Chromium-min OpenSans
  * fallback. Pix's full design review on the rendered artefact (file
  * outputs/pix-proposal-pdf-design-review-2026-04-25.md) found the regression
@@ -32,7 +32,7 @@
  * v2 expands the puppeteer evaluation step so it injects:
  *   1. Google Fonts stylesheet for Oswald + Source Sans 3 (display=block).
  *   2. A comprehensive override CSS pack covering every P0 issue from the
- *      design review — cover composition, page chrome via @page margin
+ *      design review - cover composition, page chrome via @page margin
  *      boxes, pagination rules, pull-quote canonical callout, fees summary
  *      block treatment, identity beats, and a guard against dark mode.
  *
@@ -200,7 +200,7 @@ body, .proposal-document, .proposal-document p, .proposal-document li,
   .proposal-footer { display: none !important; }
 }
 
-/* 5. Pagination — orphans, widows, heading binding (P0-BODY-03) */
+/* 5. Pagination - orphans, widows, heading binding (P0-BODY-03) */
 .proposal-document h1, .proposal-document h2, .proposal-document h3,
 .proposal-heading, .proposal-subheading {
   break-after: avoid-page !important; break-inside: avoid !important;
@@ -246,7 +246,7 @@ body, .proposal-document, .proposal-document p, .proposal-document li,
   margin-bottom: 10px !important; color: #305DAB !important;
 }
 
-/* 8. Stage numbering (P1-BODY-07) — opt-in via .proposal-stage class */
+/* 8. Stage numbering (P1-BODY-07) - opt-in via .proposal-stage class */
 .proposal-document { counter-reset: stage; }
 .proposal-document h3.proposal-stage {
   counter-increment: stage;
@@ -261,7 +261,7 @@ body, .proposal-document, .proposal-document p, .proposal-document li,
   color: #305DAB; letter-spacing: 0.04em; flex-shrink: 0;
 }
 
-/* 9. Fees summary block (P1-BODY-08) — opt-in via .proposal-fees-list */
+/* 9. Fees summary block (P1-BODY-08) - opt-in via .proposal-fees-list */
 .proposal-fees-list {
   list-style: none !important; margin: 16px 0 !important;
   padding: 0 !important;
@@ -293,7 +293,7 @@ body, .proposal-document, .proposal-document p, .proposal-document li,
   text-underline-offset: 2px !important;
 }
 
-/* Final guard — force light palette for print regardless of system preference */
+/* Final guard - force light palette for print regardless of system preference */
 @media (prefers-color-scheme: dark) {
   html, body, .proposal-document, .proposal-body, .proposal-closing-page {
     background: #ffffff !important; color: #111111 !important;
@@ -338,7 +338,7 @@ export default async function handler(req, res) {
   if (!proposal.slug) {
     return res
       .status(400)
-      .json({ error: "Proposal has no slug — cannot generate PDF." });
+      .json({ error: "Proposal has no slug, cannot generate PDF." });
   }
 
   const printUrl = `${PROPOSALS_APP_URL}/p/${proposal.slug}/print`;
