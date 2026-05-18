@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase";
+import { createAnonClient, createServiceClient } from "@/lib/supabase";
 
 const SESSION_STATE_SEPARATOR = "::";
 
@@ -109,36 +109,41 @@ function normalizeSession(
 }
 
 // Minimal projection for the pre-auth entry page (`/?session=<slug>`).
-// MUST NOT return session id, organisation id, or resources - those ship in the
-// SSR payload and would leak to unauthenticated visitors. See Hex spec
-// `outputs/hex-fix-spec-ssr-preauth-client-area-2026-04-29.md`.
+// SEC-002 / Layer C PR 3: reads via anon-key + the SECURITY DEFINER
+// `get_public_session_meta` RPC. The function returns ONLY the four
+// safe fields the heading needs (name, date, session_type,
+// organisation_name) plus slug for confirmation. Locked-down RLS
+// (Layer C PR 2) blocks any anon-key direct table read on `sessions`
+// or `contacts`, so the function is the only path. id, organisation_id,
+// resources, tiptap_json, etc. are not reachable on this surface.
 export async function getClientEntryData(slug: string): Promise<EntryPageData | null> {
-  const supabase = createServiceClient();
+  const supabase = createAnonClient();
 
-  const { data: session, error } = await supabase
-    .from("sessions")
-    .select("name, organisation_id, date, status, session_type")
-    .eq("slug", slug)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("get_public_session_meta", {
+    p_slug: slug,
+  });
 
-  if (error || !session) {
+  if (error || !Array.isArray(data) || data.length === 0) {
     return null;
   }
 
-  const state = decodeSessionState(session.status);
-  if (state.status !== "active") {
-    return null;
-  }
+  const row = data[0] as {
+    name: string | null;
+    date: string | null;
+    session_type: string | null;
+    organisation_name: string | null;
+  };
 
-  const organisationName = await resolveOrganisationName(
-    typeof session.organisation_id === "string" ? session.organisation_id : null,
-  );
+  const sessionType: SessionType =
+    row.session_type === "open_event" || row.session_type === "in_house"
+      ? row.session_type
+      : "open_event";
 
   return {
-    name: pickString(session as Record<string, unknown>, "name") ?? "Client session",
-    organisationName,
-    date: pickString(session as Record<string, unknown>, "date"),
-    sessionType: inferSessionType(session as Record<string, unknown>),
+    name: row.name ?? "Client session",
+    organisationName: row.organisation_name ?? null,
+    date: row.date ?? null,
+    sessionType,
   };
 }
 
