@@ -6,6 +6,18 @@ import {
   sendMagicLinkEmail,
 } from "@/lib/client-server";
 
+// SEC-CA-005 — explicit decision (2026-05-02, P3): no CSRF nonce on the
+// JSON form endpoints. Rationale: this route accepts only application/json
+// (see body parsing below — non-JSON requests fail at JSON.parse), which
+// browsers do not allow cross-origin without a CORS preflight. The current
+// CORS config allows only Same-Origin. A cross-origin attacker therefore
+// cannot trigger this route from another tab without first compromising
+// the user's session — at which point CSRF is moot.
+//
+// If CORS is ever loosened (e.g. to allow Squarespace embed origin) or a
+// form-encoded variant of this endpoint is added, CSRF nonce coverage
+// becomes mandatory at that point. Tracked: register entry CA-005.
+
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
