@@ -2289,6 +2289,12 @@ function ProposalsTab({ contacts }) {
   const [accessProposal, setAccessProposal] = useState(null);
   const [copied, setCopied] = useState(null);
   const [sendingProposal, setSendingProposal] = useState(null); // proposal id being sent
+  // PROP-PDF-003 (20 May 2026): explicit download state + error so a server
+  // failure (timeout, OOM, runtime error envelope) surfaces in the UI as a
+  // real PDF download failure instead of silently saving the error body as
+  // <id>.txt. See api/admin/proposal-pdf/[id].js header for full root cause.
+  const [downloadingPdf, setDownloadingPdf] = useState(null); // proposal id being downloaded
+  const [downloadError, setDownloadError] = useState(null); // { id, message } or null
 
   const VIEWER_URL = "https://proposals.diagonalthinking.co/view";
 
@@ -2344,6 +2350,68 @@ function ProposalsTab({ contacts }) {
     }
   }
 
+  // PROP-PDF-003 (20 May 2026): explicit fetch-blob-download flow.
+  //
+  // Replaces the previous `<a href download>` pattern which silently saved
+  // whatever the server returned as a download, including Vercel's
+  // text/plain runtime-error envelope when the function timed out or
+  // OOM-killed, producing the user-visible <id>.txt bug.
+  //
+  // This flow:
+  //   1. Fetches the PDF endpoint via fetch().
+  //   2. On non-2xx, reads the response body (best-effort) and surfaces a
+  //      real error to the user with status code + a body snippet for
+  //      debugging.
+  //   3. Only on success creates a Blob, sets the filename explicitly from
+  //      client_name (mirroring the server's Content-Disposition slug), and
+  //      triggers the download via a synthetic <a>.
+  //   4. Validates the response Content-Type starts with application/pdf as
+  //      a final guard against any future "soft" failure mode where the
+  //      server returns 200 with non-PDF content.
+  async function downloadProposalPdf(p) {
+    setDownloadError(null);
+    setDownloadingPdf(p.id);
+    try {
+      const res = await fetch(`/api/admin/proposal-pdf/${p.id}`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const bodyText = await res.text().catch(() => "");
+        throw new Error(
+          `PDF download failed (HTTP ${res.status}). ${bodyText.slice(0, 200)}`.trim()
+        );
+      }
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.toLowerCase().startsWith("application/pdf")) {
+        const bodyText = await res.text().catch(() => "");
+        throw new Error(
+          `Server returned non-PDF content (${contentType}). ${bodyText.slice(0, 200)}`.trim()
+        );
+      }
+      const blob = await res.blob();
+      const safeClient = (p.client_name || "proposal")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 60) || "proposal";
+      const filename = `${safeClient}-proposal.pdf`;
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // Defer revoke a tick so the click handler can dispatch on slower browsers.
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    } catch (err) {
+      console.error("[proposal-pdf] download failed", err);
+      setDownloadError({ id: p.id, message: err?.message || String(err) });
+    } finally {
+      setDownloadingPdf(null);
+    }
+  }
+
   return (
     <div>
       {/* Proposals header */}
@@ -2364,6 +2432,26 @@ function ProposalsTab({ contacts }) {
           </button>
         )}
       </div>
+
+      {/* PROP-PDF-003 (20 May 2026): surface server-side PDF generation failures
+          inline rather than letting the browser save a text/plain runtime
+          error envelope as <id>.txt. See downloadProposalPdf() above. */}
+      {downloadError && (
+        <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div>
+            <div className="font-semibold">PDF download failed</div>
+            <div className="mt-0.5 break-words">{downloadError.message}</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDownloadError(null)}
+            className="shrink-0 rounded p-1 text-rose-500 hover:bg-rose-100"
+            title="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {!isSupabaseMode() && (
         <div className="border border-line bg-slate-50 px-5 py-8 text-center text-sm text-slate-400">
@@ -2451,14 +2539,23 @@ function ProposalsTab({ contacts }) {
                           >
                             {copied === p.id ? <span className="text-[10px] font-semibold text-brand">✓</span> : <Link2 size={14} />}
                           </button>
-                          <a
-                            href={`/api/admin/proposal-pdf/${p.id}`}
-                            download
-                            title="Download proposal as PDF"
-                            className="rounded p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                          <button
+                            type="button"
+                            onClick={() => downloadProposalPdf(p)}
+                            disabled={downloadingPdf === p.id}
+                            title={
+                              downloadingPdf === p.id
+                                ? "Generating PDF…"
+                                : "Download proposal as PDF"
+                            }
+                            className="rounded p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-wait disabled:opacity-50"
                           >
-                            <Download size={14} />
-                          </a>
+                            {downloadingPdf === p.id ? (
+                              <span className="text-[10px] font-semibold text-brand">…</span>
+                            ) : (
+                              <Download size={14} />
+                            )}
+                          </button>
                           <button
                             type="button"
                             onClick={() => setAccessProposal(p)}
@@ -2532,14 +2629,15 @@ function ProposalsTab({ contacts }) {
                   >
                     {copied === p.id ? "Copied!" : "Copy link"}
                   </button>
-                  <a
-                    href={`/api/admin/proposal-pdf/${p.id}`}
-                    download
-                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand"
+                  <button
+                    type="button"
+                    onClick={() => downloadProposalPdf(p)}
+                    disabled={downloadingPdf === p.id}
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-line px-3 py-2 text-xs font-medium text-slate-600 hover:text-brand disabled:cursor-wait disabled:opacity-50"
                   >
                     <Download size={13} />
-                    Download PDF
-                  </a>
+                    {downloadingPdf === p.id ? "Generating…" : "Download PDF"}
+                  </button>
                   <button
                     type="button"
                     onClick={() => setAccessProposal(p)}

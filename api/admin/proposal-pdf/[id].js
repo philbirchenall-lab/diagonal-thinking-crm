@@ -18,6 +18,20 @@
  * §API-007). Cookie absent or empty -> 401 with no body. The check runs BEFORE
  * any database read or Chromium launch.
  *
+ * Runtime config (PROP-PDF-003, 20 May 2026): explicit maxDuration + memory
+ * for the Sparticuz Chromium cold-start. The default Vercel function timeout
+ * (15s) and default 1024 MB memory are both too low for the chromium-min
+ * binary download + headless launch + print render. When the function
+ * over-ran the default, Vercel returned its own text/plain runtime-error
+ * envelope, NOT the handler's 500 JSON path, and the client
+ * `<a href download>` saved that text as `<id>.txt`.
+ *
+ * Memory set to 2048 MB. Sparticuz docs recommend a 1769 MB floor; 2048 is
+ * the current ceiling our team's plan entitlements expose to functions.
+ * Mirrored in vercel.json `functions` block. Either one is sufficient for
+ * Vercel to honour, but having both protects against accidental regression
+ * if one file is edited without the other.
+ *
  * Required env vars (same as other API routes):
  *   SUPABASE_URL or VITE_SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_KEY or VITE_SUPABASE_ANON_KEY
@@ -26,6 +40,14 @@
 import { createClient } from "@supabase/supabase-js";
 import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
+
+// PROP-PDF-003: explicit serverless function config. Vercel respects either
+// this named export OR the matching entry in vercel.json. Set both so a
+// future edit to one file cannot silently regress the other.
+export const config = {
+  maxDuration: 60,
+  memory: 2048,
+};
 
 /**
  * Parse the request Cookie header into a plain object.
@@ -184,8 +206,25 @@ export default async function handler(req, res) {
     res.setHeader("Content-Length", buffer.length);
     return res.status(200).send(buffer);
   } catch (err) {
-    console.error("[proposal-pdf] PDF generation failed:", err);
-    return res.status(500).json({ error: "PDF generation failed." });
+    // PROP-PDF-003: log with proposal id + slug + stage so the next failure
+    // is debuggable from Vercel logs without re-running. The previous
+    // single-line console.error did not surface which proposal failed nor
+    // where in the puppeteer flow the error was thrown.
+    console.error(
+      "[proposal-pdf] PDF generation failed",
+      JSON.stringify({
+        proposalId: id,
+        slug: proposal?.slug,
+        clientName: proposal?.client_name,
+        printUrl,
+        errorName: err?.name,
+        errorMessage: err?.message,
+        errorStack: err?.stack,
+      })
+    );
+    return res
+      .status(500)
+      .json({ error: "PDF generation failed.", proposalId: id });
   } finally {
     if (browser) {
       await browser.close().catch(() => {});
