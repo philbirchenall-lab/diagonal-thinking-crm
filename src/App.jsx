@@ -2389,11 +2389,11 @@ function ProposalsTab({ contacts }) {
         );
       }
       const blob = await res.blob();
-      const safeClient = (p.client_name || "proposal")
+      const safeClient = (p.client_name ?? "proposal")
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "")
-        .slice(0, 60) || "proposal";
+        .slice(0, 60);
       const filename = `${safeClient}-proposal.pdf`;
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -2437,7 +2437,7 @@ function ProposalsTab({ contacts }) {
           inline rather than letting the browser save a text/plain runtime
           error envelope as <id>.txt. See downloadProposalPdf() above. */}
       {downloadError && (
-        <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <div>
             <div className="font-semibold">PDF download failed</div>
             <div className="mt-0.5 break-words">{downloadError.message}</div>
@@ -2445,10 +2445,10 @@ function ProposalsTab({ contacts }) {
           <button
             type="button"
             onClick={() => setDownloadError(null)}
-            className="shrink-0 rounded p-1 text-rose-500 hover:bg-rose-100"
+            className="shrink-0 rounded p-1 text-red-500 hover:bg-red-100"
             title="Dismiss"
           >
-            ×
+            <X size={14} />
           </button>
         </div>
       )}
