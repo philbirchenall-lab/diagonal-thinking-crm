@@ -2372,9 +2372,25 @@ function ProposalsTab({ contacts }) {
     setDownloadError(null);
     setDownloadingPdf(p.id);
     try {
+      // The PDF route is gated by the canonical Supabase bearer-JWT check
+      // (api/_lib/auth.js). The CRM SPA holds its session in localStorage and
+      // sets no cookie, so the access token must be sent as an Authorization
+      // header or the request returns HTTP 401.
+      const { data: { session } } = await getSupabaseClient().auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        throw new Error(
+          "Your session has expired. Please sign out, sign in again, then retry the download."
+        );
+      }
       const res = await fetch(`/api/admin/proposal-pdf/${p.id}`, {
-        credentials: "include",
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
+      if (res.status === 401) {
+        throw new Error(
+          "Your session has expired. Please sign out, sign in again, then retry the download."
+        );
+      }
       if (!res.ok) {
         const bodyText = await res.text().catch(() => "");
         throw new Error(
@@ -2415,7 +2431,7 @@ function ProposalsTab({ contacts }) {
   return (
     <div>
       {/* Proposals header */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 px-4 sm:px-0">
         <div>
           <h2 className="font-display text-2xl font-normal uppercase tracking-[0.02em] text-ink">PROPOSALS</h2>
           <p className="mt-1 text-sm text-slate-500">
@@ -2437,7 +2453,7 @@ function ProposalsTab({ contacts }) {
           inline rather than letting the browser save a text/plain runtime
           error envelope as <id>.txt. See downloadProposalPdf() above. */}
       {downloadError && (
-        <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mb-4 mx-4 sm:mx-0 flex items-start justify-between gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <div>
             <div className="font-semibold">PDF download failed</div>
             <div className="mt-0.5 break-words">{downloadError.message}</div>

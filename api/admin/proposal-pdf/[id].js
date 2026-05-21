@@ -67,6 +67,7 @@
 import { createClient } from "@supabase/supabase-js";
 import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
+import { requireAuthedUser } from "../../_lib/auth.js";
 
 // PROP-PDF-003: explicit serverless function config. Vercel respects either
 // this named export OR the matching entry in vercel.json. Set both so a
@@ -75,35 +76,6 @@ export const config = {
   maxDuration: 60,
   memory: 2048,
 };
-
-/**
- * Parse the request Cookie header into a plain object.
- * Returns the value of `admin_session` if present and non-empty, else null.
- *
- * Standalone helper (no extra dependency) - small enough to inline and avoids
- * pulling `cookie` into a route that previously had no parser. Same shape as
- * the canonical `cookies().get('admin_session')?.value` check used in the
- * dt-proposals Next.js admin pages.
- */
-function readAdminSessionCookie(req) {
-  const header = req.headers?.cookie;
-  if (!header || typeof header !== "string") return null;
-  const parts = header.split(";");
-  for (const part of parts) {
-    const idx = part.indexOf("=");
-    if (idx === -1) continue;
-    const name = part.slice(0, idx).trim();
-    if (name !== "admin_session") continue;
-    const raw = part.slice(idx + 1).trim();
-    if (!raw) return null;
-    try {
-      return decodeURIComponent(raw);
-    } catch {
-      return raw;
-    }
-  }
-  return null;
-}
 
 const PROPOSALS_APP_URL = "https://proposals.diagonalthinking.co";
 
@@ -371,11 +343,19 @@ function getSupabase() {
 
 export default async function handler(req, res) {
   // SEC-API-007: admin auth gate. Runs BEFORE any database read or Chromium
-  // launch, per Hex's 30 Apr 2026 risk register §API-007. Missing or empty
-  // `admin_session` cookie -> 401, no body, no leak. Closes the unauth path
-  // that compounded yesterday's proposals admin SSR UUID leak.
-  const adminSession = readAdminSessionCookie(req);
-  if (!adminSession) {
+  // launch, per Hex's 30 Apr 2026 risk register §API-007.
+  //
+  // Auth shape corrected 21 May 2026. The original gate required an
+  // `admin_session` cookie, copied from the dt-proposals Next.js admin. But
+  // the CRM is a Vite SPA that holds its Supabase session in localStorage and
+  // sets no HTTP cookie, so that gate rejected every CRM caller with HTTP 401
+  // and the download never worked for anyone. This route now uses the
+  // canonical bearer-JWT check (api/_lib/auth.js), the same check every other
+  // gated CRM API route uses. A missing or invalid token still returns 401
+  // with no body, so the unauthenticated path API-007 closed stays closed.
+  const supabase = getSupabase();
+  const user = await requireAuthedUser(req, supabase);
+  if (!user) {
     return res.status(401).end();
   }
 
@@ -387,8 +367,6 @@ export default async function handler(req, res) {
   if (!id) {
     return res.status(400).json({ error: "id is required" });
   }
-
-  const supabase = getSupabase();
 
   const { data: proposal, error } = await supabase
     .from("proposals")
