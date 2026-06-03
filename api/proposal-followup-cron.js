@@ -259,6 +259,25 @@ function buildLinkedInDraftBody(proposal) {
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
+  // INCIDENT 2026-06-03: autonomous proposal chase/nudge path DISABLED pending
+  // Phil review. This cron sent prospect-facing emails under Phil's name without
+  // his authorisation (6 chase sends, 21 Apr to 3 Jun 2026). Per the standing rule
+  // that no agent or automation may chase a prospect autonomously, the entire path
+  // is killed here as a fail-closed backstop in addition to removing the cron
+  // schedule from vercel.json. Do not re-enable without Phil's explicit sign-off.
+  // Revert: drop this block AND restore the crons entry in vercel.json.
+  const chaseAutomationEnabled = process.env.PROPOSAL_CHASE_ENABLED === "true";
+  if (!chaseAutomationEnabled) {
+    console.warn(
+      "[proposal-followup-cron] DISABLED by incident kill switch 2026-06-03. " +
+        "No emails sent. Set PROPOSAL_CHASE_ENABLED=true only after Phil sign-off."
+    );
+    return res.status(503).json({
+      disabled: true,
+      reason: "Autonomous proposal chase disabled pending Phil review (incident 2026-06-03)",
+    });
+  }
+
   // Only allow GET (Vercel cron) or POST (manual trigger)
   if (req.method !== "GET" && req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
