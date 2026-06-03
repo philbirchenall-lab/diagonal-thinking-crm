@@ -2,12 +2,6 @@
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
-  "crons": [
-    {
-      "path": "/api/proposal-followup-cron",
-      "schedule": "0 9 * * *"
-    }
-  ],
   "functions": {
     "api/admin/proposal-pdf/[id].js": {
       "maxDuration": 60,
