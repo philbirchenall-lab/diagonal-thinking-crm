@@ -118,6 +118,17 @@ const TYPE_COLORS = {
 
 const STAGES = ["Identified", "Qualifying", "Proposal", "Negotiating", "Won", "Lost"];
 
+// Terminal = any closed stage, however it is spelled. Live rows carry variants
+// outside the STAGES enum ("Closed Won", "Closed - Duplicate", historic
+// imports), and a strict equality check let them leak through the
+// "Show Won / Lost" filter and into the Active Pipeline value (Phil,
+// 12 Jun 2026). Normalise, then match won/lost anywhere plus any
+// "closed..." prefix.
+const isTerminalStage = (stage) => {
+  const s = String(stage ?? "").trim().toLowerCase();
+  return s.includes("won") || s.includes("lost") || s.startsWith("closed");
+};
+
 const STAGE_STYLES = {
   Identified: "bg-slate-100 text-slate-600 ring-slate-200",
   Qualifying: "bg-blue-50 text-blue-700 ring-blue-200",
@@ -1763,7 +1774,7 @@ function ContactOpportunitiesPanel({ contact, onOppChange }) {
     }
   }
 
-  const isTerminal = (stage) => stage === "Won" || stage === "Lost";
+  const isTerminal = isTerminalStage;
 
   return (
     <div className="border border-line bg-white p-5">
@@ -1930,7 +1941,7 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
 
   useEffect(() => { load(); }, []);
 
-  const isTerminal = (stage) => stage === "Won" || stage === "Lost";
+  const isTerminal = isTerminalStage;
 
   function handleSort(col) {
     if (sortCol === col) {
