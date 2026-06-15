@@ -49,11 +49,11 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const ENQUIRY_MSG =
   "For 6 or more seats we arrange a private cohort. We have logged your interest and Phil will be in touch to confirm pricing.";
 
-// Apex per Phil's instruction (matches the embeds' privacy/terms links). The
-// site canonical is www (apex 301-redirects, preserving the session_id query),
-// so this resolves cleanly; override via the env var to use www directly.
-const THANKYOU_URL = Deno.env.get("MORADA_THANKYOU_URL") ?? "https://diagonalthinking.co/morada-thank-you";
-const COURSE_PAGE_URL = Deno.env.get("MORADA_COURSE_PAGE_URL") ?? "https://diagonalthinking.co/ai-for-contractors-course";
+// Canonical www (matches the live privacy/booking-terms pages confirmed 20:04
+// BST), so the Stripe return lands directly with no redirect hop. Override via
+// the env vars if the slugs change.
+const THANKYOU_URL = Deno.env.get("MORADA_THANKYOU_URL") ?? "https://www.diagonalthinking.co/morada-thank-you";
+const COURSE_PAGE_URL = Deno.env.get("MORADA_COURSE_PAGE_URL") ?? "https://www.diagonalthinking.co/ai-for-contractors-course";
 
 serve(async (req: Request) => {
   const cors = buildCorsHeaders(req);
