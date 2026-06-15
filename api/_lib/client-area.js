@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { fetchFilesBySession } from "./files.js";
 
 const SESSION_STATE_SEPARATOR = "::";
 const DEFAULT_CLIENT_AREA_ORIGIN = "https://client.diagonalthinking.co";
@@ -428,6 +429,7 @@ export async function listSessionDetails(supabase) {
   const sessionIds = sessionRows.map((session) => session.id);
   const resources = await fetchResourcesBySession(supabase, sessionIds);
   const engagementLog = await fetchEngagementBySession(supabase, sessionIds);
+  const files = await fetchFilesBySession(supabase, sessionIds);
 
   const contactIds = Array.from(
     new Set(
@@ -440,6 +442,7 @@ export async function listSessionDetails(supabase) {
   const contacts = await fetchContactsByIds(supabase, contactIds);
   const contactMap = new Map(contacts.map((contact) => [contact.id, contact]));
   const resourceMap = new Map(resources.map((resource) => [resource.id, resource]));
+  const fileMap = new Map(files.map((file) => [file.id, file]));
 
   return sessionRows.map((row) => {
     const state = decodeSessionState(row.status);
@@ -452,6 +455,7 @@ export async function listSessionDetails(supabase) {
         url: resource.url || "",
         sortOrder: resource.sort_order ?? 0,
       }));
+    const sessionFiles = files.filter((file) => file.sessionId === row.id);
     const sessionEvents = engagementLog.filter((entry) => entry.session_id === row.id);
     const registrations = sessionEvents
       .filter((entry) => entry.event_type === "resource_click" && !entry.resource_id)
@@ -471,6 +475,7 @@ export async function listSessionDetails(supabase) {
       .map((entry) => {
       const contact = contactMap.get(entry.contact_id);
       const resource = resourceMap.get(entry.resource_id);
+      const file = fileMap.get(entry.file_id);
       return {
         id: entry.id,
         contactId: entry.contact_id || "",
@@ -480,8 +485,9 @@ export async function listSessionDetails(supabase) {
         contactName: contact?.contact_name || "",
         email: contact?.email || "",
         company: contact?.company || "",
-        resourceLabel: resource?.label || "",
+        resourceLabel: resource?.label || file?.title || "",
         resourceId: entry.resource_id || "",
+        fileId: entry.file_id || "",
       };
     });
 
@@ -496,6 +502,8 @@ export async function listSessionDetails(supabase) {
       sessionType: inferSessionType(row),
       resources: sessionResources,
       resourceCount: sessionResources.length,
+      files: sessionFiles,
+      fileCount: sessionFiles.length,
       registrations,
       engagementLog: activity,
     };

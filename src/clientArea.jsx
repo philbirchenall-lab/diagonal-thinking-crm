@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Copy, ExternalLink, GripVertical, Mail, Plus, X } from "lucide-react";
+import { Copy, ExternalLink, FileText, GripVertical, Mail, Plus, Trash2, Upload, X } from "lucide-react";
 import {
+  deleteSessionFile,
+  getSessionFileViewUrl,
   isSupabaseMode,
   loadClientSessions,
   requestClientMagicLink,
   saveClientSession,
+  uploadSessionFile,
 } from "./db.js";
 
 const CLIENT_AREA_ORIGIN = "https://client.diagonalthinking.co";
@@ -74,7 +77,7 @@ function matchesSessionToContact(session, contact) {
     return true;
   }
 
-  // Attendee match — contact registered for this session
+  // Attendee match - contact registered for this session
   const regs = session.registrations ?? [];
   return regs.some(
     (reg) =>
@@ -405,6 +408,176 @@ function AttendeeCard({ attendee }) {
   );
 }
 
+const ACCEPTED_FILE_TYPES = ".pdf,.md,.markdown,.pptx,.docx";
+const MAX_UPLOAD_BYTES = 52428800; // 50 MB
+
+function formatFileSize(bytes) {
+  if (bytes === null || bytes === undefined || bytes === "") return "";
+  const units = ["B", "KB", "MB", "GB"];
+  let value = Number(bytes);
+  if (!Number.isFinite(value)) return "";
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  const rounded = value >= 10 || unit === 0 ? Math.round(value) : Math.round(value * 10) / 10;
+  return `${rounded} ${units[unit]}`;
+}
+
+function fileExtensionLabel(name) {
+  const dot = String(name || "").lastIndexOf(".");
+  return dot >= 0 ? String(name).slice(dot + 1).toUpperCase() : "FILE";
+}
+
+// Hosted file uploads for a session. Files live in their own table and are
+// managed via /api/client/files, independent of the URL resources above.
+function SessionFilesSection({ sessionId, files, onChange }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [title, setTitle] = useState("");
+  const [busyId, setBusyId] = useState("");
+  const fileInputRef = useRef(null);
+  const list = files ?? [];
+
+  if (!sessionId) {
+    return (
+      <div className="border border-dashed border-line bg-mist px-4 py-4 text-sm text-slate-500">
+        Save the session first, then upload files (PDF, MD, PPTX, DOCX, up to 50 MB).
+      </div>
+    );
+  }
+
+  async function handleFileChange(event) {
+    const file = event.target.files?.[0];
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (!file) return;
+
+    setError("");
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setError("File is too large. The limit is 50 MB.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const saved = await uploadSessionFile(sessionId, file, title.trim());
+      onChange([...list, saved]);
+      setTitle("");
+    } catch (uploadError) {
+      setError(uploadError.message || "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleRemove(fileId) {
+    setError("");
+    setBusyId(fileId);
+    try {
+      await deleteSessionFile(fileId);
+      onChange(list.filter((file) => file.id !== fileId));
+    } catch (removeError) {
+      setError(removeError.message || "Could not remove the file.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function handleView(fileId) {
+    setError("");
+    setBusyId(fileId);
+    try {
+      const url = await getSessionFileViewUrl(fileId);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (viewError) {
+      setError(viewError.message || "Could not open the file.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      {list.length ? (
+        <div className="space-y-2">
+          {list.map((file) => (
+            <div key={file.id} className="flex items-center gap-3 border border-line bg-white p-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-brandSoft text-brand">
+                <FileText size={18} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium text-ink">{file.title || file.fileName}</div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
+                  <span className="font-semibold uppercase tracking-[0.08em]">{fileExtensionLabel(file.fileName)}</span>
+                  {file.sizeBytes ? <span>{formatFileSize(file.sizeBytes)}</span> : null}
+                  {file.createdAt ? <span>{formatSessionDate(file.createdAt)}</span> : null}
+                  {file.uploadedBy ? <span>by {file.uploadedBy}</span> : null}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleView(file.id)}
+                disabled={busyId === file.id}
+                className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-brand hover:bg-mist disabled:opacity-60"
+              >
+                View
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRemove(file.id)}
+                disabled={busyId === file.id}
+                aria-label="Remove file"
+                className="rounded-md border border-line px-2 py-1.5 text-rose-600 transition hover:bg-rose-50 disabled:opacity-60"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-xs italic text-slate-400">No files uploaded yet.</div>
+      )}
+
+      <div className="grid gap-3 border border-line bg-mist p-4 sm:grid-cols-[1fr_auto]">
+        <TextInput
+          placeholder="Optional title (defaults to the file name)"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+        />
+        <div className="flex items-center">
+          <input
+            ref={fileInputRef}
+            id="session-file-input"
+            type="file"
+            accept={ACCEPTED_FILE_TYPES}
+            onChange={handleFileChange}
+            disabled={uploading}
+            className="hidden"
+          />
+          <label
+            htmlFor="session-file-input"
+            className={`inline-flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-line px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-brand hover:bg-white sm:w-auto ${uploading ? "opacity-60" : ""}`}
+          >
+            <Upload size={16} />
+            {uploading ? "Uploading…" : "Upload file"}
+          </label>
+        </div>
+      </div>
+
+      <div className="text-xs text-slate-500">
+        Accepted: PDF, MD, PPTX, DOCX. Up to 50 MB. Files are private and shared only with this session&rsquo;s attendees.
+      </div>
+
+      {error ? (
+        <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700">
+          {error}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function SessionEditorModal({ contacts, initialSession, launchEmail, onClose, onSaved }) {
   const [session, setSession] = useState(() => ({
     ...initialSession,
@@ -412,6 +585,7 @@ function SessionEditorModal({ contacts, initialSession, launchEmail, onClose, on
       ? initialSession.resources.map((resource) => ({ ...resource, id: resource.id || crypto.randomUUID() }))
       : [{ id: crypto.randomUUID(), label: "", type: "link", url: "" }],
   }));
+  const [files, setFiles] = useState(() => initialSession.files ?? []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -596,6 +770,17 @@ function SessionEditorModal({ contacts, initialSession, launchEmail, onClose, on
             />
           </div>
 
+          <div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Uploaded files
+            </div>
+            <SessionFilesSection
+              sessionId={session.id}
+              files={files}
+              onChange={setFiles}
+            />
+          </div>
+
           {error ? (
             <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               {error}
@@ -625,6 +810,10 @@ function SessionEditorModal({ contacts, initialSession, launchEmail, onClose, on
               <div className="flex items-center justify-between gap-4">
                 <span>Resources</span>
                 <span className="font-medium text-ink">{session.resources.length}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span>Files</span>
+                <span className="font-medium text-ink">{files.length}</span>
               </div>
               <div className="flex items-center justify-between gap-4">
                 <span>Registrations</span>
@@ -863,7 +1052,12 @@ export function ClientAreaTab({ contacts, launchContact, onLaunchConsumed }) {
                           {session.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-600">{session.resourceCount}</td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {session.resourceCount}
+                        {session.fileCount
+                          ? ` + ${session.fileCount} file${session.fileCount === 1 ? "" : "s"}`
+                          : ""}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-2">
                           <button
@@ -927,7 +1121,7 @@ export function ClientAreaTab({ contacts, launchContact, onLaunchConsumed }) {
                   </button>
                   <div className="mt-3 flex items-center justify-between gap-3">
                     <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                      {session.resourceCount} resources · {session.sessionType === "in_house" ? "In-house" : "Open event"}
+                      {session.resourceCount} resources{session.fileCount ? ` · ${session.fileCount} file${session.fileCount === 1 ? "" : "s"}` : ""} · {session.sessionType === "in_house" ? "In-house" : "Open event"}
                     </div>
                     <div className="flex gap-2">
                       <a
