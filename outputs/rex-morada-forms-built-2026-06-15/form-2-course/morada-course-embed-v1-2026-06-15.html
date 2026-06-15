@@ -176,7 +176,10 @@
   .dtf-transactional { color: #2a2a2a; }
   .dtf-transactional a { color: #305DAB; }
   .dtf-total span { color: #111111; }
-  .dtf-btn { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.02em; }
+  /* Primary CTA is an INVERSE button on the navy section (navy-on-navy would be
+     invisible): white fill, navy text, Oswald uppercase. */
+  .dtf-btn { background: #FFFFFF; color: #305DAB; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.02em; }
+  .dtf-btn:hover { background: #E7EEF8; }
 </style>
 
 <script>

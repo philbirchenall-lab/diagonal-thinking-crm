@@ -147,8 +147,11 @@
   .dtf a { color: #FFFFFF; text-decoration: underline; text-underline-offset: 2px; }
   .dtf-transactional { color: #2a2a2a; }
   .dtf-transactional a { color: #305DAB; }
-  .dtf-btn { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.02em; }
-  .dtf-btn-soft { color: #305DAB; }
+  /* Primary CTA is an INVERSE button on the navy section: white fill, navy text,
+     Oswald uppercase (navy-on-navy would be invisible). */
+  .dtf-btn { background: #FFFFFF; color: #305DAB; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.02em; }
+  .dtf-btn:hover { background: #E7EEF8; }
+  .dtf-btn-soft { background: #E7EEF8; color: #305DAB; }
 </style>
 
 <script>
