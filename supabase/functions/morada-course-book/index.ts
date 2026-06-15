@@ -146,7 +146,9 @@ serve(async (req: Request) => {
             `Hi ${fields.first_name},\n\n` +
             `Thank you for booking the AI for Contractors course. Your invoice for ${seats} ${seatWord} is below. ` +
             `You can pay securely by card using the button.\n\n[online_payment_link]\n\n` +
-            `Once payment clears we will confirm your place. Phil will send the joining details and course materials closer to each session.\n\n` +
+            `As soon as you have paid, your place is confirmed. You will get a payment receipt from the secure payment page, ` +
+            `and Phil will be in touch with the joining details and course materials before each session ` +
+            `(Thursdays 3, 10 and 17 September 2026, 3:00pm to 4:00pm BST).\n\n` +
             `Phil\nDiagonal Thinking`,
         });
         invoiceUrl = created.url;

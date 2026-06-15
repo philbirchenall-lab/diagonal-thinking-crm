@@ -602,34 +602,26 @@ export async function createAndSendFreeAgentInvoice(
 
 // Reads invoice status for the poll.
 //
-// TIMING (Phil's note 15 Jun 2026): two very different events.
-//   - `payment_at_url_status` flips to a payment-taken value within SECONDS of
-//     the customer paying via the Stripe link ("Payment processing" in the UI).
-//   - `status` becomes "Paid" only after the Stripe payout lands and FreeAgent
-//     reconciles the bank transaction - up to a week later on rolling payouts.
-// We must confirm on the FORMER so the customer is not left waiting a week.
-//
-// NB: the public API docs do not nail down the exact `payment_at_url_status`
-// values, so paymentReceived also accepts status "Paid" as a backstop. The
-// exact value must be confirmed against Phil's live test invoice JSON once the
-// OAuth creds are set (a one-line tweak to PAYMENT_TAKEN if needed).
-const PAYMENT_TAKEN = /paid|processing|received|complete|succeed/i;
-
+// VERIFIED 15 Jun 2026 against the live FreeAgent account: FreeAgent exposes NO
+// early "payment received" signal. After a customer pays via the Stripe link the
+// invoice stays "Open" with paid_value 0 until the Stripe payout settles and
+// FreeAgent reconciles the bank transaction (up to a week later), at which point
+// `status` flips to "Paid". There is no payment_at_url_status field and no
+// webhook. So the poll is INTERNAL bookkeeping only: it marks the CRM record
+// paid once FreeAgent reconciles. The customer is told what happens at booking
+// time (the invoice email) and gets Stripe's own receipt on payment, so there is
+// no DT payment-confirmation email. (See morada-course-poll-paid + build notes.)
 export async function getFreeAgentInvoice(
   token: string,
   invoiceUrl: string,
-): Promise<{ status: string; paidOn: string | null; permalink: string | null; paymentReceived: boolean; paymentUrlStatus: string | null }> {
+): Promise<{ status: string; paidOn: string | null; permalink: string | null }> {
   const res = await fetch(invoiceUrl, { headers: faHeaders(token) });
   if (!res.ok) throw new Error(`FreeAgent invoice fetch failed (${res.status}): ${await res.text()}`);
   const { invoice } = await res.json();
-  const status = invoice.status ?? "Unknown";
-  const paymentUrlStatus = invoice.payment_at_url_status ?? null;
   return {
-    status,
+    status: invoice.status ?? "Unknown",
     paidOn: invoice.paid_on ?? null,
     permalink: invoice.permalink ?? null,
-    paymentUrlStatus,
-    paymentReceived: status === "Paid" || (!!paymentUrlStatus && PAYMENT_TAKEN.test(paymentUrlStatus)),
   };
 }
 

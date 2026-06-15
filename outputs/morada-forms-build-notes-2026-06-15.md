@@ -41,25 +41,27 @@ reconciliation** (no code path, no opp schema). (Spec 1.6.)
 ### Decision 3 (Form 2): FreeAgent-driven payment, poll not webhook
 
 Phil's locked architecture: form -> FreeAgent invoice with Stripe online payment
--> FreeAgent emails the Pay-now button -> a scheduled poll detects payment ->
-our confirmation email. No direct Stripe code, no Stripe keys.
+-> FreeAgent emails the Pay-now button -> customer pays on Stripe. No direct
+Stripe code, no Stripe keys.
 
-**FreeAgent has no webhooks** (verified against dev.freeagent.com and the
-FreeAgent API forum, Jun 2026; it is an open feature request). So payment is
-detected by **polling invoice status**, which is the repo's existing pattern for
-scheduled jobs (`proposal-followup-cron`). Phil chose the poll (15 Jun 2026).
+**Customer confirmation: set at booking + Stripe receipt; no DT payment email.**
+VERIFIED 15 Jun 2026 against the live FreeAgent account: FreeAgent has no
+webhooks AND exposes no early payment signal. After a customer pays, the invoice
+stays "Open" with paid_value 0 until the Stripe payout settles and the bank
+transaction reconciles (up to a week later), at which point `status` becomes
+"Paid". There is no `payment_at_url_status` field. A live £1.20 test payment
+confirmed this: post-payment the API still reported the invoice unpaid, and no
+FreeAgent thank-you email was sent.
 
-**Payment-received vs reconciled timing (Phil's note 15 Jun 2026).** FreeAgent
-has two payment events: `payment_at_url_status` flips within seconds of the
-customer paying via the Stripe link ("Payment processing"), whereas `status`
-becomes "Paid" only after the Stripe payout lands and the bank transaction is
-reconciled (up to a week later on new rolling payouts). The poll fires the
-confirmation on **payment received**, not reconciliation, so the customer is not
-left waiting. The exact `payment_at_url_status` value is not pinned down in the
-public docs, so the poll also accepts a payment-taken pattern plus "Paid" as a
-backstop; **confirm the exact value against Phil's live test invoice once the
-OAuth creds are set** (one-line tweak to `PAYMENT_TAKEN` in `_shared/forms.ts`).
-Run the poll every 5 to 15 minutes so confirmation lands within minutes.
+So we do NOT try to send an instant DT "payment received" email (the tool cannot
+trigger one in time). Instead: the booking invoice email sets the expectation
+("once you have paid, your place is confirmed; Phil will be in touch with joining
+details before each session"); the customer gets Stripe's own on-screen receipt
+on payment. The **poll is internal bookkeeping only**: when FreeAgent eventually
+reconciles an invoice to Paid, it upgrades the CRM contact to Client, applies the
+paid Mailchimp tag, and records the GA4 purchase. (Phil sends the Zoom links and
+materials manually, by design.) Decision taken with Phil 15 Jun 2026 after the
+instant-email options proved unworkable without direct Stripe access.
 
 **Stripe connect:** FreeAgent's Connect-to-Stripe accepts an existing Stripe
 account (you enter the account email). Phil's Monzo-managed Stripe is a standard
@@ -75,16 +77,18 @@ Payments; nothing for Rex to do on the Stripe side.
    supabase functions deploy morada-course-book --no-verify-jwt
    supabase functions deploy morada-course-poll-paid --no-verify-jwt
    ```
-2. **Schedule the poll** every 5 to 15 minutes (Phil wants confirmation within
-   minutes of payment). Either Supabase scheduled functions / pg_cron invoking
-   `morada-course-poll-paid`, or any scheduler hitting its URL with
-   `Authorization: Bearer ${MORADA_POLL_SECRET}`.
+2. **Schedule the poll** daily (it is internal bookkeeping on a days-late signal,
+   so frequency does not affect the customer). Either Supabase scheduled functions
+   / pg_cron invoking `morada-course-poll-paid`, or any scheduler hitting its URL
+   with `Authorization: Bearer ${MORADA_POLL_SECRET}`.
 3. **Phil connects Stripe** in FreeAgent Settings -> Online Payments (existing
-   Monzo-managed Stripe account).
+   Monzo-managed Stripe account). Already done 15 Jun 2026.
 4. **Paste the embeds** into the two Squarespace Code Blocks; the CONFIG block is
    already set (FUNCTION_URL, PRIVACY_URL, BOOKING_TERMS_URL).
-5. **Smoke-test** end to end with a 1-seat booking and a real (or test) FreeAgent
-   invoice payment; confirm the poll fires the confirmation within one interval.
+5. **Smoke-test** with a 1-seat booking: confirm the FreeAgent invoice is created
+   and emailed with a working Pay-now button, and that the form shows the
+   "invoice emailed" panel. CRM upgrade to Client is verified later, after the
+   first real payment reconciles.
 
 ## Environment variables
 
@@ -131,17 +135,19 @@ Replaces spec criteria 12-20. Verify on staging/preview before opening to traffi
 2. On a valid 1-5 seat submit, a FreeAgent invoice is created for the contact
    (deduped on email), with the course line item, net 300/seat, 20% VAT, 0-day
    terms, and Stripe online payment enabled.
-3. FreeAgent emails the customer the invoice with a working Pay-now button.
-4. The form shows the "check your email / invoice emailed" confirmation and fires
-   GA4 `generate_lead` once (form_id `morada_course_form2`, value, campaign).
+3. FreeAgent emails the customer the invoice with a working Pay-now button, and
+   the invoice email sets expectations (place confirmed on payment; Phil in touch
+   with joining details before each session).
+4. The form shows the "invoice emailed" confirmation and fires GA4
+   `generate_lead` once (form_id `morada_course_form2`, value, campaign).
 5. A PENDING `course_invoice_created` activity is written with the FreeAgent
    invoice URL (the poll's tracking record).
-6. On payment, the poll: upgrades the contact to `Client`, applies Mailchimp tag
-   `morada-course-2026-09-paid` (TYPE Client), sends the "payment received, Phil
-   will be in touch" email once, and flips the activity to `paid` (no re-send on
-   the next run).
+6. No DT payment-confirmation email is sent (by design). When FreeAgent later
+   reconciles the invoice to `Paid`, the poll upgrades the contact to `Client`,
+   applies Mailchimp tag `morada-course-2026-09-paid` (TYPE Client), and flips
+   the activity to `paid` (no reprocessing on the next run).
 7. GA4 server-side `purchase` is sent via Measurement Protocol when configured
-   (else skipped, no error).
+   (else skipped, no error), at reconciliation time.
 8. Booking terms page resolves from the checkbox; refund terms shown. Discount
    field present and inert (D15).
 9. Manual fallback: with FreeAgent OAuth absent, the booking is still recorded

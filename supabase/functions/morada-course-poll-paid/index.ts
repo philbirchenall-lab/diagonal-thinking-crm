@@ -1,36 +1,30 @@
-// Form 2 payment confirmation: scheduled poll of FreeAgent invoice status.
+// Form 2 payment reconciliation: scheduled poll of FreeAgent invoice status.
 //   Spec: outputs/tes-spec-morada-forms-1-and-2-2026-06-15.md sections 3.4-3.7,
-//   as amended by Phil's FreeAgent pivot (15 Jun 2026).
+//   as amended by Phil's FreeAgent pivot (15 Jun 2026) and the verified-reality
+//   simplification (15 Jun 2026).
 //
-// WHY A POLL, NOT A WEBHOOK: FreeAgent has no webhooks (verified against
-// dev.freeagent.com and the FreeAgent API forum, Jun 2026). So this function is
-// invoked on a schedule and detects payment by reading invoice status.
+// VERIFIED: FreeAgent has no webhooks AND exposes no early payment signal. A
+// paid invoice only flips to status "Paid" once the Stripe payout settles and
+// the bank transaction reconciles (up to a week later). So this poll does NOT
+// send any customer email - the customer is told what happens at booking time
+// (the invoice email) and gets Stripe's own receipt when they pay. This poll is
+// INTERNAL bookkeeping only: when FreeAgent finally reconciles an invoice to
+// Paid, it upgrades the CRM contact to Client, applies the paid Mailchimp tag,
+// records the GA4 purchase, and closes off the activity.
 //
-// Each run:
-//   1. Loads PENDING course_invoice_created activities (written by morada-course-book).
-//   2. For each, reads the linked FreeAgent invoice status.
-//   3. When an invoice is Paid: upgrades the CRM contact to Client, applies the
-//      paid Mailchimp tag, sends the "payment received, Phil will be in touch"
-//      email, sends a server-side GA4 purchase (best-effort), and flips the
-//      activity to "paid" so it is not processed again.
-//
-// SCHEDULING: invoke every 5 to 15 minutes (Phil wants the confirmation within
-// minutes of payment, not hours) via Supabase scheduled functions / pg_cron, or
-// any external scheduler hitting this URL with the shared secret:
+// Because the signal is days-late by nature, a daily schedule is plenty.
+// SCHEDULING: invoke via Supabase scheduled functions / pg_cron (daily), or any
+// external scheduler hitting this URL with the shared secret:
 //   Authorization: Bearer ${MORADA_POLL_SECRET}
-// Manual-fallback bookings (no FreeAgent invoice URL) are skipped here; Phil
-// confirms those by hand.
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import {
   corsHeaders,
-  escapeHtml,
   freeAgentAccessToken,
   freeAgentConfig,
   ga4Purchase,
   getFreeAgentInvoice,
   json,
-  sendResend,
   serviceClient,
   syncToMailchimp,
 } from "../_shared/forms.ts";
@@ -72,7 +66,6 @@ serve(async (req: Request) => {
     return json({ error: "freeagent auth failed" }, 502);
   }
 
-  const resendKey = Deno.env.get("RESEND_API_KEY");
   const mailchimpKey = Deno.env.get("MAILCHIMP_API_KEY");
 
   let checked = 0;
@@ -96,9 +89,9 @@ serve(async (req: Request) => {
       console.error(`[poll] invoice fetch failed for activity ${row.id}:`, e);
       continue;
     }
-    // Fire on payment RECEIVED (Stripe charge taken, seconds after paying), NOT
-    // on full bank reconciliation ("Paid", up to a week later). See helper note.
-    if (!inv.paymentReceived) continue;
+    // Internal bookkeeping fires only once FreeAgent has reconciled the invoice
+    // to Paid (the only signal it gives). No customer email here by design.
+    if (inv.status !== "Paid") continue;
 
     paidCount++;
     const contact = (row.contacts ?? {}) as { email?: string; contact_name?: string; company?: string };
@@ -130,23 +123,6 @@ serve(async (req: Request) => {
       ).catch((e) => console.error("[poll] mailchimp error:", e));
     }
 
-    // Confirmation email (Phil's copy): generic, materials handled manually.
-    if (resendKey && email) {
-      await sendResend(
-        {
-          to: email,
-          subject: "Payment received: AI for Contractors course",
-          html:
-            `<p>Hi ${escapeHtml(firstName)},</p>` +
-            `<p>Thanks, your payment has been received and your place on the AI for Contractors course is confirmed.</p>` +
-            `<p>Phil will be in touch with the joining details and course materials closer to each session ` +
-            `(Thursdays 3, 10 and 17 September 2026, 3:00pm to 4:00pm BST).</p>` +
-            `<p>See you there,<br>Phil<br>Diagonal Thinking</p>`,
-        },
-        resendKey,
-      ).catch((e) => console.error("[poll] resend error:", e));
-    }
-
     // Server-side GA4 purchase (best-effort; skipped if MP not configured).
     await ga4Purchase({
       clientId: String(meta.freeagent_reference ?? email ?? row.id),
@@ -156,16 +132,15 @@ serve(async (req: Request) => {
       items: [{ item_name: "AI for Contractors course", quantity: seats, price: 360 }],
     }).catch((e) => console.error("[poll] ga4 error:", e));
 
-    // Flip the activity to paid so it is not processed again.
+    // Close off the activity so it is not processed again.
     meta.confirmation_sent = true;
-    meta.paid_on = inv.paidOn; // null until bank reconciliation catches up
-    meta.payment_url_status = inv.paymentUrlStatus;
+    meta.paid_on = inv.paidOn;
     await supabase.from("contact_activities")
       .update({ status: "paid", activity_type: "course_booking_paid", body: JSON.stringify(meta) })
       .eq("id", row.id)
       .then(() => {}).catch((e: unknown) => console.error("[poll] activity update error:", e));
   }
 
-  console.log(`[poll] checked ${checked}, newly paid ${paidCount}`);
+  console.log(`[poll] checked ${checked}, reconciled-to-paid ${paidCount}`);
   return json({ ok: true, checked, paid: paidCount }, 200);
 });
