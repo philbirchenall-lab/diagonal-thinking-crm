@@ -9,6 +9,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import {
   badRequest,
+  brandedEmail,
   buildCorsHeaders,
   buildIcs,
   checkDbRateLimit,
@@ -60,10 +61,19 @@ serve(async (req: Request) => {
       return badRequest("Invalid JSON body", cors);
     }
 
-    // P0: honeypot (website/_gotcha) + min fill-time -> silent drop.
-    if (isHoneypotTripped(body) || tooFast(body)) {
-      console.log(`[spam] honeypot/timing silent drop (IP: ${clientIp})`);
+    // Honeypot -> benign (bots get no signal). Timing -> clear retryable message
+    // so a fast/autofill legit user is never silently dropped.
+    if (isHoneypotTripped(body)) {
+      console.log(`[spam] honeypot tripped, silent drop (IP: ${clientIp})`);
       return ok({}, cors);
+    }
+    if (tooFast(body)) {
+      console.log(`[spam] too-fast submit (IP: ${clientIp})`);
+      return json({
+        success: false,
+        reason: "too_fast",
+        error: "That was quick - please review your details and submit again.",
+      }, 200, cors);
     }
 
     const fields = {
@@ -163,14 +173,16 @@ serve(async (req: Request) => {
         {
           to: fields.email,
           subject: "You are registered: AI for Contractors webinar, Mon 20 Jul",
-          html: `
-            <p>Hi ${escapeHtml(fields.first_name)},</p>
-            <p>You are registered for the AI for Contractors webinar with Diagonal Thinking and Morada.</p>
-            <p><strong>When:</strong> Monday 20 July 2026, 3:00pm to 4:00pm BST.</p>
-            ${joinBlock}
-            <p>A calendar invite is attached so you do not lose the slot.</p>
-            <p>See you there,<br>Phil<br>Diagonal Thinking</p>
-          `,
+          html: brandedEmail({
+            heading: "You are registered",
+            bodyHtml:
+              `<p>Hi ${escapeHtml(fields.first_name)},</p>` +
+              `<p>You are registered for the AI for Contractors webinar with Diagonal Thinking and Morada.</p>` +
+              `<p><strong>When:</strong> Monday 20 July 2026, 3:00pm to 4:00pm BST.</p>` +
+              joinBlock +
+              `<p>A calendar invite is attached so you do not lose the slot.</p>` +
+              `<p>See you there,<br>Phil<br>Diagonal Thinking</p>`,
+          }),
           attachments: [{ filename: "ai-for-contractors-webinar.ics", content: icsToBase64(ics) }],
         },
         resendKey,

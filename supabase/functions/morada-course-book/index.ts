@@ -76,10 +76,20 @@ serve(async (req: Request) => {
       return badRequest("Invalid JSON body", cors);
     }
 
-    // Item 3: honeypot + timing -> SILENT drop (look like success, do nothing).
-    if (isHoneypotTripped(body) || tooFast(body)) {
-      console.log("[spam] honeypot/timing silent drop");
+    // Honeypot -> stay benign so bots get no signal. Timing -> a fast/autofill
+    // legit user must NOT be silently dropped: return a clear, retryable message
+    // (their next submit has a larger elapsed_ms and passes). Never invisible.
+    if (isHoneypotTripped(body)) {
+      console.log("[spam] honeypot tripped, silent drop");
       return json({ success: true }, 200, cors);
+    }
+    if (tooFast(body)) {
+      console.log("[spam] too-fast submit");
+      return json({
+        success: false,
+        reason: "too_fast",
+        error: "That was quick - please review your details and submit again.",
+      }, 200, cors);
     }
 
     const fields = {

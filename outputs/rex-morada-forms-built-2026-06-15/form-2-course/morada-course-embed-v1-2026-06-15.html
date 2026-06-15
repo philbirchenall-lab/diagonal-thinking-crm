@@ -162,6 +162,21 @@
   .dtf-btn:hover { background: #2A528E; }
   .dtf-btn:disabled { opacity: 0.6; cursor: default; }
   @media (max-width: 480px) { .dtf-row { flex-direction: column; gap: 0; } }
+
+  /* Pix live brand pass (navy #305DAB section background): white text on navy,
+     with dark text kept on the LIGHT sub-panels (transactional notice, total,
+     inputs, error) so nothing goes white-on-light invisible. CTA -> Oswald
+     UPPERCASE per DT Brand Guidelines v1 (T1). Links underlined Paper White (T2). */
+  .dtf { color: #FFFFFF; }
+  .dtf-h { color: #FFFFFF; }
+  .dtf-sub { color: #FFFFFF; }
+  .dtf-consent label { color: #FFFFFF; }
+  .dtf-hint { color: #E7EEF8; }
+  .dtf a { color: #FFFFFF; text-decoration: underline; text-underline-offset: 2px; }
+  .dtf-transactional { color: #2a2a2a; }
+  .dtf-transactional a { color: #305DAB; }
+  .dtf-total span { color: #111111; }
+  .dtf-btn { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.02em; }
 </style>
 
 <script>
@@ -196,6 +211,11 @@
   document.getElementById("dtc-privacy-1").href = PRIVACY_URL;
   document.getElementById("dtc-privacy-2").href = PRIVACY_URL;
   document.getElementById("dtc-terms-link").href = BOOKING_TERMS_URL;
+
+  // WCAG: mark required fields for assistive tech (Tes P2).
+  Array.prototype.forEach.call(form.querySelectorAll("[required]"), function (el) {
+    el.setAttribute("aria-required", "true");
+  });
 
   // Returned from a cancelled Stripe checkout?
   if (new URLSearchParams(window.location.search).get("status") === "cancelled") {

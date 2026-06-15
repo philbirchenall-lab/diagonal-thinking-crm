@@ -237,6 +237,27 @@ export function escapeHtml(str: string): string {
     .replace(/'/g, "&#x27;");
 }
 
+// DT-branded transactional email shell (Pix brand pack): navy #305DAB, Oswald
+// uppercase logo lockup with a 3px navy strip, Source Sans 3 body (web-safe
+// fallbacks for email clients that strip web fonts), em-dash zero.
+export function brandedEmail(opts: { heading: string; bodyHtml: string }): string {
+  return `<div style="margin:0;padding:24px 0;background:#f4f5f7;">
+  <div style="max-width:560px;margin:0 auto;background:#FFFFFF;border-radius:8px;overflow:hidden;font-family:'Source Sans 3',Helvetica,Arial,sans-serif;color:#111111;">
+    <div style="padding:22px 28px 14px;">
+      <span style="font-family:'Oswald',Helvetica,Arial,sans-serif;font-weight:600;font-size:20px;letter-spacing:0.04em;text-transform:uppercase;color:#305DAB;">Diagonal Thinking</span>
+      <div style="height:3px;width:64px;background:#305DAB;margin-top:8px;"></div>
+    </div>
+    <div style="padding:6px 28px 24px;font-size:16px;line-height:1.5;color:#111111;">
+      <h1 style="font-family:'Oswald',Helvetica,Arial,sans-serif;font-weight:600;font-size:22px;letter-spacing:0.02em;color:#111111;margin:0 0 14px;">${opts.heading}</h1>
+      ${opts.bodyHtml}
+    </div>
+    <div style="padding:14px 28px;background:#f7f8fb;color:#6b6862;font-size:12px;line-height:1.4;">
+      Diagonal Thinking Ltd. You are receiving this because you registered or booked with us.
+    </div>
+  </div>
+</div>`;
+}
+
 // === Shared field validation for the Morada forms ===========================
 
 export interface CommonFields {
@@ -960,12 +981,15 @@ export async function fulfillCoursePayment(supabase: any, p: {
     await sendResend({
       to: email,
       subject: "Payment received: AI for Contractors course",
-      html:
-        `<p>Hi ${escapeHtml(firstName)},</p>` +
-        `<p>Thanks, your payment has been received and your place on the AI for Contractors course is confirmed.</p>` +
-        `<p>Phil will be in touch with the joining details and course materials closer to each session ` +
-        `(Thursdays 3, 10 and 17 September 2026, 3:00pm to 4:00pm BST).</p>` +
-        `<p>See you there,<br>Phil<br>Diagonal Thinking</p>`,
+      html: brandedEmail({
+        heading: "Payment received",
+        bodyHtml:
+          `<p>Hi ${escapeHtml(firstName)},</p>` +
+          `<p>Thanks, your payment has been received and your place on the AI for Contractors course is confirmed.</p>` +
+          `<p>Phil will be in touch with the joining details and course materials closer to each session ` +
+          `(Thursdays 3, 10 and 17 September 2026, 3:00pm to 4:00pm BST).</p>` +
+          `<p>See you there,<br>Phil<br>Diagonal Thinking</p>`,
+      }),
     }, resendKey).catch((e) => console.error("[fulfil] resend error:", e));
   }
 
