@@ -1,4 +1,4 @@
-# Diagonal Thinking CRM — Task Board
+# Diagonal Thinking CRM - Task Board
 
 > Sprint-level view of active and recently completed work. Complements CODEX-BACKLOG.md (which is the full feature history).
 
@@ -33,7 +33,7 @@
 
 | Ticket | Title | PR / Commit |
 |---|---|---|
-| CRM-012 | CRM-012 — Auto-derive Projected Value from Opportunity Records | PR #23 |
+| CRM-012 | CRM-012 - Auto-derive Projected Value from Opportunity Records | PR #23 |
 | CRM-010 | Opportunities feature | PR pending (feat/sortable-opportunities-headers) |
 | CRM-011 | Sol direct-write API | PR pending (feat/sortable-opportunities-headers) |
 | MAIL-003 | SOURCE merge field + segment builder | PR #9 |

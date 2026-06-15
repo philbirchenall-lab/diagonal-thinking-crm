@@ -3,58 +3,50 @@
 //   Price: GBP 300 ex-VAT (GBP 360 inc VAT at 20%) per seat.
 //   Spec: outputs/tes-spec-morada-forms-1-and-2-2026-06-15.md section 3.
 //
-// PAYMENT ARCHITECTURE (Phil pivot, 15 Jun 2026): FreeAgent-driven, NOT direct
-// Stripe. On submit this:
-//   1. Finds or creates the FreeAgent contact (dedup on email).
-//   2. Creates a FreeAgent invoice (course line items, 20% VAT, 0-day terms),
-//      enables Stripe online payment, marks it sent, and emails the customer the
-//      invoice with a "Pay now" button.
-//   3. Writes the CRM contact (Warm Lead) + a PENDING course_invoice_created
-//      activity carrying the FreeAgent invoice URL. The morada-course-poll-paid
-//      function later reconciles that invoice and, when Paid, upgrades the
-//      contact to Client (internal bookkeeping only).
+// PAYMENT ARCHITECTURE (B3, Phil 18:32 BST 2026-06-15): direct Stripe Checkout.
+// On submit this:
+//   1. Validates + routes (6+ seats -> enquiry, no payment).
+//   2. Creates a Stripe Checkout Session WE own, with success_url pointing at our
+//      thank-you page (so we control the post-payment redirect and can verify).
+//   3. Writes the CRM contact (Warm Lead) + a PENDING course_checkout_started
+//      activity carrying the Stripe session id (for the thank-you fulfilment and
+//      the safety-net poll).
+//   4. Returns the Checkout URL; the embed fires GA4 begin_checkout and redirects.
 //
-// Customer confirmation is set in this invoice email (place confirmed on
-// payment; Phil in touch with joining details) plus Stripe's own receipt. There
-// is NO DT payment-confirmation email - FreeAgent exposes no timely payment
-// signal (verified 15 Jun 2026). No Stripe code, no Stripe keys, no webhooks.
+// The customer pays on Stripe, returns to /morada-thank-you?session_id=..., and
+// morada-course-thank-you verifies the session via the Stripe API, then creates
+// the FreeAgent invoice (VAT/books), upgrades the contact to Client, and sends
+// the confirmation email. FreeAgent is NOT used for payment here.
 //
-// If FreeAgent OAuth is not yet provisioned, this still records the booking and
-// returns success with a "your invoice will follow" message (manual fallback:
-// Phil raises the invoice from FreeAgent by hand). Spec 3.4 authorises this.
+// Env-guarded: inert (503) until STRIPE_SECRET_KEY is provisioned.
 //
-// BLOCKED ON PHIL (surfaced to Dot, defaults flagged in source):
-//   D9 pricing (GBP 360 inc VAT/seat, 6+ to enquiry), M1 cap, M2 MVC fallback.
+// BLOCKED ON PHIL (defaults flagged): D9 pricing, M1 cap, M2 MVC fallback.
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import {
   badRequest,
   buildCorsHeaders,
   checkRateLimit,
-  createAndSendFreeAgentInvoice,
-  findOrCreateFreeAgentContact,
-  freeAgentAccessToken,
-  freeAgentConfig,
+  createStripeCheckoutSession,
   getClientIp,
   json,
   parseUtm,
   routeFromUtm,
   serviceClient,
+  stripeKey,
   syncToMailchimp,
   validateCommon,
 } from "../_shared/forms.ts";
 
 // === Pricing config (D9, PROVISIONAL - Phil to ratify) ======================
-const NET_PER_SEAT = 300; // GBP ex-VAT per seat
-const VAT_RATE = 20; // percent
-const UNIT_INC_VAT = 360; // GBP inc VAT per seat (display + GA value)
+const UNIT_INC_VAT = 360; // GBP inc VAT per seat
 const MAX_SELF_SERVE_SEATS = 5; // 6+ routes to Phil as an enquiry
 const COHORT_HARD_CAP: number | null = null; // M1: null = manual cap (blocks launch only)
 const COHORT_LABEL = "AI for Contractors - Sep 2026 beginner cohort (3 sessions)";
-// Booking/invoice date is "today"; Deno date is fine here (not in a workflow).
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+const STATEMENT_DESCRIPTOR = "DT AI COURSE";
+
+const THANKYOU_URL = Deno.env.get("MORADA_THANKYOU_URL") ?? "https://www.diagonalthinking.co/morada-thank-you";
+const COURSE_PAGE_URL = Deno.env.get("MORADA_COURSE_PAGE_URL") ?? "https://www.diagonalthinking.co/ai-for-contractors-course";
 
 serve(async (req: Request) => {
   const cors = buildCorsHeaders(req);
@@ -98,7 +90,7 @@ serve(async (req: Request) => {
     if (!acceptTerms) return badRequest("Please accept the booking terms to continue.", cors);
     if (!Number.isFinite(seats) || seats < 1) return badRequest("Please choose a valid number of seats.", cors);
 
-    // Seat-count routing (D9). 6+ seats are an enquiry, not an invoice.
+    // Seat-count routing (D9). 6+ seats are an enquiry, not a payment.
     if (seats > MAX_SELF_SERVE_SEATS) {
       return json({
         success: true,
@@ -111,65 +103,65 @@ serve(async (req: Request) => {
       return badRequest("That exceeds the seats available in this cohort. Please contact us.", cors);
     }
 
+    // Payments inert until the Stripe key is provisioned (B3 env-guard).
+    const sk = stripeKey();
+    if (!sk) {
+      console.error("STRIPE_SECRET_KEY not set; cannot create Checkout session.");
+      return json({
+        error: "Online payment is not yet available. Please contact phil@diagonalthinking.co to book.",
+      }, 503, cors);
+    }
+
     const utm = parseUtm(body);
     const route = routeFromUtm(utm);
     const totalIncVat = UNIT_INC_VAT * seats;
+    const seatWord = seats === 1 ? "seat" : "seats";
 
-    const supabase = serviceClient();
+    // Metadata travels with the Stripe session; the thank-you function reads it
+    // back (after verifying the session is paid) to build the FreeAgent invoice
+    // and the CRM write. Stripe metadata values are strings, capped per key.
+    const meta: Record<string, string> = {
+      first_name: fields.first_name,
+      last_name: fields.last_name,
+      email: fields.email,
+      company: fields.company,
+      role: fields.role,
+      billing_address: billingAddress.slice(0, 480),
+      vat_number: vatNumber,
+      seats: String(seats),
+      total_inc_vat: String(totalIncVat),
+      marketing_consent: String(marketingConsent),
+      how_heard: howHeard,
+      source: route.source,
+      opp_route: route.oppRoute,
+      utm_campaign: utm.utm_campaign ?? "",
+      utm_source: utm.utm_source ?? "",
+      utm_medium: utm.utm_medium ?? "",
+      utm_content: utm.utm_content ?? "",
+      utm_term: utm.utm_term ?? "",
+    };
 
-    // 1. FreeAgent invoice (or manual fallback if OAuth not provisioned).
-    const faCfg = freeAgentConfig();
-    let invoiceUrl: string | null = null;
-    let invoiceRef: string | null = null;
-    let faError: string | null = null;
-    if (faCfg) {
-      try {
-        const token = await freeAgentAccessToken(faCfg);
-        const contactUrl = await findOrCreateFreeAgentContact(token, {
-          email: fields.email,
-          firstName: fields.first_name,
-          lastName: fields.last_name,
-          company: fields.company,
-        });
-        const seatWord = seats === 1 ? "seat" : "seats";
-        const created = await createAndSendFreeAgentInvoice(token, {
-          contactUrl,
-          datedOn: todayIso(),
-          paymentTermsDays: 0,
-          reference: "",
-          comments: `Billing address: ${billingAddress}${vatNumber ? ` | VAT: ${vatNumber}` : ""}`,
-          items: [{
-            description: `${COHORT_LABEL} - ${seats} ${seatWord}`,
-            quantity: seats,
-            price: NET_PER_SEAT,
-            sales_tax_rate: VAT_RATE,
-          }],
-          toEmail: fields.email,
-          emailSubject: "Your invoice: AI for Contractors course (Sep 2026)",
-          emailBody:
-            `Hi ${fields.first_name},\n\n` +
-            `Thank you for booking the AI for Contractors course. Your invoice for ${seats} ${seatWord} is below. ` +
-            `You can pay securely by card using the button.\n\n[online_payment_link]\n\n` +
-            `As soon as you have paid, your place is confirmed. You will get a payment receipt from the secure payment page, ` +
-            `and Phil will be in touch with the joining details and course materials before each session ` +
-            `(Thursdays 3, 10 and 17 September 2026, 3:00pm to 4:00pm BST).\n\n` +
-            `Phil\nDiagonal Thinking`,
-        });
-        invoiceUrl = created.url;
-        invoiceRef = created.reference;
-      } catch (e) {
-        // Do not fail the booking: record it and fall back to a manual invoice.
-        faError = String(e);
-        console.error("FreeAgent invoice flow error:", faError);
-      }
-    } else {
-      console.log(
-        `[freeagent] OAuth not provisioned. MANUAL FALLBACK: raise an invoice by hand for ` +
-        `${fields.email} (${fields.company}), ${seats} seat(s), total inc VAT GBP ${totalIncVat}.`,
-      );
+    let session;
+    try {
+      session = await createStripeCheckoutSession({
+        key: sk,
+        successUrl: `${THANKYOU_URL}?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${COURSE_PAGE_URL}?status=cancelled`,
+        customerEmail: fields.email,
+        lineName: `${COHORT_LABEL} - ${seats} ${seatWord}`,
+        unitAmountPence: UNIT_INC_VAT * 100,
+        quantity: seats,
+        statementDescriptor: STATEMENT_DESCRIPTOR,
+        metadata: meta,
+      });
+    } catch (e) {
+      console.error("Stripe session create error:", e);
+      return json({ error: "Could not start checkout. Please try again." }, 502, cors);
     }
 
-    // 2. CRM: upsert contact (Warm Lead) + reliable PENDING activity the poll reads.
+    // CRM: upsert contact (Warm Lead) + reliable PENDING activity the thank-you
+    // function and the safety-net poll read, keyed on the Stripe session id.
+    const supabase = serviceClient();
     const { data: contactRow, error: contactError } = await supabase
       .from("contacts")
       .upsert(
@@ -186,38 +178,26 @@ serve(async (req: Request) => {
       .maybeSingle();
     if (contactError) {
       console.error("Supabase contact upsert error:", contactError);
-      return json({ error: "Failed to save your booking. Please try again." }, 500, cors);
+      // The Stripe session exists; do not hard-fail the customer. Proceed to
+      // checkout - the thank-you function can still fulfil from session metadata.
     }
 
     if (contactRow?.id) {
       const { error: actError } = await supabase.from("contact_activities").insert({
         contact_id: contactRow.id,
-        activity_type: "course_invoice_created",
-        subject: `Course invoice issued: ${seats} seat(s)${invoiceRef ? ` (${invoiceRef})` : ""}`,
+        activity_type: "course_checkout_started",
+        subject: `Course checkout started: ${seats} ${seatWord}`,
         body: JSON.stringify({
-          seats,
-          role: fields.role,
-          billing_address: billingAddress,
-          vat_number: vatNumber,
-          net_per_seat: NET_PER_SEAT,
-          total_inc_vat: totalIncVat,
-          freeagent_invoice_url: invoiceUrl,
-          freeagent_reference: invoiceRef,
-          manual_fallback: !invoiceUrl,
-          freeagent_error: faError,
-          marketing_consent: marketingConsent,
-          how_heard: howHeard,
-          ...utm,
-          opp_route: route.oppRoute,
+          ...meta,
+          stripe_session_id: session.id,
           confirmation_sent: false,
         }),
-        // "pending" = awaiting payment; the poll flips it to "paid".
         status: "pending",
       });
       if (actError) console.error("contact_activities insert error:", actError);
     }
 
-    // 3. Mailchimp at booking: Warm Lead + booked tag (paid tag added on payment).
+    // Mailchimp at booking: Warm Lead + booked tag (paid tag added on payment).
     const mailchimpKey = Deno.env.get("MAILCHIMP_API_KEY");
     if (mailchimpKey) {
       syncToMailchimp(
@@ -235,13 +215,12 @@ serve(async (req: Request) => {
       ).catch((err) => console.error("Mailchimp sync error:", err));
     }
 
-    // Return success. The embed shows the "check your email" panel and fires GA4
-    // generate_lead (the client-side named event for the paid course; the real
-    // purchase is sent server-side by the poll via Measurement Protocol).
+    // Return the Checkout URL so the embed fires begin_checkout and redirects.
     return json({
       success: true,
-      route: "invoice_sent",
-      invoice_emailed: !!invoiceUrl,
+      route: "checkout",
+      checkout_url: session.url,
+      session_id: session.id,
       total_inc_vat: totalIncVat,
       seats,
       campaign: utm.utm_campaign,

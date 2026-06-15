@@ -563,12 +563,15 @@ export interface FreeAgentInvoiceItem {
   sales_tax_rate: number; // e.g. 20
 }
 
-// Creates the invoice with Stripe online payment enabled, marks it as sent, and
-// emails it to the customer with the online payment link. Returns the invoice
-// URL + reference. The send_email step is best-effort: if FreeAgent's email
-// schema differs on the live account, the invoice is still created and sent
-// (status Sent), and Phil can resend from FreeAgent. Verify on provisioning.
-export async function createAndSendFreeAgentInvoice(
+// Records an ALREADY-PAID sale as a FreeAgent invoice (for VAT/books). B3
+// architecture (Phil 18:32 BST): payment is taken via our own Stripe Checkout,
+// so this does NOT enable a FreeAgent online-payment link or email the customer
+// a Pay-now button (the customer already paid and gets our thank-you email).
+// Creates the invoice and marks it Sent; the Stripe payment intent is recorded
+// in the comments for reconciliation. NB: FreeAgent has no API "mark Paid"
+// transition - the invoice reconciles when the Stripe payout lands in the
+// connected bank feed, or Phil marks it paid manually.
+export async function recordFreeAgentInvoice(
   token: string,
   inv: {
     contactUrl: string;
@@ -577,9 +580,6 @@ export async function createAndSendFreeAgentInvoice(
     reference: string;
     comments: string;
     items: FreeAgentInvoiceItem[];
-    toEmail: string;
-    emailSubject: string;
-    emailBody: string; // include the [online_payment_link] tag for the pay button
   },
 ): Promise<{ url: string; reference: string }> {
   const base = freeAgentBaseUrl();
@@ -595,7 +595,6 @@ export async function createAndSendFreeAgentInvoice(
         currency: "GBP",
         reference: inv.reference,
         comments: inv.comments,
-        payment_methods: { stripe: true },
         invoice_items: inv.items.map((it) => ({
           description: it.description,
           item_type: "Services",
@@ -608,25 +607,89 @@ export async function createAndSendFreeAgentInvoice(
   });
   if (!createRes.ok) throw new Error(`FreeAgent invoice create failed (${createRes.status}): ${await createRes.text()}`);
   const { invoice } = await createRes.json();
-  const invoiceUrl = invoice.url as string;
-  const id = invoiceUrl.split("/").pop();
+  const id = (invoice.url as string).split("/").pop();
 
-  // Mark as sent (Draft -> Sent) so the status can progress to Paid.
+  // Mark as sent (Draft -> Sent) so it is a live record on the books.
   await fetch(`${base}/v2/invoices/${id}/transitions/mark_as_sent`, { method: "PUT", headers: faHeaders(token) })
     .catch((e) => console.error("FreeAgent mark_as_sent error:", e));
 
-  // Email the invoice with the online payment link (best-effort).
-  await fetch(`${base}/v2/invoices/${id}/send_email`, {
-    method: "POST",
-    headers: faHeaders(token),
-    body: JSON.stringify({
-      invoice: { email: { to: inv.toEmail, subject: inv.emailSubject, body: inv.emailBody } },
-    }),
-  }).then(async (r) => {
-    if (!r.ok) console.error(`FreeAgent send_email non-OK (${r.status}): ${await r.text()}`);
-  }).catch((e) => console.error("FreeAgent send_email error:", e));
+  return { url: invoice.url as string, reference: invoice.reference as string };
+}
 
-  return { url: invoiceUrl, reference: invoice.reference as string };
+// === Stripe Checkout (B3 direct-Stripe payment leg, Phil 18:32 BST) =========
+//
+// We create the Checkout Session so we own success_url -> our thank-you page.
+// Verification is via the Stripe API at return time (instant + reliable),
+// unlike FreeAgent which has no early payment signal. Needs STRIPE_SECRET_KEY;
+// callers env-guard so the build is inert until the key is provisioned.
+
+export function stripeKey(): string | null {
+  return Deno.env.get("STRIPE_SECRET_KEY") ?? null;
+}
+
+export async function createStripeCheckoutSession(o: {
+  key: string;
+  successUrl: string;
+  cancelUrl: string;
+  customerEmail: string;
+  lineName: string;
+  unitAmountPence: number;
+  quantity: number;
+  statementDescriptor: string;
+  metadata: Record<string, string>;
+}): Promise<{ id: string; url: string }> {
+  const p = new URLSearchParams();
+  p.set("mode", "payment");
+  p.set("success_url", o.successUrl);
+  p.set("cancel_url", o.cancelUrl);
+  p.set("customer_email", o.customerEmail);
+  p.set("billing_address_collection", "required");
+  ["card", "apple_pay", "google_pay"].forEach((m, i) => p.set(`payment_method_types[${i}]`, m));
+  p.set("line_items[0][quantity]", String(o.quantity));
+  p.set("line_items[0][price_data][currency]", "gbp");
+  p.set("line_items[0][price_data][unit_amount]", String(o.unitAmountPence));
+  p.set("line_items[0][price_data][product_data][name]", o.lineName);
+  p.set("payment_intent_data[statement_descriptor]", o.statementDescriptor.slice(0, 22));
+  for (const [k, v] of Object.entries(o.metadata)) {
+    p.set(`metadata[${k}]`, v);
+    p.set(`payment_intent_data[metadata][${k}]`, v);
+  }
+  const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${o.key}`, "Content-Type": "application/x-www-form-urlencoded" },
+    body: p.toString(),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.url) {
+    throw new Error(`Stripe session create failed (${res.status}): ${JSON.stringify(data).slice(0, 300)}`);
+  }
+  return { id: data.id as string, url: data.url as string };
+}
+
+// Verifies a Checkout Session at thank-you / poll time. paid === payment cleared.
+export async function getStripeCheckoutSession(key: string, sessionId: string): Promise<{
+  paid: boolean;
+  paymentStatus: string;
+  paymentIntent: string | null;
+  amountTotalPence: number | null;
+  customerEmail: string | null;
+  metadata: Record<string, string>;
+}> {
+  const res = await fetch(
+    `https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`,
+    { headers: { Authorization: `Bearer ${key}` } },
+  );
+  const d = await res.json();
+  if (!res.ok) throw new Error(`Stripe session fetch failed (${res.status}): ${JSON.stringify(d).slice(0, 200)}`);
+  const pi = d.payment_intent;
+  return {
+    paid: d.payment_status === "paid",
+    paymentStatus: String(d.payment_status ?? "unknown"),
+    paymentIntent: typeof pi === "string" ? pi : (pi?.id ?? null),
+    amountTotalPence: typeof d.amount_total === "number" ? d.amount_total : null,
+    customerEmail: d.customer_details?.email ?? d.customer_email ?? null,
+    metadata: (d.metadata ?? {}) as Record<string, string>,
+  };
 }
 
 // Reads invoice status for the poll.
@@ -654,12 +717,145 @@ export async function getFreeAgentInvoice(
   };
 }
 
-// === GA4 Measurement Protocol (server-side purchase, spec 3.7) ==============
+// === Course payment fulfilment (shared by thank-you + safety-net poll) =======
 //
-// The real purchase happens off-site (Stripe inside FreeAgent), so the customer
-// never returns to our page and a client-side `purchase` cannot fire. The poll
-// sends `purchase` server-side via Measurement Protocol when an invoice is Paid,
-// IF these are set (else skipped, documented): GA4_MEASUREMENT_ID, GA4_API_SECRET.
+// Idempotent on the Stripe session id. Upserts the contact as Client, records
+// the FreeAgent invoice (VAT/books, best-effort), applies the paid Mailchimp
+// tag, sends the confirmation email once, and writes the paid activity. Both the
+// thank-you function (primary) and the poll (safety net for customers who paid
+// but did not return) call this after verifying the Stripe session is paid.
+const COURSE_LABEL = "AI for Contractors - Sep 2026 beginner cohort (3 sessions)";
+const COURSE_NET_PER_SEAT = 300;
+const COURSE_VAT_RATE = 20;
+
+// deno-lint-ignore no-explicit-any
+export async function fulfillCoursePayment(supabase: any, p: {
+  sessionId: string;
+  paymentIntent: string;
+  meta: Record<string, string>;
+  seats: number;
+}): Promise<{ already: boolean }> {
+  const { sessionId, paymentIntent, meta, seats } = p;
+  const email = (meta.email ?? "").toLowerCase().trim();
+  const firstName = meta.first_name ?? "";
+  const lastName = meta.last_name ?? "";
+  const company = meta.company ?? "";
+  const seatWord = seats === 1 ? "seat" : "seats";
+
+  // Idempotency: if this session is already fulfilled, do nothing.
+  const { data: existing } = await supabase
+    .from("contact_activities")
+    .select("id, contact_id, status")
+    .like("body", `%${sessionId}%`)
+    .limit(1)
+    .maybeSingle();
+  if (existing && existing.status === "paid") return { already: true };
+
+  // 1. Upsert the CRM contact as Client (email-keyed, idempotent).
+  const { data: contactRow } = await supabase
+    .from("contacts")
+    .upsert({
+      contact_name: `${firstName} ${lastName}`.trim(),
+      email,
+      company,
+      type: "Client",
+      source: meta.source ?? "Morada - AI for Contractors",
+    }, { onConflict: "email", ignoreDuplicates: false })
+    .select("id")
+    .maybeSingle();
+  const contactId = existing?.contact_id ?? contactRow?.id ?? null;
+
+  // 2. Record the FreeAgent invoice for VAT/books (best-effort, non-fatal).
+  let invoiceUrl: string | null = null;
+  let invoiceRef: string | null = null;
+  const faCfg = freeAgentConfig();
+  if (faCfg) {
+    try {
+      const token = await freeAgentAccessToken(faCfg);
+      const contactUrl = await findOrCreateFreeAgentContact(token, { email, firstName, lastName, company });
+      const rec = await recordFreeAgentInvoice(token, {
+        contactUrl,
+        datedOn: new Date().toISOString().slice(0, 10),
+        paymentTermsDays: 0,
+        reference: "",
+        comments:
+          `Paid via Stripe Checkout (payment intent ${paymentIntent}). ` +
+          `Billing: ${meta.billing_address ?? ""}${meta.vat_number ? ` | VAT: ${meta.vat_number}` : ""}`,
+        items: [{
+          description: `${COURSE_LABEL} - ${seats} ${seatWord}`,
+          quantity: seats,
+          price: COURSE_NET_PER_SEAT,
+          sales_tax_rate: COURSE_VAT_RATE,
+        }],
+      });
+      invoiceUrl = rec.url;
+      invoiceRef = rec.reference;
+    } catch (e) {
+      console.error("[fulfil] FreeAgent invoice error (non-fatal):", e);
+    }
+  } else {
+    console.log(`[fulfil] FreeAgent not provisioned; invoice deferred for ${email} (intent ${paymentIntent}).`);
+  }
+
+  // 3. Mailchimp: Client + paid tag.
+  const mailchimpKey = Deno.env.get("MAILCHIMP_API_KEY");
+  if (mailchimpKey && email) {
+    await syncToMailchimp({
+      email, firstName, lastName, company, type: "Client",
+      tags: ["morada-ai-2026", "morada-course-2026-09-paid"],
+      marketingTag: "morada-ai-2026-marketing",
+      marketingConsent: meta.marketing_consent === "true",
+    }, mailchimpKey).catch((e) => console.error("[fulfil] mailchimp error:", e));
+  }
+
+  // 4. Confirmation email (once).
+  const resendKey = Deno.env.get("RESEND_API_KEY");
+  if (resendKey && email) {
+    await sendResend({
+      to: email,
+      subject: "Payment received: AI for Contractors course",
+      html:
+        `<p>Hi ${escapeHtml(firstName)},</p>` +
+        `<p>Thanks, your payment has been received and your place on the AI for Contractors course is confirmed.</p>` +
+        `<p>Phil will be in touch with the joining details and course materials closer to each session ` +
+        `(Thursdays 3, 10 and 17 September 2026, 3:00pm to 4:00pm BST).</p>` +
+        `<p>See you there,<br>Phil<br>Diagonal Thinking</p>`,
+    }, resendKey).catch((e) => console.error("[fulfil] resend error:", e));
+  }
+
+  // 5. Write the paid activity (idempotent on session id).
+  const paidBody = JSON.stringify({
+    ...meta,
+    stripe_session_id: sessionId,
+    stripe_payment_intent: paymentIntent,
+    freeagent_invoice_url: invoiceUrl,
+    freeagent_reference: invoiceRef,
+    confirmation_sent: true,
+  });
+  if (existing?.id) {
+    await supabase.from("contact_activities")
+      .update({ status: "paid", activity_type: "course_booking_paid", body: paidBody })
+      .eq("id", existing.id)
+      .then(() => {}).catch((e: unknown) => console.error("[fulfil] activity update error:", e));
+  } else if (contactId) {
+    await supabase.from("contact_activities").insert({
+      contact_id: contactId,
+      activity_type: "course_booking_paid",
+      subject: `Paid: AI for Contractors course, ${seats} seat(s)`,
+      body: paidBody,
+      status: "paid",
+    }).then(() => {}).catch((e: unknown) => console.error("[fulfil] activity insert error:", e));
+  }
+
+  return { already: false };
+}
+
+// === GA4 Measurement Protocol (server-side purchase fallback) ===============
+//
+// The customer now returns to our thank-you page, so the primary GA4 `purchase`
+// fires CLIENT-SIDE there (deduped on session id). This server-side Measurement
+// Protocol path is a fallback for the safety-net poll (a customer who paid but
+// never returned), used only if GA4_MEASUREMENT_ID + GA4_API_SECRET are set.
 export async function ga4Purchase(p: {
   clientId: string; // a stable id; we use the invoice reference
   transactionId: string;

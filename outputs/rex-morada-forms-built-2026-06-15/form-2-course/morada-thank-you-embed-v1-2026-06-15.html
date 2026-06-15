@@ -1,0 +1,104 @@
+<!--
+  Form 2 thank-you page (B3, Phil 18:32 BST).
+  Paste into a Squarespace Code Block on /morada-thank-you (the slug used as the
+  Stripe success_url). Stripe returns the customer here as
+  /morada-thank-you?session_id=cs_...
+
+  On load this verifies the payment via the morada-course-thank-you Edge Function
+  (which checks the Stripe session server-side), then shows the confirmed or
+  "processing" state and fires GA4 purchase once (deduped on session id).
+
+  Typography inherits the DT site theme; DT brand colours only.
+-->
+<div id="morada-thankyou" class="dtf">
+  <div id="ty-loading" class="dtf-card">
+    <h2 class="dtf-h">Confirming your payment...</h2>
+    <p class="dtf-sub">One moment while we confirm your booking.</p>
+  </div>
+
+  <div id="ty-confirmed" class="dtf-card" role="status" hidden>
+    <h2 class="dtf-h">Booking confirmed</h2>
+    <p>Thank you, your payment has been received and your place on the AI for Contractors course is confirmed. We have emailed your confirmation.</p>
+    <p><strong>Your sessions:</strong></p>
+    <ul>
+      <li>Thursday 3 September 2026, 3:00pm to 4:00pm BST</li>
+      <li>Thursday 10 September 2026, 3:00pm to 4:00pm BST</li>
+      <li>Thursday 17 September 2026, 3:00pm to 4:00pm BST</li>
+    </ul>
+    <p class="dtf-sub">Phil will be in touch with the joining details and course materials before each session.</p>
+  </div>
+
+  <div id="ty-processing" class="dtf-card" role="status" hidden>
+    <h2 class="dtf-h">Payment processing</h2>
+    <p>Thanks. Your payment is being processed. As soon as it clears we will confirm your place, and Phil will be in touch with the joining details. If you have any questions, contact phil@diagonalthinking.co.</p>
+  </div>
+</div>
+
+<style>
+  .dtf { max-width: 560px; margin: 0 auto; color: #111111; font-family: inherit; }
+  .dtf * { box-sizing: border-box; }
+  .dtf-h { font-size: 1.5rem; line-height: 1.2; margin: 0 0 0.5rem; color: #111111; }
+  .dtf-sub { color: #2a2a2a; }
+  .dtf-card ul { padding-left: 1.2rem; }
+  .dtf-card li { margin-bottom: 0.25rem; }
+  .dtf a { color: #305DAB; }
+</style>
+
+<script>
+(function () {
+  // === CONFIG (fill before launch) =========================================
+  var FUNCTION_URL = "https://unphfgcjfncnqhpvmrvf.supabase.co/functions/v1/morada-course-thank-you";
+  var ANON_KEY = ""; // optional; function deployed public (--no-verify-jwt)
+  var UNIT_INC_VAT = 360;
+  // =========================================================================
+
+  var root = document.getElementById("morada-thankyou");
+  if (!root) return;
+  var loading = document.getElementById("ty-loading");
+  var confirmed = document.getElementById("ty-confirmed");
+  var processing = document.getElementById("ty-processing");
+
+  function show(el) {
+    loading.hidden = true; confirmed.hidden = true; processing.hidden = true;
+    el.hidden = false;
+  }
+  function ga(name, payload) { if (typeof window.gtag === "function") window.gtag("event", name, payload); }
+
+  var sessionId = new URLSearchParams(window.location.search).get("session_id") || "";
+  if (!sessionId) { show(processing); return; }
+
+  function firePurchaseOnce(value, seats, campaign) {
+    var KEY = "dt_morada_purchase_fired";
+    var fired = [];
+    try { fired = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) {}
+    if (fired.indexOf(sessionId) !== -1) return; // already counted (refresh)
+    ga("purchase", {
+      transaction_id: sessionId,
+      value: value || 0,
+      currency: "GBP",
+      campaign: campaign || "",
+      items: [{ item_name: "AI for Contractors course", quantity: seats || 1, price: UNIT_INC_VAT }]
+    });
+    fired.push(sessionId);
+    try { localStorage.setItem(KEY, JSON.stringify(fired)); } catch (e) {}
+  }
+
+  var headers = { "Content-Type": "application/json" };
+  if (ANON_KEY) { headers["apikey"] = ANON_KEY; headers["Authorization"] = "Bearer " + ANON_KEY; }
+
+  fetch(FUNCTION_URL, { method: "POST", headers: headers, body: JSON.stringify({ session_id: sessionId }) })
+    .then(function (res) { return res.json(); })
+    .then(function (d) {
+      if (d && d.status === "confirmed") {
+        var pending = {};
+        try { pending = JSON.parse(localStorage.getItem("dt_morada_pending_purchase") || "{}"); } catch (e) {}
+        firePurchaseOnce(d.value || pending.value, d.seats || pending.seats, d.campaign || pending.campaign);
+        show(confirmed);
+      } else {
+        // "processing" or anything unexpected: reassure, do not alarm.
+        show(processing);
+      }
+    })
+    .catch(function () { show(processing); });
+})();
+</script>

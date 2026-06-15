@@ -5,9 +5,13 @@ self-contained block: markup + scoped CSS (`.dtf*` classes) + the JS that POSTs
 to the Supabase Edge Function. Nothing external to load.
 
 ```
-form-1-webinar/morada-webinar-embed-v1-2026-06-15.html   Form 1, free webinar -> /morada-ai-webinar
-form-2-course/morada-course-embed-v1-2026-06-15.html     Form 2, paid course  -> /ai-for-contractors-course
+form-1-webinar/morada-webinar-embed-v1-2026-06-15.html      Form 1, free webinar  -> /morada-ai-webinar
+form-2-course/morada-course-embed-v1-2026-06-15.html        Form 2, paid course   -> /ai-for-contractors-course
+form-2-course/morada-thank-you-embed-v1-2026-06-15.html     Form 2, thank-you     -> /morada-thank-you
 ```
+Form 2 takes payment via direct Stripe Checkout: the booking embed redirects to
+Stripe; the thank-you embed (on the Stripe return URL) verifies the payment and
+fires GA4 purchase.
 
 ## How to view / render
 - Open either `.html` directly in a browser to see the rendered form.
