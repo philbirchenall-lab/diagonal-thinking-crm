@@ -27,6 +27,7 @@
 |---|---|---|---|---|
 | CRM-DEDUP-V2 | Morada CRM dedup v2: wire full six-gate (LinkedIn URL + phone + name variants + company variants + combinations) per `feedback_crm_duplicate_check_mandatory` | Rex (CRM-write via Sol) | Within 7 days of Form 2 go-live | Phil decision 18:00 BST 2026-06-15 (B4 Option A). v1 ships with email-keyed UPSERT only (spec 1.6 fallback). Dot to pick up at next post-launch morning briefing. |
 | MORADA-CODED-PAGES | Migrate Morada booking forms from Squarespace embeds to branded coded pages (Next.js on Vercel, Client-Area pattern) on a subdomain. Backend (Edge Functions) unchanged. | Rex | Post-launch fast-follow | Phil decision ~19:10 BST 2026-06-15: ship v1 on embeds, migrate after launch. Gains: thank-you hosting, Vercel preview URLs, exact brand control, repo-versioned, easier E2E. |
+| MORADA-HARDENING-V2 | Lower-severity polish from the pre-review (deferred, non-blocking): durable auto-retry for FreeAgent invoice on failure (currently loud [RECONCILE] log + manual fallback); GA4 server-side purchase for the poll/safety-net path; GA4 purchase cross-device dedup; suppress begin_checkout on idempotent replay; minor a11y (announce char-counter/total changes, move focus on course validation error, honeypot focusable-in-aria-hidden); £ symbol vs "GBP" code (Pix call); Stripe Idempotency-Key header on session create; amount reconciliation Stripe-captured vs invoiced. | Rex | Post-launch | From the 15 Jun pre-review (26 medium/low). None block launch; full list in the workflow output. |
 
 ---
 
