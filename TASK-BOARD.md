@@ -21,6 +21,14 @@
 
 ---
 
+## Scheduled (post-launch, do not block current launch)
+
+| Ticket | Title | Owner | Due | Notes |
+|---|---|---|---|---|
+| CRM-DEDUP-V2 | Morada CRM dedup v2: wire full six-gate (LinkedIn URL + phone + name variants + company variants + combinations) per `feedback_crm_duplicate_check_mandatory` | Rex (CRM-write via Sol) | Within 7 days of Form 2 go-live | Phil decision 18:00 BST 2026-06-15 (B4 Option A). v1 ships with email-keyed UPSERT only (spec 1.6 fallback). Dot to pick up at next post-launch morning briefing. |
+
+---
+
 ## Recently Done (last 5)
 
 | Ticket | Title | PR / Commit |
