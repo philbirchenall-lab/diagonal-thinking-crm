@@ -237,9 +237,10 @@ export interface CrmWrite {
   type: string; // "Warm Lead" (Form 1) | "Client" (Form 2)
   source: string;
   phone?: string | null;
-  activityType: string; // "webinar_registration" | "course_booking_paid"
+  activityType: string; // "webinar_registration" | "course_invoice_created" | "course_booking_paid"
   activitySubject: string;
-  activityMeta: Record<string, unknown>; // UTM, role, how-heard, takeaway, payment intent...
+  activityMeta: Record<string, unknown>; // UTM, role, how-heard, takeaway, invoice url...
+  activityStatus?: string; // "received" (default) | "pending" (awaiting payment) | "paid"
 }
 
 // deno-lint-ignore no-explicit-any
@@ -280,7 +281,7 @@ export async function upsertContactAndActivity(
         activity_type: w.activityType,
         subject: w.activitySubject,
         body: JSON.stringify(w.activityMeta),
-        status: "received",
+        status: w.activityStatus ?? "received",
       })
       .then(() => {})
       .catch((err: unknown) => console.error("contact_activities insert error:", err));
@@ -428,4 +429,228 @@ export function buildIcs(events: IcsEvent[]): string {
 
 export function icsToBase64(ics: string): string {
   return btoa(unescape(encodeURIComponent(ics)));
+}
+
+// === FreeAgent API (Form 2 payment leg, post-pivot 15 Jun 2026) =============
+//
+// Phil's locked architecture: the form creates a FreeAgent invoice with online
+// payment enabled; FreeAgent emails the customer a "Pay now" button (Stripe
+// connected inside FreeAgent); a scheduled poll detects when the invoice is
+// Paid and fires our confirmation email. NO direct Stripe code, NO Stripe keys.
+//
+// FreeAgent has NO webhooks (verified against dev.freeagent.com + the API forum,
+// Jun 2026), which is why payment is detected by polling, not a webhook.
+//
+// OAuth: FreeAgent access tokens are short-lived, refresh tokens long-lived. We
+// always mint a fresh access token from the refresh token at call time, which is
+// more robust than storing a token that expires. Required env:
+//   FREEAGENT_CLIENT_ID, FREEAGENT_CLIENT_SECRET, FREEAGENT_REFRESH_TOKEN
+//   FREEAGENT_BASE_URL (optional; defaults to production)
+// NB: this refines Tes's original env list (API_KEY / ACCESS_TOKEN / REFRESH).
+// CLIENT_ID maps to the old "API key"; CLIENT_SECRET is additionally required
+// for the refresh grant; the stored ACCESS_TOKEN is not needed (we refresh).
+
+export function freeAgentBaseUrl(): string {
+  return Deno.env.get("FREEAGENT_BASE_URL") ?? "https://api.freeagent.com";
+}
+
+export interface FreeAgentConfig {
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+}
+
+// Returns the config if all three vars are present, else null (caller falls back
+// to the manual-invoice path and logs it).
+export function freeAgentConfig(): FreeAgentConfig | null {
+  const clientId = Deno.env.get("FREEAGENT_CLIENT_ID") ?? Deno.env.get("FREEAGENT_API_KEY");
+  const clientSecret = Deno.env.get("FREEAGENT_CLIENT_SECRET");
+  const refreshToken = Deno.env.get("FREEAGENT_REFRESH_TOKEN");
+  if (!clientId || !clientSecret || !refreshToken) return null;
+  return { clientId, clientSecret, refreshToken };
+}
+
+export async function freeAgentAccessToken(cfg: FreeAgentConfig): Promise<string> {
+  const res = await fetch(`${freeAgentBaseUrl()}/v2/token_endpoint`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${btoa(`${cfg.clientId}:${cfg.clientSecret}`)}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: cfg.refreshToken }).toString(),
+  });
+  if (!res.ok) throw new Error(`FreeAgent token refresh failed (${res.status}): ${await res.text()}`);
+  const data = await res.json();
+  return data.access_token as string;
+}
+
+function faHeaders(token: string) {
+  return {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    "User-Agent": "DiagonalThinkingCRM (phil@diagonalthinking.co)",
+  };
+}
+
+// Dedup on email: search the first page of contacts and match. Volume is low
+// (a single course cohort), so one page is sufficient. Returns the contact URL.
+export async function findOrCreateFreeAgentContact(
+  token: string,
+  c: { email: string; firstName: string; lastName: string; company: string },
+): Promise<string> {
+  const base = freeAgentBaseUrl();
+  const email = c.email.toLowerCase().trim();
+
+  const listRes = await fetch(`${base}/v2/contacts?view=all&per_page=100`, { headers: faHeaders(token) });
+  if (listRes.ok) {
+    const { contacts = [] } = await listRes.json();
+    const hit = contacts.find((x: { email?: string }) => (x.email ?? "").toLowerCase().trim() === email);
+    if (hit?.url) return hit.url;
+  }
+
+  const createRes = await fetch(`${base}/v2/contacts`, {
+    method: "POST",
+    headers: faHeaders(token),
+    body: JSON.stringify({
+      contact: {
+        first_name: c.firstName,
+        last_name: c.lastName,
+        organisation_name: c.company,
+        email,
+      },
+    }),
+  });
+  if (!createRes.ok) throw new Error(`FreeAgent contact create failed (${createRes.status}): ${await createRes.text()}`);
+  const { contact } = await createRes.json();
+  return contact.url as string;
+}
+
+export interface FreeAgentInvoiceItem {
+  description: string;
+  quantity: number;
+  price: number; // net unit price ex-VAT
+  sales_tax_rate: number; // e.g. 20
+}
+
+// Creates the invoice with Stripe online payment enabled, marks it as sent, and
+// emails it to the customer with the online payment link. Returns the invoice
+// URL + reference. The send_email step is best-effort: if FreeAgent's email
+// schema differs on the live account, the invoice is still created and sent
+// (status Sent), and Phil can resend from FreeAgent. Verify on provisioning.
+export async function createAndSendFreeAgentInvoice(
+  token: string,
+  inv: {
+    contactUrl: string;
+    datedOn: string; // YYYY-MM-DD
+    paymentTermsDays: number;
+    reference: string;
+    comments: string;
+    items: FreeAgentInvoiceItem[];
+    toEmail: string;
+    emailSubject: string;
+    emailBody: string; // include the [online_payment_link] tag for the pay button
+  },
+): Promise<{ url: string; reference: string }> {
+  const base = freeAgentBaseUrl();
+
+  const createRes = await fetch(`${base}/v2/invoices`, {
+    method: "POST",
+    headers: faHeaders(token),
+    body: JSON.stringify({
+      invoice: {
+        contact: inv.contactUrl,
+        dated_on: inv.datedOn,
+        payment_terms_in_days: inv.paymentTermsDays,
+        currency: "GBP",
+        reference: inv.reference,
+        comments: inv.comments,
+        payment_methods: { stripe: true },
+        invoice_items: inv.items.map((it) => ({
+          description: it.description,
+          item_type: "Services",
+          quantity: it.quantity,
+          price: it.price,
+          sales_tax_rate: it.sales_tax_rate,
+        })),
+      },
+    }),
+  });
+  if (!createRes.ok) throw new Error(`FreeAgent invoice create failed (${createRes.status}): ${await createRes.text()}`);
+  const { invoice } = await createRes.json();
+  const invoiceUrl = invoice.url as string;
+  const id = invoiceUrl.split("/").pop();
+
+  // Mark as sent (Draft -> Sent) so the status can progress to Paid.
+  await fetch(`${base}/v2/invoices/${id}/transitions/mark_as_sent`, { method: "PUT", headers: faHeaders(token) })
+    .catch((e) => console.error("FreeAgent mark_as_sent error:", e));
+
+  // Email the invoice with the online payment link (best-effort).
+  await fetch(`${base}/v2/invoices/${id}/send_email`, {
+    method: "POST",
+    headers: faHeaders(token),
+    body: JSON.stringify({
+      invoice: { email: { to: inv.toEmail, subject: inv.emailSubject, body: inv.emailBody } },
+    }),
+  }).then(async (r) => {
+    if (!r.ok) console.error(`FreeAgent send_email non-OK (${r.status}): ${await r.text()}`);
+  }).catch((e) => console.error("FreeAgent send_email error:", e));
+
+  return { url: invoiceUrl, reference: invoice.reference as string };
+}
+
+// Reads invoice status for the poll. Returns { status, paidOn, permalink }.
+export async function getFreeAgentInvoice(
+  token: string,
+  invoiceUrl: string,
+): Promise<{ status: string; paidOn: string | null; permalink: string | null }> {
+  const res = await fetch(invoiceUrl, { headers: faHeaders(token) });
+  if (!res.ok) throw new Error(`FreeAgent invoice fetch failed (${res.status}): ${await res.text()}`);
+  const { invoice } = await res.json();
+  return {
+    status: invoice.status ?? "Unknown",
+    paidOn: invoice.paid_on ?? null,
+    permalink: invoice.permalink ?? null,
+  };
+}
+
+// === GA4 Measurement Protocol (server-side purchase, spec 3.7) ==============
+//
+// The real purchase happens off-site (Stripe inside FreeAgent), so the customer
+// never returns to our page and a client-side `purchase` cannot fire. The poll
+// sends `purchase` server-side via Measurement Protocol when an invoice is Paid,
+// IF these are set (else skipped, documented): GA4_MEASUREMENT_ID, GA4_API_SECRET.
+export async function ga4Purchase(p: {
+  clientId: string; // a stable id; we use the invoice reference
+  transactionId: string;
+  value: number;
+  campaign: string;
+  items: Array<{ item_name: string; quantity: number; price: number }>;
+}): Promise<void> {
+  const mid = Deno.env.get("GA4_MEASUREMENT_ID");
+  const secret = Deno.env.get("GA4_API_SECRET");
+  if (!mid || !secret) {
+    console.log("[ga4] Measurement Protocol not configured; skipping server-side purchase event.");
+    return;
+  }
+  const res = await fetch(
+    `https://www.google-analytics.com/mp/collect?measurement_id=${mid}&api_secret=${secret}`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        client_id: p.clientId,
+        events: [{
+          name: "purchase",
+          params: {
+            transaction_id: p.transactionId,
+            value: p.value,
+            currency: "GBP",
+            campaign: p.campaign,
+            items: p.items,
+          },
+        }],
+      }),
+    },
+  );
+  if (!res.ok) console.error(`GA4 MP purchase failed (${res.status}): ${await res.text()}`);
 }

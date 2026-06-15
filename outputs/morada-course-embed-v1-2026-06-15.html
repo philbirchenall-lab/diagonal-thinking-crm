@@ -3,16 +3,17 @@
   Paste into a Squarespace Code Block on /ai-for-contractors-course.
   Spec: outputs/tes-spec-morada-forms-1-and-2-2026-06-15.md section 3.
 
+  PAYMENT FLOW (Phil pivot, 15 Jun 2026): FreeAgent-driven, NOT direct Stripe.
+  On submit, the backend creates a FreeAgent invoice and FreeAgent emails the
+  customer a "Pay now" button. There is no on-site redirect to a payment page,
+  so this embed shows an "invoice emailed" confirmation and fires the GA4
+  generate_lead event. The real purchase is recorded server-side by the poll.
+
   Typography inherits the DT site theme. DT brand colours only. Cookie banner +
   privacy notice inherited from the site (M7).
 
-  CONFIG below. PROVISIONAL pricing per D9 (Tes default): GBP 360 inc VAT/seat,
-  2-5 per-seat, 6+ routes to an enquiry. BOOKING_TERMS_URL must point at the live
-  booking terms page (D14, blocks launch).
-
-  This page handles BOTH the booking form AND the post-payment return: Stripe
-  redirects back to this slug with ?status=success&session_id=... where the
-  GA4 purchase event fires (deduped on session_id).
+  PROVISIONAL pricing per D9 (Tes default): GBP 360 inc VAT/seat, 2-5 per-seat,
+  6+ routes to an enquiry.
 -->
 <div id="morada-course" class="dtf">
   <form id="dtc-form" novalidate>
@@ -99,7 +100,7 @@
     </div>
     <p class="dtf-hint" id="dtc-total-note">Includes VAT at 20%.</p>
 
-    <p class="dtf-transactional">We will use your details to send your joining links, calendar invites, reminders and your invoice. See how we handle your data in our <a id="dtc-privacy-1" href="#" target="_blank" rel="noopener">Privacy Notice</a>.</p>
+    <p class="dtf-transactional">We will use your details to send your invoice, joining details, reminders and course updates. See how we handle your data in our <a id="dtc-privacy-1" href="#" target="_blank" rel="noopener">Privacy Notice</a>.</p>
 
     <div class="dtf-consent">
       <input id="dtc-terms" name="accept_terms" type="checkbox" required />
@@ -124,7 +125,7 @@
 
     <div id="dtc-error" class="dtf-error" role="alert" hidden></div>
 
-    <button id="dtc-submit" type="submit" class="dtf-btn">Continue to payment</button>
+    <button id="dtc-submit" type="submit" class="dtf-btn">Book and send my invoice</button>
   </form>
 
   <div id="dtc-enquiry" class="dtf-success" role="status" hidden>
@@ -132,19 +133,16 @@
     <p id="dtc-enquiry-msg">For 6 or more seats we arrange a private cohort. We have logged your interest and Phil will be in touch to confirm pricing.</p>
   </div>
 
-  <div id="dtc-confirmed" class="dtf-success" role="status" hidden>
-    <h2 class="dtf-h">Booking confirmed</h2>
-    <p>Thank you. Your place on the AI for Contractors course is booked and paid. We have sent a confirmation to your inbox with your joining details and invoice.</p>
+  <div id="dtc-invoiced" class="dtf-success" role="status" hidden>
+    <h2 class="dtf-h">Almost there: check your email</h2>
+    <p id="dtc-invoiced-msg">We have emailed your invoice with a secure "Pay now" button. As soon as your payment clears we will confirm your place, and Phil will send the joining details and course materials closer to each session.</p>
     <p><strong>Your sessions:</strong></p>
     <ul>
       <li>Thursday 3 September 2026, 3:00pm to 4:00pm BST</li>
       <li>Thursday 10 September 2026, 3:00pm to 4:00pm BST</li>
       <li>Thursday 17 September 2026, 3:00pm to 4:00pm BST</li>
     </ul>
-  </div>
-
-  <div id="dtc-cancelled" class="dtf-error" role="status" hidden>
-    Your payment was cancelled and you have not been charged. You can try again whenever you are ready.
+    <p class="dtf-sub">Cannot find the email? Check your spam folder, or contact phil@diagonalthinking.co.</p>
   </div>
 </div>
 
@@ -192,7 +190,7 @@
   var FUNCTION_URL = "https://unphfgcjfncnqhpvmrvf.supabase.co/functions/v1/morada-course-book";
   var ANON_KEY = ""; // optional; function deployed public (--no-verify-jwt)
   var PRIVACY_URL = "https://diagonalthinking.co/privacy"; // M7, confirmed by Phil 15 Jun 2026
-  var BOOKING_TERMS_URL = "https://diagonalthinking.co/booking-terms"; // D14 page, confirmed by Phil 15 Jun 2026 (wording approval still on the page itself)
+  var BOOKING_TERMS_URL = "https://diagonalthinking.co/booking-terms"; // D14 page, confirmed by Phil 15 Jun 2026
   var UNIT_INC_VAT = 360; // GBP per seat inc VAT (D9 PROVISIONAL)
   var GA_FORM_ID = "morada_course_form2";
   // =========================================================================
@@ -220,7 +218,7 @@
     } else {
       totalEl.textContent = "GBP " + (seats * UNIT_INC_VAT).toFixed(2);
       totalNote.textContent = "Includes VAT at 20%.";
-      submitBtn.textContent = "Continue to payment";
+      submitBtn.textContent = "Book and send my invoice";
     }
   }
   seatsEl.addEventListener("change", updateTotal);
@@ -240,41 +238,17 @@
     UTM_KEYS.forEach(function (k) { var el = form.elements[k]; if (el) el.value = effective[k] || ""; });
   })();
 
-  // === GA4 helpers (spec 3.7), guarded ====================================
-  function ga(name, payload) { if (typeof window.gtag === "function") window.gtag("event", name, payload); }
-
-  // === Return-from-Stripe handling (purchase event + confirmation) ========
-  (function handleReturn() {
-    var params = new URLSearchParams(window.location.search);
-    var status = params.get("status");
-    if (status === "cancelled") {
-      form.hidden = true;
-      document.getElementById("dtc-cancelled").hidden = false;
-      return;
+  // === GA4 (spec 3.7), guarded, fire-once =================================
+  var leadFired = false;
+  function fireGenerateLead(value, campaign) {
+    if (leadFired) return;
+    leadFired = true;
+    if (typeof window.gtag === "function") {
+      window.gtag("event", "generate_lead", {
+        form_id: GA_FORM_ID, value: value, currency: "GBP", campaign: campaign || ""
+      });
     }
-    if (status === "success") {
-      var sessionId = params.get("session_id") || "";
-      form.hidden = true;
-      document.getElementById("dtc-confirmed").hidden = false;
-      // Fire purchase once, dedup on session_id (spec 3.7).
-      var FIRED_KEY = "dt_morada_purchase_fired";
-      var fired = [];
-      try { fired = JSON.parse(localStorage.getItem(FIRED_KEY) || "[]"); } catch (e) {}
-      if (sessionId && fired.indexOf(sessionId) === -1) {
-        var pending = {};
-        try { pending = JSON.parse(localStorage.getItem("dt_morada_pending_purchase") || "{}"); } catch (e) {}
-        ga("purchase", {
-          transaction_id: sessionId,
-          value: pending.value || 0,
-          currency: "GBP",
-          campaign: pending.campaign || "",
-          items: [{ item_name: "AI for Contractors course", quantity: pending.seats || 1, price: UNIT_INC_VAT }]
-        });
-        fired.push(sessionId);
-        try { localStorage.setItem(FIRED_KEY, JSON.stringify(fired)); } catch (e) {}
-      }
-    }
-  })();
+  }
 
   function showError(msg) { errorBox.textContent = msg; errorBox.hidden = false; }
 
@@ -331,22 +305,18 @@
           enq.scrollIntoView({ behavior: "smooth", block: "start" });
           return;
         }
-        if (r.data.route === "checkout" && r.data.checkout_url) {
-          // Stash for the purchase event on return, fire begin_checkout, redirect.
-          try {
-            localStorage.setItem("dt_morada_pending_purchase", JSON.stringify({
-              value: (r.data.total_inc_vat_pence || 0) / 100,
-              seats: r.data.seats || seats,
-              campaign: r.data.campaign || payload.utm_campaign
-            }));
-          } catch (e) {}
-          ga("begin_checkout", {
-            value: (r.data.total_inc_vat_pence || 0) / 100,
-            currency: "GBP",
-            campaign: r.data.campaign || payload.utm_campaign,
-            items: [{ item_name: "AI for Contractors course", quantity: r.data.seats || seats, price: UNIT_INC_VAT }]
-          });
-          window.location.href = r.data.checkout_url;
+        if (r.data.route === "invoice_sent") {
+          // Named client-side event for the paid course (WEB-007). The actual
+          // purchase is sent server-side by the poll when the invoice is Paid.
+          fireGenerateLead((r.data.total_inc_vat || 0), r.data.campaign || payload.utm_campaign);
+          form.hidden = true;
+          var panel = document.getElementById("dtc-invoiced");
+          if (r.data.invoice_emailed === false) {
+            document.getElementById("dtc-invoiced-msg").textContent =
+              "Thanks for booking. Your invoice will follow by email shortly with a secure Pay now button. As soon as your payment clears we will confirm your place.";
+          }
+          panel.hidden = false;
+          panel.scrollIntoView({ behavior: "smooth", block: "start" });
           return;
         }
         submitBtn.disabled = false; updateTotal();
