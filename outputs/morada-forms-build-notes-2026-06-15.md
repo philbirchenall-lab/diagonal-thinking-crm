@@ -148,8 +148,8 @@ Replaces spec criteria 12-20. Verify on staging/preview before opening to traffi
    the activity to `paid` (no reprocessing on the next run).
 7. GA4 server-side `purchase` is sent via Measurement Protocol when configured
    (else skipped, no error), at reconciliation time.
-8. Booking terms page resolves from the checkbox; refund terms shown. Discount
-   field present and inert (D15).
+8. Booking terms page resolves from the checkbox; refund terms shown. (Discount
+   code field removed per Phil 15 Jun 2026; D15 no longer applies.)
 9. Manual fallback: with FreeAgent OAuth absent, the booking is still recorded
    and the form says "your invoice will follow"; no crash.
 10. Honeypot, rate limit, disposable-email and gibberish-name guards active.
