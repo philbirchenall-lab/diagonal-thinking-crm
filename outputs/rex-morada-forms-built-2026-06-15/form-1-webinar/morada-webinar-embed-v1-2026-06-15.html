@@ -71,6 +71,8 @@
     <div class="dtf-gotcha" aria-hidden="true">
       <label for="dtf-gotcha">Leave this field empty</label>
       <input id="dtf-gotcha" name="_gotcha" type="text" tabindex="-1" autocomplete="off" />
+      <label for="dtf-website">Website</label>
+      <input id="dtf-website" name="website" type="text" tabindex="-1" autocomplete="off" />
     </div>
 
     <!-- UTM hidden fields, populated on load (first-touch, spec 1.5). -->
@@ -150,6 +152,9 @@
   var errorBox = document.getElementById("dtf-error");
   var submitBtn = document.getElementById("dtf-submit");
   var successPanel = document.getElementById("dtf-success");
+
+  // P0 anti-abuse: form-fill timing (server rejects implausibly fast submits).
+  var FORM_LOADED_AT = Date.now();
 
   // Privacy links.
   document.getElementById("dtf-privacy-1").href = PRIVACY_URL;
@@ -233,7 +238,9 @@
       how_heard: form.elements.how_heard.value,
       takeaway: form.elements.takeaway.value,
       marketing_consent: form.elements.marketing_consent.checked,
-      _gotcha: form.elements._gotcha.value
+      _gotcha: form.elements._gotcha.value,
+      website: form.elements.website.value,
+      elapsed_ms: Date.now() - FORM_LOADED_AT
     };
     UTM_KEYS.forEach(function (k) { payload[k] = form.elements[k].value; });
 

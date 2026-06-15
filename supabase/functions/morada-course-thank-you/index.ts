@@ -23,6 +23,7 @@ import {
   fulfillCoursePayment,
   getStripeCheckoutSession,
   json,
+  originRefererOk,
   serviceClient,
   stripeKey,
 } from "../_shared/forms.ts";
@@ -37,6 +38,12 @@ serve(async (req: Request) => {
     return new Response(null, { headers: cors, status: 204 });
   }
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405, cors);
+
+  // P0: server-side Origin + Referer allowlist (the thank-you page is on the DT
+  // site). Payment is still independently verified against Stripe below.
+  if (!originRefererOk(req)) {
+    return json({ error: "Forbidden" }, 403, cors);
+  }
 
   let body: Record<string, unknown>;
   try {

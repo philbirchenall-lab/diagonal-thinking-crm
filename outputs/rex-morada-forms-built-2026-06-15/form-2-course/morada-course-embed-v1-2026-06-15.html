@@ -111,6 +111,8 @@
     <div class="dtf-gotcha" aria-hidden="true">
       <label for="dtc-gotcha">Leave this field empty</label>
       <input id="dtc-gotcha" name="_gotcha" type="text" tabindex="-1" autocomplete="off" />
+      <label for="dtc-website">Website</label>
+      <input id="dtc-website" name="website" type="text" tabindex="-1" autocomplete="off" />
     </div>
 
     <input type="hidden" name="utm_source" />
@@ -186,6 +188,18 @@
   var errorBox = document.getElementById("dtc-error");
   var submitBtn = document.getElementById("dtc-submit");
 
+  // P0 anti-abuse signals: form-fill timing + one idempotency key per page load
+  // (a double-submit / retry returns the same Checkout session, not a new one).
+  var FORM_LOADED_AT = Date.now();
+  function uuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0, v = c === "x" ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+  var IDEM_KEY = uuid();
+
   document.getElementById("dtc-privacy-1").href = PRIVACY_URL;
   document.getElementById("dtc-privacy-2").href = PRIVACY_URL;
   document.getElementById("dtc-terms-link").href = BOOKING_TERMS_URL;
@@ -257,7 +271,10 @@
       how_heard: form.elements.how_heard.value,
       accept_terms: form.elements.accept_terms.checked,
       marketing_consent: form.elements.marketing_consent.checked,
-      _gotcha: form.elements._gotcha.value
+      _gotcha: form.elements._gotcha.value,
+      website: form.elements.website.value,
+      elapsed_ms: Date.now() - FORM_LOADED_AT,
+      idempotency_key: IDEM_KEY
     };
     UTM_KEYS.forEach(function (k) { payload[k] = form.elements[k].value; });
 

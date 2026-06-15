@@ -114,6 +114,61 @@ export function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+// === P0 hardening (Phil 19:02 BST): origin/referer, honeypot, timing, db RL ===
+
+// Server-side Origin + Referer allowlist. Browser CORS is bypassable by curl, so
+// we ALSO reject here. Missing Origin -> reject; Referer present but disagreeing
+// -> reject. (Absent Referer is allowed: a strict Referrer-Policy can omit it.)
+export function originRefererOk(req: Request): boolean {
+  const origin = req.headers.get("Origin");
+  if (!origin || !isOriginAllowed(origin)) return false;
+  const referer = req.headers.get("Referer");
+  if (referer) {
+    try {
+      if (!isOriginAllowed(new URL(referer).origin)) return false;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Honeypot: bots fill hidden fields. Either `website` or `_gotcha` filled = bot.
+export function isHoneypotTripped(body: Record<string, unknown>): boolean {
+  return !!(body.website && String(body.website).trim()) ||
+    !!(body._gotcha && String(body._gotcha).trim());
+}
+
+// Timing: real users take >2s to fill the form. `elapsed_ms` is sent by the embed
+// (now - page load). Implausibly fast (or absent) = bot.
+const MIN_FILL_MS = 2000;
+export function tooFast(body: Record<string, unknown>): boolean {
+  const elapsed = Number(body.elapsed_ms);
+  return !Number.isFinite(elapsed) || elapsed < MIN_FILL_MS;
+}
+
+// Persistent sliding-window rate limit (Postgres), survives cold start. Keyed on
+// the caller-supplied bucket (e.g. ip + email). Falls back to the in-memory limit
+// if the table is unavailable, so there is always SOME limit. 3 per 10 minutes.
+// deno-lint-ignore no-explicit-any
+export async function checkDbRateLimit(supabase: any, bucket: string): Promise<boolean> {
+  const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+  try {
+    const { count, error } = await supabase
+      .from("morada_rate_limit")
+      .select("id", { count: "exact", head: true })
+      .eq("bucket", bucket)
+      .gte("created_at", since);
+    if (error) throw error;
+    if ((count ?? 0) >= RATE_LIMIT_MAX) return false;
+    await supabase.from("morada_rate_limit").insert({ bucket });
+    return true;
+  } catch (e) {
+    console.error("[rate-limit] DB unavailable, falling back to in-memory:", e);
+    return checkRateLimit(bucket);
+  }
+}
+
 // === Layer 2: content validation (parity with live functions) ===============
 
 const DISPOSABLE_DOMAINS = new Set([
@@ -131,12 +186,25 @@ const DISPOSABLE_DOMAINS = new Set([
   "mytrashmail.com", "getonemail.com", "mt2015.com",
 ]);
 
-export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Stricter, practical RFC 5322 subset (local-part + dotted domain labels).
+export const EMAIL_REGEX =
+  /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$/;
 
 export function isDisposableEmail(email: string): boolean {
   const domain = email.split("@")[1]?.toLowerCase() ?? "";
   return DISPOSABLE_DOMAINS.has(domain);
 }
+
+// Field character classes (P0 hardening, Phil 19:02 BST). Unicode-letter aware
+// so legitimate international names (Jose, Muller) and B2B company names are not
+// dropped, while blocking the injection/spam vectors: URLs, HTML angle brackets,
+// quotes. NAME = letters/digits/space/apostrophe/hyphen. COMPANY additionally
+// allows the common business punctuation (. , & ( ) /). NB: this broadens Phil's
+// "same character class for company" so real names like "Smith & Co." are not
+// rejected - flagged in the closing report.
+const NAME_RE = /^[\p{L}\p{N} '\-]{2,80}$/u;
+const COMPANY_RE = /^[\p{L}\p{N} .,&()'/\-]{2,120}$/u;
+const URLISH = /(https?:\/\/|www\.|<|>|["])/i;
 
 export function isGibberishName(name: string): boolean {
   const words = name.trim().split(/[\s\-']+/).filter((w) => w.length > 0);
@@ -171,15 +239,25 @@ export interface CommonFields {
 }
 
 // Runs the shared spam + format gates. Returns an error string, or null if OK.
-// Callers handle the honeypot and rate limit separately (cheap, pre-parse).
+// Honeypot, timing and origin checks are handled separately (pre-validation).
 export function validateCommon(f: Partial<CommonFields>): string | null {
   if (!f.first_name || !f.last_name || !f.email || !f.company || !f.role) {
     return "First name, last name, email, business name and role are required.";
   }
-  if (!EMAIL_REGEX.test(f.email)) return "Please enter a valid email address.";
+  if (f.email.length > 254 || !EMAIL_REGEX.test(f.email)) return "Please enter a valid email address.";
   if (isDisposableEmail(f.email)) return "Please use a real email address.";
+  if (!NAME_RE.test(f.first_name) || !NAME_RE.test(f.last_name) ||
+      URLISH.test(f.first_name) || URLISH.test(f.last_name)) {
+    return "Please enter your real name.";
+  }
   if (isGibberishName(`${f.first_name} ${f.last_name}`)) {
     return "Please enter your real name.";
+  }
+  if (!COMPANY_RE.test(f.company) || URLISH.test(f.company)) {
+    return "Please enter a valid business name.";
+  }
+  if (f.role.length < 1 || f.role.length > 100 || URLISH.test(f.role)) {
+    return "Please enter a valid role.";
   }
   return null;
 }

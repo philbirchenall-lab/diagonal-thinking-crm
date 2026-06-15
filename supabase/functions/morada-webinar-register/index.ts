@@ -11,17 +11,20 @@ import {
   badRequest,
   buildCorsHeaders,
   buildIcs,
-  checkRateLimit,
+  checkDbRateLimit,
   escapeHtml,
   getClientIp,
   icsToBase64,
+  isHoneypotTripped,
   json,
   ok,
+  originRefererOk,
   parseUtm,
   routeFromUtm,
   sendResend,
   serviceClient,
   syncToMailchimp,
+  tooFast,
   upsertContactAndActivity,
   validateCommon,
 } from "../_shared/forms.ts";
@@ -41,12 +44,12 @@ serve(async (req: Request) => {
   }
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405, cors);
 
-  // Layer 3: rate limit before parsing the body.
-  const clientIp = getClientIp(req);
-  if (!checkRateLimit(clientIp)) {
-    console.log(`[spam] Rate limit exceeded for IP ${clientIp}`);
-    return json({ error: "Too many requests. Please try again later." }, 429, cors);
+  // P0: server-side Origin + Referer allowlist (not just CORS headers).
+  if (!originRefererOk(req)) {
+    console.log("[security] origin/referer rejected");
+    return json({ error: "Forbidden" }, 403, cors);
   }
+  const clientIp = getClientIp(req);
 
   try {
     let body: Record<string, unknown>;
@@ -56,9 +59,9 @@ serve(async (req: Request) => {
       return badRequest("Invalid JSON body", cors);
     }
 
-    // Layer 1: honeypot. Silent success so bots get no signal.
-    if (body._gotcha) {
-      console.log(`[spam] Honeypot triggered, silent block (IP: ${clientIp})`);
+    // P0: honeypot (website/_gotcha) + min fill-time -> silent drop.
+    if (isHoneypotTripped(body) || tooFast(body)) {
+      console.log(`[spam] honeypot/timing silent drop (IP: ${clientIp})`);
       return ok({}, cors);
     }
 
@@ -83,8 +86,13 @@ serve(async (req: Request) => {
     const utm = parseUtm(body);
     const route = routeFromUtm(utm);
 
-    // CRM write (email-keyed upsert + non-blocking activity). Spec 1.6 / 2.3.
     const supabase = serviceClient();
+    // P0: persistent rate limit (survives cold start), separate Form 1 bucket.
+    if (!(await checkDbRateLimit(supabase, `webinar:${clientIp}`))) {
+      return json({ error: "Too many requests. Please try again later." }, 429, cors);
+    }
+
+    // CRM write (email-keyed upsert + non-blocking activity). Spec 1.6 / 2.3.
     const { contactError } = await upsertContactAndActivity(supabase, {
       contactName: `${fields.first_name} ${fields.last_name}`,
       email: fields.email,
