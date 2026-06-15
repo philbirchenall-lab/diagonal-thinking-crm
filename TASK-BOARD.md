@@ -26,6 +26,7 @@
 | Ticket | Title | Owner | Due | Notes |
 |---|---|---|---|---|
 | CRM-DEDUP-V2 | Morada CRM dedup v2: wire full six-gate (LinkedIn URL + phone + name variants + company variants + combinations) per `feedback_crm_duplicate_check_mandatory` | Rex (CRM-write via Sol) | Within 7 days of Form 2 go-live | Phil decision 18:00 BST 2026-06-15 (B4 Option A). v1 ships with email-keyed UPSERT only (spec 1.6 fallback). Dot to pick up at next post-launch morning briefing. |
+| MORADA-CODED-PAGES | Migrate Morada booking forms from Squarespace embeds to branded coded pages (Next.js on Vercel, Client-Area pattern) on a subdomain. Backend (Edge Functions) unchanged. | Rex | Post-launch fast-follow | Phil decision ~19:10 BST 2026-06-15: ship v1 on embeds, migrate after launch. Gains: thank-you hosting, Vercel preview URLs, exact brand control, repo-versioned, easier E2E. |
 
 ---
 
