@@ -23,6 +23,7 @@ import {
   json,
   serviceClient,
   stripeKey,
+  timingSafeEqual,
 } from "../_shared/forms.ts";
 
 serve(async (req: Request) => {
@@ -31,11 +32,13 @@ serve(async (req: Request) => {
     return new Response(null, { headers: cors, status: 204 });
   }
 
-  // Shared-secret guard so only the scheduler can run the poll.
+  // Shared-secret guard so only the scheduler can run the poll. Fail CLOSED:
+  // if no secret is configured, reject (never run the poll unauthenticated).
   const expected = Deno.env.get("MORADA_POLL_SECRET");
-  if (expected) {
-    const auth = req.headers.get("authorization") ?? "";
-    if (auth !== `Bearer ${expected}`) return json({ error: "Unauthorized" }, 401, cors);
+  const auth = req.headers.get("authorization") ?? "";
+  const provided = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (!expected || !timingSafeEqual(provided, expected)) {
+    return json({ error: "Unauthorized" }, 401, cors);
   }
 
   const sk = stripeKey();
@@ -45,11 +48,15 @@ serve(async (req: Request) => {
   }
 
   const supabase = serviceClient();
+  // Only recent pending checkouts: Stripe sessions expire ~24h, so after 48h an
+  // unpaid row is abandoned - stop polling it (bounds work + Stripe calls).
+  const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
   const { data: pending, error } = await supabase
     .from("contact_activities")
     .select("id, body")
     .eq("activity_type", "course_checkout_started")
-    .eq("status", "pending");
+    .eq("status", "pending")
+    .gte("created_at", since);
   if (error) {
     console.error("[poll] failed to load pending checkouts:", error);
     return json({ error: "query failed" }, 500, cors);

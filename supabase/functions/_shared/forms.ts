@@ -89,11 +89,10 @@ const RATE_LIMIT_MAX = 3;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 
 export function getClientIp(req: Request): string {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
-    "unknown"
-  );
+  const raw = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ?? "unknown";
+  // Strip to IP-valid chars so an attacker-controlled XFF cannot forge log lines.
+  return raw.replace(/[^0-9a-fA-F:.]/g, "").slice(0, 45) || "unknown";
 }
 
 export function checkRateLimit(ip: string): boolean {
@@ -131,6 +130,16 @@ export function originRefererOk(req: Request): boolean {
     }
   }
   return true;
+}
+
+// Constant-time string compare for secrets (avoids timing oracles).
+export function timingSafeEqual(a: string, b: string): boolean {
+  const ae = new TextEncoder().encode(a);
+  const be = new TextEncoder().encode(b);
+  if (ae.length !== be.length) return false;
+  let diff = 0;
+  for (let i = 0; i < ae.length; i++) diff |= ae[i] ^ be[i];
+  return diff === 0;
 }
 
 // Honeypot: bots fill hidden fields. Either `website` or `_gotcha` filled = bot.
@@ -833,15 +842,6 @@ export async function fulfillCoursePayment(supabase: any, p: {
   const company = meta.company ?? "";
   const seatWord = seats === 1 ? "seat" : "seats";
 
-  // Idempotency: if this session is already fulfilled, do nothing.
-  const { data: existing } = await supabase
-    .from("contact_activities")
-    .select("id, contact_id, status")
-    .like("body", `%${sessionId}%`)
-    .limit(1)
-    .maybeSingle();
-  if (existing && existing.status === "paid") return { already: true };
-
   const TEST = testMode();
 
   // 1. Upsert the CRM contact as Client (email-keyed, idempotent). ALWAYS runs
@@ -857,7 +857,50 @@ export async function fulfillCoursePayment(supabase: any, p: {
     }, { onConflict: "email", ignoreDuplicates: false })
     .select("id")
     .maybeSingle();
+
+  // Atomic idempotent claim on the session (UNIQUE stripe_session_id index).
+  // If already paid or being fulfilled, stop. Otherwise CLAIM it - flip the
+  // booking row pending->fulfilling via a CONDITIONAL update, or insert a
+  // fulfilling row - so the FreeAgent invoice + confirmation email fire EXACTLY
+  // ONCE even under concurrent thank-you / poll calls for the same session.
+  const { data: existing } = await supabase
+    .from("contact_activities")
+    .select("id, contact_id, status")
+    .eq("stripe_session_id", sessionId)
+    .maybeSingle();
+  if (existing && (existing.status === "paid" || existing.status === "fulfilling")) {
+    return { already: true };
+  }
   const contactId = existing?.contact_id ?? contactRow?.id ?? null;
+  let claimedId: string | null = null;
+  if (existing?.id) {
+    const { data: claim } = await supabase
+      .from("contact_activities")
+      .update({ status: "fulfilling" })
+      .eq("id", existing.id)
+      .eq("status", "pending")
+      .select("id")
+      .maybeSingle();
+    if (!claim) return { already: true }; // another caller claimed it first
+    claimedId = existing.id;
+  } else {
+    // No booking row (e.g. the book-time activity write failed): claim by
+    // inserting a unique-session row; a concurrent insert hits the UNIQUE index.
+    const { data: ins, error: insErr } = await supabase
+      .from("contact_activities")
+      .insert({
+        contact_id: contactId,
+        activity_type: "course_booking_paid",
+        subject: `Paid: AI for Contractors course, ${seats} ${seatWord}`,
+        stripe_session_id: sessionId,
+        status: "fulfilling",
+        body: "{}",
+      })
+      .select("id")
+      .maybeSingle();
+    if (insErr || !ins) return { already: true }; // UNIQUE violation = lost the race
+    claimedId = ins.id;
+  }
 
   // 2. Record the FreeAgent invoice for VAT/books (best-effort, non-fatal).
   //    Skipped in test mode so probes never hit Phil's live books.
@@ -888,7 +931,9 @@ export async function fulfillCoursePayment(supabase: any, p: {
       invoiceUrl = rec.url;
       invoiceRef = rec.reference;
     } catch (e) {
-      console.error("[fulfil] FreeAgent invoice error (non-fatal):", e);
+      // Money taken but invoice failed: loud marker for manual reconciliation
+      // (the manual-invoice fallback). Durable auto-retry is a tracked follow-up.
+      console.error(`[fulfil][RECONCILE] FreeAgent invoice FAILED for paid session ${sessionId} (intent ${paymentIntent}, ${email}) - raise it by hand:`, e);
     }
   } else {
     console.log(`[fulfil] FreeAgent not provisioned; invoice deferred for ${email} (intent ${paymentIntent}).`);
@@ -924,7 +969,7 @@ export async function fulfillCoursePayment(supabase: any, p: {
     }, resendKey).catch((e) => console.error("[fulfil] resend error:", e));
   }
 
-  // 5. Write the paid activity (idempotent on session id).
+  // 5. Finalize the claimed row -> paid (only the claimer reaches here).
   const paidBody = JSON.stringify({
     ...meta,
     stripe_session_id: sessionId,
@@ -933,20 +978,10 @@ export async function fulfillCoursePayment(supabase: any, p: {
     freeagent_reference: invoiceRef,
     confirmation_sent: true,
   });
-  if (existing?.id) {
-    await supabase.from("contact_activities")
-      .update({ status: "paid", activity_type: "course_booking_paid", body: paidBody })
-      .eq("id", existing.id)
-      .then(() => {}).catch((e: unknown) => console.error("[fulfil] activity update error:", e));
-  } else if (contactId) {
-    await supabase.from("contact_activities").insert({
-      contact_id: contactId,
-      activity_type: "course_booking_paid",
-      subject: `Paid: AI for Contractors course, ${seats} seat(s)`,
-      body: paidBody,
-      status: "paid",
-    }).then(() => {}).catch((e: unknown) => console.error("[fulfil] activity insert error:", e));
-  }
+  await supabase.from("contact_activities")
+    .update({ status: "paid", activity_type: "course_booking_paid", body: paidBody, stripe_session_id: sessionId })
+    .eq("id", claimedId)
+    .then(() => {}).catch((e: unknown) => console.error("[fulfil] activity finalize error:", e));
 
   return { already: false };
 }

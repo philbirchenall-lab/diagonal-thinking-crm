@@ -11,7 +11,7 @@
   Typography inherits the DT site theme; DT brand colours only.
 -->
 <div id="morada-thankyou" class="dtf">
-  <div id="ty-loading" class="dtf-card">
+  <div id="ty-loading" class="dtf-card" role="status" aria-live="polite">
     <h2 class="dtf-h">Confirming your payment...</h2>
     <p class="dtf-sub">One moment while we confirm your booking.</p>
   </div>
@@ -61,6 +61,8 @@
   function show(el) {
     loading.hidden = true; confirmed.hidden = true; processing.hidden = true;
     el.hidden = false;
+    var h = el.querySelector(".dtf-h");
+    if (h) { h.setAttribute("tabindex", "-1"); try { h.focus(); } catch (e) {} }
   }
   function ga(name, payload) { if (typeof window.gtag === "function") window.gtag("event", name, payload); }
 

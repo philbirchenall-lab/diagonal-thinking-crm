@@ -187,6 +187,29 @@ serve(async (req: Request) => {
       utm_term: utm.utm_term ?? "",
     };
 
+    // CRM: upsert the contact (Warm Lead) BEFORE creating the session, and BAIL
+    // if it fails - so we never create a Checkout session we cannot record for
+    // idempotency. (Fix: previously a failed upsert left a session with no
+    // idempotency row, so a replay minted a second session.)
+    const { data: contactRow, error: contactError } = await supabase
+      .from("contacts")
+      .upsert(
+        {
+          contact_name: `${fields.first_name} ${fields.last_name}`,
+          email: fields.email,
+          company: fields.company,
+          type: "Warm Lead",
+          source: route.source,
+        },
+        { onConflict: "email", ignoreDuplicates: false },
+      )
+      .select("id")
+      .maybeSingle();
+    if (contactError || !contactRow?.id) {
+      console.error("Supabase contact upsert error (bailing before checkout):", contactError);
+      return json({ error: "Could not start your booking. Please try again." }, 500, cors);
+    }
+
     let session;
     try {
       session = await createStripeCheckoutSession({
@@ -205,34 +228,16 @@ serve(async (req: Request) => {
       return json({ error: "Could not start checkout. Please try again." }, 502, cors);
     }
 
-    // CRM: upsert contact (Warm Lead) + PENDING activity, keyed on the
-    // idempotency key (unique index) and carrying the session + checkout URL so a
-    // replay returns the same booking and the thank-you/poll can fulfil it.
-    const { data: contactRow, error: contactError } = await supabase
-      .from("contacts")
-      .upsert(
-        {
-          contact_name: `${fields.first_name} ${fields.last_name}`,
-          email: fields.email,
-          company: fields.company,
-          type: "Warm Lead",
-          source: route.source,
-        },
-        { onConflict: "email", ignoreDuplicates: false },
-      )
-      .select("id")
-      .maybeSingle();
-    if (contactError) {
-      console.error("Supabase contact upsert error:", contactError);
-      // Stripe session exists; thank-you can still fulfil from session metadata.
-    }
-
-    if (contactRow?.id) {
+    // PENDING activity = the idempotency record (UNIQUE idempotency_key + UNIQUE
+    // stripe_session_id), carrying the session + checkout URL so a replay returns
+    // the same booking and the thank-you/poll can fulfil it. Contact is guaranteed.
+    {
       const { error: actError } = await supabase.from("contact_activities").insert({
         contact_id: contactRow.id,
         activity_type: "course_checkout_started",
         subject: `Course checkout started: ${seats} ${seatWord}`,
         idempotency_key: idem,
+        stripe_session_id: session.id,
         body: JSON.stringify({
           ...meta,
           stripe_session_id: session.id,
@@ -241,8 +246,8 @@ serve(async (req: Request) => {
         }),
         status: "pending",
       });
-      // Unique-index race: another concurrent submit with the same key won.
-      if (actError) console.error("contact_activities insert error (likely idempotency race):", actError);
+      // Unique-index conflict = a concurrent submit with the same key/session won.
+      if (actError) console.error("contact_activities insert error (idempotency race or transient):", actError);
     }
 
     // Mailchimp at booking: Warm Lead + booked tag (paid tag added on payment).
