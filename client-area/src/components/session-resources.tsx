@@ -23,6 +23,34 @@ function resourceKindLabel(resource: SessionResource) {
   return "Link";
 }
 
+function fileExtensionLabel(name?: string | null) {
+  const clean = String(name ?? "");
+  const dot = clean.lastIndexOf(".");
+  return dot >= 0 ? clean.slice(dot + 1).toUpperCase() : "";
+}
+
+function formatBytes(bytes?: number | null) {
+  if (bytes === null || bytes === undefined || !Number.isFinite(Number(bytes))) {
+    return "";
+  }
+  const units = ["B", "KB", "MB", "GB"];
+  let value = Number(bytes);
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  const rounded = value >= 10 || unit === 0 ? Math.round(value) : Math.round(value * 10) / 10;
+  return `${rounded} ${units[unit]}`;
+}
+
+function fileMetaLabel(resource: SessionResource) {
+  const parts = [fileExtensionLabel(resource.fileName), formatBytes(resource.sizeBytes)].filter(
+    Boolean,
+  );
+  return parts.length ? parts.join(" · ") : "Secure download";
+}
+
 export function SessionResources({ sessionSlug, resources }: SessionResourcesProps) {
   const [activeResourceId, setActiveResourceId] = useState<string | null>(null);
 
@@ -78,23 +106,33 @@ export function SessionResources({ sessionSlug, resources }: SessionResourcesPro
             </div>
           ) : null}
 
-          <div className="dt-resource-card__footer">
-            <button
-              type="button"
-              onClick={() => void openResource(resource)}
-              disabled={activeResourceId === resource.id}
-              className="dt-btn-primary"
-            >
-              {activeResourceId === resource.id ? "Opening..." : "View resource"}
-            </button>
-            {activeResourceId === resource.id ? (
-              <span className="dt-resource-card__status">Opening in a new tab...</span>
-            ) : (
-              <span className="dt-resource-card__status">
-                {isFile(resource) ? "File download or document link" : "Opens in a new tab"}
-              </span>
-            )}
-          </div>
+          {isFile(resource) ? (
+            <div className="dt-resource-card__footer">
+              {/* The href is the auth-checked download endpoint, which logs the
+                  download and redirects to a 5-minute signed URL. A same-tab
+                  link gives the cleanest download on desktop and iOS Safari. */}
+              <a href={resource.url} className="dt-btn-primary" rel="noopener">
+                Download
+              </a>
+              <span className="dt-resource-card__status">{fileMetaLabel(resource)}</span>
+            </div>
+          ) : (
+            <div className="dt-resource-card__footer">
+              <button
+                type="button"
+                onClick={() => void openResource(resource)}
+                disabled={activeResourceId === resource.id}
+                className="dt-btn-primary"
+              >
+                {activeResourceId === resource.id ? "Opening..." : "View resource"}
+              </button>
+              {activeResourceId === resource.id ? (
+                <span className="dt-resource-card__status">Opening in a new tab...</span>
+              ) : (
+                <span className="dt-resource-card__status">Opens in a new tab</span>
+              )}
+            </div>
+          )}
         </article>
       ))}
     </div>

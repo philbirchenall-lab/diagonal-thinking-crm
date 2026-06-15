@@ -109,7 +109,7 @@ export function isSupabaseMode() {
  * Build the Authorization header for a CRM API call using the current
  * Supabase user's access token. Required by every gated /api/* route since
  * SEC-API-001 (30 Apr 2026 risk register). Returns an empty object if no
- * session — the API will respond 401, which the SPA surfaces as "session
+ * session - the API will respond 401, which the SPA surfaces as "session
  * expired, please sign in again".
  */
 async function getAuthHeader() {
@@ -147,9 +147,11 @@ function normaliseSessionRecord(session, index = 0) {
     status: session.status || "active",
     sessionType: session.sessionType || "in_house",
     resources,
+    files: Array.isArray(session.files) ? session.files : [],
     registrations: Array.isArray(session.registrations) ? session.registrations : [],
     engagementLog: Array.isArray(session.engagementLog) ? session.engagementLog : [],
     resourceCount: resources.length,
+    fileCount: Array.isArray(session.files) ? session.files.length : 0,
   };
 }
 
@@ -555,6 +557,89 @@ export async function saveClientSession(session) {
   });
   const data = await readJson(response, "Failed to save client session.");
   return data.session;
+}
+
+// ─── Client Area session files ───────────────────────────────────────────────
+
+export async function listSessionFiles(sessionId) {
+  if (!USE_SUPABASE) return [];
+  const response = await fetch(
+    `/api/client/files?sessionId=${encodeURIComponent(sessionId)}`,
+    { headers: { ...(await getAuthHeader()) } },
+  );
+  const data = await readJson(response, "Failed to load session files.");
+  return data.files ?? [];
+}
+
+/**
+ * Upload a file for a session in three steps so the bytes go straight to
+ * Supabase Storage and never through the 4.5MB-capped serverless body:
+ *   1. ask the API for a signed upload URL (minted with the service role),
+ *   2. upload the bytes directly to Supabase with the returned token,
+ *   3. commit the metadata row.
+ */
+export async function uploadSessionFile(sessionId, file, title) {
+  if (!USE_SUPABASE || !supabase) {
+    throw new Error("File uploads require the hosted Supabase environment.");
+  }
+
+  const authHeader = await getAuthHeader();
+
+  const signResponse = await fetch("/api/client/files", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeader },
+    body: JSON.stringify({
+      action: "sign-upload",
+      sessionId,
+      fileName: file.name,
+      sizeBytes: file.size,
+    }),
+  });
+  const target = await readJson(signResponse, "Could not start the upload.");
+
+  const { error: uploadError } = await supabase.storage
+    .from("session-files")
+    .uploadToSignedUrl(target.storagePath, target.token, file, {
+      contentType: target.contentType,
+    });
+  if (uploadError) {
+    throw new Error(uploadError.message || "Upload failed.");
+  }
+
+  const commitResponse = await fetch("/api/client/files", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeader },
+    body: JSON.stringify({
+      action: "commit",
+      sessionId,
+      storagePath: target.storagePath,
+      fileName: file.name,
+      title: title || file.name,
+      contentType: target.contentType,
+      sizeBytes: file.size,
+    }),
+  });
+  const data = await readJson(commitResponse, "Could not save the file.");
+  return data.file;
+}
+
+export async function deleteSessionFile(fileId) {
+  if (!USE_SUPABASE) return { id: fileId };
+  const response = await fetch(
+    `/api/client/files?id=${encodeURIComponent(fileId)}`,
+    { method: "DELETE", headers: { ...(await getAuthHeader()) } },
+  );
+  return readJson(response, "Could not remove the file.");
+}
+
+export async function getSessionFileViewUrl(fileId) {
+  const response = await fetch("/api/client/files", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await getAuthHeader()) },
+    body: JSON.stringify({ action: "view", id: fileId }),
+  });
+  const data = await readJson(response, "Could not open the file.");
+  return data.url;
 }
 
 // ─── Opportunities ────────────────────────────────────────────────────────────

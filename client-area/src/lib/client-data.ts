@@ -13,6 +13,10 @@ export type SessionResource = {
   url: string;
   description?: string | null;
   sortOrder: number;
+  // Set only for hosted file resources (type === "file").
+  fileName?: string | null;
+  contentType?: string | null;
+  sizeBytes?: number | null;
 };
 
 export type ClientSession = {
@@ -72,6 +76,24 @@ function normalizeResource(row: Record<string, unknown>): SessionResource {
     url: pickString(row, "url") ?? "#",
     description: typeof row.description === "string" ? row.description : null,
     sortOrder: Number(row.sort_order ?? row.sortOrder ?? 0),
+  };
+}
+
+// A hosted file (session_files) presented as a "file" resource. The url is
+// the auth-checked download endpoint, never a public storage URL.
+function normalizeFileResource(row: Record<string, unknown>): SessionResource {
+  const id = String(row.id);
+  const rawSize = row.size_bytes;
+  return {
+    id,
+    label: pickString(row, "title") ?? pickString(row, "file_name") ?? "File",
+    type: "file",
+    url: `/api/client/files/${id}`,
+    description: null,
+    sortOrder: Number(row.sort_order ?? 0),
+    fileName: pickString(row, "file_name"),
+    contentType: pickString(row, "content_type"),
+    sizeBytes: rawSize === null || rawSize === undefined ? null : Number(rawSize),
   };
 }
 
@@ -167,7 +189,19 @@ export async function getClientSessionBySlug(slug: string) {
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
-  const resources = (resourceRows ?? []).map((row) => normalizeResource(row as Record<string, unknown>));
+  const { data: fileRows } = await supabase
+    .from("session_files")
+    .select("*")
+    .eq("session_id", session.id)
+    .is("deleted_at", null)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  // URL resources first, then hosted files, so attendees see them together.
+  const resources = [
+    ...(resourceRows ?? []).map((row) => normalizeResource(row as Record<string, unknown>)),
+    ...(fileRows ?? []).map((row) => normalizeFileResource(row as Record<string, unknown>)),
+  ];
   const organisationName = await resolveOrganisationName(
     typeof session.organisation_id === "string" ? session.organisation_id : null,
   );
