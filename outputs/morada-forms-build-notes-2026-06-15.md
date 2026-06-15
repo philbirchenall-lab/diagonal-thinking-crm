@@ -110,14 +110,30 @@ Needed before Form 2 launch:
 | `GA4_MEASUREMENT_ID` + `GA4_API_SECRET` | poll | Optional; server-side `purchase` fallback for the poll path only (the thank-you page fires `purchase` client-side). |
 | `MORADA_WEBINAR_JOIN_URL` | Form 1 | Optional; webinar confirmation says "join link to follow" (Phil's choice). |
 
-## Security / hardening
-- **CORS (B1, SEC-SUP-002):** origin allowlist (www + apex diagonalthinking.co),
-  never `*`. Disallowed origins get the canonical host so the browser blocks them.
-  Verified live on all functions.
-- **Spam layers:** honeypot, IP rate limit (3 / 10 min), disposable-email +
-  gibberish-name guards (Form 1 + book).
-- **Payment trust:** the thank-you return URL is verified server-side against the
-  Stripe API before any fulfilment; a forged session id gets nothing.
+## Security / hardening (P0 sign-off gate, Phil 19:02 BST)
+
+The invariant: **a malicious actor cannot trigger an invoice.** Invoices are only
+created in `fulfillCoursePayment`, called only by thank-you/poll AFTER the Stripe
+session is verified `paid` against Stripe's API. `book` never touches FreeAgent.
+
+| # | Control | Where | Live probe result |
+| --- | --- | --- | --- |
+| 1 | Server-side Origin + Referer allowlist (not just CORS); missing Origin or disagreeing Referer rejected | book, webinar, thank-you | evil origin / no origin / referer-mismatch all -> 403 |
+| 2 | Persistent Postgres rate limit, 3/10min, survives cold start, in-memory fallback | all form fns (`morada_rate_limit`) | 4th rapid submit -> 429 |
+| 3 | Honeypot (`website` + `_gotcha`) + min 2s fill-time -> SILENT drop | book, webinar | filled honeypot / 300ms -> 200 no-op, no session |
+| 4 | Strict validation: RFC-5322 email + disposable denylist; Unicode-letter name/company classes blocking URLs/HTML/quotes; seats 1-5 server-side | shared `validateCommon`, book | disposable -> 400; name URL -> 400; seats:999 -> enquiry (no payment) |
+| 5 | Idempotency: client UUID per submit, unique index on `contact_activities`; replay returns same session | book (`idempotency_key`) | same key replay -> identical `cs_...` session |
+| 6 | No Stripe webhook (pull model): thank-you/poll query the Stripe API to confirm `paid`, so a forged request cannot fake a paid state. **Stripe-Signature verification is N/A - there is no inbound webhook.** | thank-you, poll | forged session id -> `processing`, fulfils nothing |
+| 7 | Form 1 / Form 2 isolation: separate functions, schemas, rate-limit buckets (`webinar:` vs `book:`); Form 1 never reads `seats` | both | n/a (structural) |
+| 8 | FreeAgent invoice only after verified Stripe payment; no raw-form path to it | shared/forms.ts | full probe storm created ZERO FreeAgent invoices |
+
+NB for reviewers: item 6's "webhook signature failure modes" do not apply - this
+build uses **pull verification**, not push webhooks. The equivalent control is
+the live Stripe API check in thank-you/poll (probe: forged session -> processing).
+
+NB item 4: the company character class is broader than name (allows `. , & ( ) /`)
+so real B2B names like "Smith & Co." are not rejected, while still blocking
+URLs/HTML/quotes. Flagged as a deliberate deviation from "same class".
 
 ## Form 2 acceptance criteria (B3 / direct Stripe Checkout)
 
