@@ -11,10 +11,13 @@
 //      invoice with a "Pay now" button.
 //   3. Writes the CRM contact (Warm Lead) + a PENDING course_invoice_created
 //      activity carrying the FreeAgent invoice URL. The morada-course-poll-paid
-//      function polls that invoice and, when Paid, upgrades the contact to Client
-//      and fires the "payment received" email.
+//      function later reconciles that invoice and, when Paid, upgrades the
+//      contact to Client (internal bookkeeping only).
 //
-// No Stripe code, no Stripe keys. FreeAgent has no webhooks, hence the poll.
+// Customer confirmation is set in this invoice email (place confirmed on
+// payment; Phil in touch with joining details) plus Stripe's own receipt. There
+// is NO DT payment-confirmation email - FreeAgent exposes no timely payment
+// signal (verified 15 Jun 2026). No Stripe code, no Stripe keys, no webhooks.
 //
 // If FreeAgent OAuth is not yet provisioned, this still records the booking and
 // returns success with a "your invoice will follow" message (manual fallback:
