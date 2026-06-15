@@ -19,12 +19,41 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// === CORS (parity with live functions) ======================================
+// === CORS (origin allowlist, SEC-SUP-002 hardening) =========================
+//
+// B1 fix (2026-06-15): the previous "*" wildcard let any attacker page POST
+// cross-origin and spam FreeAgent invoices from Phil's account. We now reflect
+// only an allowlisted Origin and NEVER return "*". The DT Squarespace site is
+// canonically https://www.diagonalthinking.co (apex 301-redirects to www); the
+// apex is allowlisted too as belt-and-braces. A disallowed origin receives the
+// canonical host in ACAO, so the browser's CORS check fails and blocks it.
 
-export const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+const ALLOWED_ORIGINS = new Set([
+  "https://www.diagonalthinking.co",
+  "https://diagonalthinking.co",
+]);
+const DEFAULT_ORIGIN = "https://www.diagonalthinking.co";
+
+export function isOriginAllowed(origin: string | null): boolean {
+  return !!origin && ALLOWED_ORIGINS.has(origin);
+}
+
+export function buildCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("Origin");
+  return {
+    "Access-Control-Allow-Origin": isOriginAllowed(origin) ? (origin as string) : DEFAULT_ORIGIN,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+}
+
+// Safe non-wildcard fallback so no response path can ever regress to "*".
+const LOCKED_CORS: Record<string, string> = {
+  "Access-Control-Allow-Origin": DEFAULT_ORIGIN,
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Vary": "Origin",
 };
 
 // === Mailchimp constants (from the live functions) ==========================
@@ -34,19 +63,19 @@ export const MAILCHIMP_SERVER = "us8";
 
 // === JSON response helpers ==================================================
 
-export function json(body: unknown, status = 200): Response {
+export function json(body: unknown, status = 200, cors: Record<string, string> = LOCKED_CORS): Response {
   return new Response(JSON.stringify(body), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...cors, "Content-Type": "application/json" },
     status,
   });
 }
 
-export function ok(extra: Record<string, unknown> = {}): Response {
-  return json({ success: true, ...extra }, 200);
+export function ok(extra: Record<string, unknown> = {}, cors: Record<string, string> = LOCKED_CORS): Response {
+  return json({ success: true, ...extra }, 200, cors);
 }
 
-export function badRequest(error: string): Response {
-  return json({ error }, 400);
+export function badRequest(error: string, cors: Record<string, string> = LOCKED_CORS): Response {
+  return json({ error }, 400, cors);
 }
 
 // === Layer 3: IP rate limiting (3 per 10 minutes), in-memory ================

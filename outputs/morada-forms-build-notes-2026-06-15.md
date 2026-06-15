@@ -16,8 +16,8 @@ acceptance criteria, and the Phil-actions still outstanding before launch.
 | `supabase/functions/morada-webinar-register/index.ts` | Form 1 edge function (free webinar). |
 | `supabase/functions/morada-course-book/index.ts` | Form 2 edge function: creates the FreeAgent invoice, emails the Pay-now button. |
 | `supabase/functions/morada-course-poll-paid/index.ts` | Form 2 scheduled poll: detects paid invoices, fires the confirmation. |
-| `outputs/morada-webinar-embed-v1-2026-06-15.html` | Form 1 Squarespace Code Block embed. |
-| `outputs/morada-course-embed-v1-2026-06-15.html` | Form 2 Squarespace Code Block embed. |
+| `outputs/rex-morada-forms-built-2026-06-15/form-1-webinar/morada-webinar-embed-v1-2026-06-15.html` | Form 1 Squarespace Code Block embed. |
+| `outputs/rex-morada-forms-built-2026-06-15/form-2-course/morada-course-embed-v1-2026-06-15.html` | Form 2 Squarespace Code Block embed. |
 
 (The earlier `morada-course-stripe-webhook` function was removed in the pivot.)
 

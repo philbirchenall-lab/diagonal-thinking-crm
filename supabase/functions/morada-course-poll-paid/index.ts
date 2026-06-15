@@ -19,7 +19,7 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import {
-  corsHeaders,
+  buildCorsHeaders,
   freeAgentAccessToken,
   freeAgentConfig,
   ga4Purchase,
@@ -30,21 +30,22 @@ import {
 } from "../_shared/forms.ts";
 
 serve(async (req: Request) => {
+  const cors = buildCorsHeaders(req);
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders, status: 204 });
+    return new Response(null, { headers: cors, status: 204 });
   }
 
   // Shared-secret guard so only the scheduler can run the poll.
   const expected = Deno.env.get("MORADA_POLL_SECRET");
   if (expected) {
     const auth = req.headers.get("authorization") ?? "";
-    if (auth !== `Bearer ${expected}`) return json({ error: "Unauthorized" }, 401);
+    if (auth !== `Bearer ${expected}`) return json({ error: "Unauthorized" }, 401, cors);
   }
 
   const faCfg = freeAgentConfig();
   if (!faCfg) {
     console.log("[poll] FreeAgent OAuth not provisioned; nothing to poll.");
-    return json({ ok: true, checked: 0, paid: 0, note: "FreeAgent not configured" }, 200);
+    return json({ ok: true, checked: 0, paid: 0, note: "FreeAgent not configured" }, 200, cors);
   }
 
   const supabase = serviceClient();
@@ -55,7 +56,7 @@ serve(async (req: Request) => {
     .eq("status", "pending");
   if (error) {
     console.error("[poll] failed to load pending activities:", error);
-    return json({ error: "query failed" }, 500);
+    return json({ error: "query failed" }, 500, cors);
   }
 
   let token: string;
@@ -63,7 +64,7 @@ serve(async (req: Request) => {
     token = await freeAgentAccessToken(faCfg);
   } catch (e) {
     console.error("[poll] FreeAgent token error:", e);
-    return json({ error: "freeagent auth failed" }, 502);
+    return json({ error: "freeagent auth failed" }, 502, cors);
   }
 
   const mailchimpKey = Deno.env.get("MAILCHIMP_API_KEY");
@@ -142,5 +143,5 @@ serve(async (req: Request) => {
   }
 
   console.log(`[poll] checked ${checked}, reconciled-to-paid ${paidCount}`);
-  return json({ ok: true, checked, paid: paidCount }, 200);
+  return json({ ok: true, checked, paid: paidCount }, 200, cors);
 });

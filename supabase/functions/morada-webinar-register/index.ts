@@ -3,15 +3,15 @@
 //   Spec: outputs/tes-spec-morada-forms-1-and-2-2026-06-15.md section 2.
 //
 // Posted to from the Squarespace page /morada-ai-webinar (Code Block embed at
-// outputs/morada-webinar-embed-v1-2026-06-15.html). Returns JSON; the embed
-// renders the success panel and fires GA4 client-side (spec 1.4 / 2.4).
+// outputs/rex-morada-forms-built-2026-06-15/form-1-webinar/). Returns JSON; the
+// embed renders the success panel and fires GA4 client-side (spec 1.4 / 2.4).
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import {
   badRequest,
+  buildCorsHeaders,
   buildIcs,
   checkRateLimit,
-  corsHeaders,
   escapeHtml,
   getClientIp,
   icsToBase64,
@@ -35,16 +35,17 @@ const EVENT_LABEL = "Diagonal Thinking: AI for Contractors (free webinar)";
 const ZOOM_WEBINAR_JOIN = Deno.env.get("MORADA_WEBINAR_JOIN_URL") ?? "";
 
 serve(async (req: Request) => {
+  const cors = buildCorsHeaders(req);
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders, status: 204 });
+    return new Response(null, { headers: cors, status: 204 });
   }
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405, cors);
 
   // Layer 3: rate limit before parsing the body.
   const clientIp = getClientIp(req);
   if (!checkRateLimit(clientIp)) {
     console.log(`[spam] Rate limit exceeded for IP ${clientIp}`);
-    return json({ error: "Too many requests. Please try again later." }, 429);
+    return json({ error: "Too many requests. Please try again later." }, 429, cors);
   }
 
   try {
@@ -52,13 +53,13 @@ serve(async (req: Request) => {
     try {
       body = await req.json();
     } catch {
-      return badRequest("Invalid JSON body");
+      return badRequest("Invalid JSON body", cors);
     }
 
     // Layer 1: honeypot. Silent success so bots get no signal.
     if (body._gotcha) {
       console.log(`[spam] Honeypot triggered, silent block (IP: ${clientIp})`);
-      return ok();
+      return ok({}, cors);
     }
 
     const fields = {
@@ -76,7 +77,7 @@ serve(async (req: Request) => {
     const validationError = validateCommon(fields);
     if (validationError) {
       console.log(`[validation] ${validationError} (IP: ${clientIp})`);
-      return badRequest(validationError);
+      return badRequest(validationError, cors);
     }
 
     const utm = parseUtm(body);
@@ -102,7 +103,7 @@ serve(async (req: Request) => {
       },
     });
     if (contactError) {
-      return json({ error: "Failed to save your registration. Please try again." }, 500);
+      return json({ error: "Failed to save your registration. Please try again." }, 500, cors);
     }
 
     // Mailchimp: event tags always; marketing tag only on consent (spec 1.3 / 2.2).
@@ -169,9 +170,9 @@ serve(async (req: Request) => {
       join_url: ZOOM_WEBINAR_JOIN || null,
       ics_base64: icsToBase64(ics),
       campaign: utm.utm_campaign,
-    });
+    }, cors);
   } catch (err) {
     console.error("Unexpected error:", err);
-    return json({ error: "An unexpected error occurred." }, 500);
+    return json({ error: "An unexpected error occurred." }, 500, cors);
   }
 });

@@ -29,8 +29,8 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import {
   badRequest,
+  buildCorsHeaders,
   checkRateLimit,
-  corsHeaders,
   createAndSendFreeAgentInvoice,
   findOrCreateFreeAgentContact,
   freeAgentAccessToken,
@@ -57,14 +57,15 @@ function todayIso(): string {
 }
 
 serve(async (req: Request) => {
+  const cors = buildCorsHeaders(req);
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders, status: 204 });
+    return new Response(null, { headers: cors, status: 204 });
   }
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405, cors);
 
   const clientIp = getClientIp(req);
   if (!checkRateLimit(clientIp)) {
-    return json({ error: "Too many requests. Please try again later." }, 429);
+    return json({ error: "Too many requests. Please try again later." }, 429, cors);
   }
 
   try {
@@ -72,10 +73,10 @@ serve(async (req: Request) => {
     try {
       body = await req.json();
     } catch {
-      return badRequest("Invalid JSON body");
+      return badRequest("Invalid JSON body", cors);
     }
 
-    if (body._gotcha) return json({ success: true }, 200);
+    if (body._gotcha) return json({ success: true }, 200, cors);
 
     const fields = {
       first_name: String(body.first_name ?? "").trim(),
@@ -92,10 +93,10 @@ serve(async (req: Request) => {
     const seats = Math.floor(Number(body.seats ?? 1));
 
     const validationError = validateCommon(fields);
-    if (validationError) return badRequest(validationError);
-    if (!billingAddress) return badRequest("A billing address is required for the invoice.");
-    if (!acceptTerms) return badRequest("Please accept the booking terms to continue.");
-    if (!Number.isFinite(seats) || seats < 1) return badRequest("Please choose a valid number of seats.");
+    if (validationError) return badRequest(validationError, cors);
+    if (!billingAddress) return badRequest("A billing address is required for the invoice.", cors);
+    if (!acceptTerms) return badRequest("Please accept the booking terms to continue.", cors);
+    if (!Number.isFinite(seats) || seats < 1) return badRequest("Please choose a valid number of seats.", cors);
 
     // Seat-count routing (D9). 6+ seats are an enquiry, not an invoice.
     if (seats > MAX_SELF_SERVE_SEATS) {
@@ -104,10 +105,10 @@ serve(async (req: Request) => {
         route: "enquiry",
         message:
           "For 6 or more seats we arrange a private cohort. We have logged your interest and Phil will be in touch to confirm pricing.",
-      }, 200);
+      }, 200, cors);
     }
     if (COHORT_HARD_CAP !== null && seats > COHORT_HARD_CAP) {
-      return badRequest("That exceeds the seats available in this cohort. Please contact us.");
+      return badRequest("That exceeds the seats available in this cohort. Please contact us.", cors);
     }
 
     const utm = parseUtm(body);
@@ -185,7 +186,7 @@ serve(async (req: Request) => {
       .maybeSingle();
     if (contactError) {
       console.error("Supabase contact upsert error:", contactError);
-      return json({ error: "Failed to save your booking. Please try again." }, 500);
+      return json({ error: "Failed to save your booking. Please try again." }, 500, cors);
     }
 
     if (contactRow?.id) {
@@ -244,9 +245,9 @@ serve(async (req: Request) => {
       total_inc_vat: totalIncVat,
       seats,
       campaign: utm.utm_campaign,
-    }, 200);
+    }, 200, cors);
   } catch (err) {
     console.error("Unexpected error:", err);
-    return json({ error: "An unexpected error occurred." }, 500);
+    return json({ error: "An unexpected error occurred." }, 500, cors);
   }
 });
