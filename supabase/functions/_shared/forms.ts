@@ -644,7 +644,10 @@ export async function createStripeCheckoutSession(o: {
   p.set("cancel_url", o.cancelUrl);
   p.set("customer_email", o.customerEmail);
   p.set("billing_address_collection", "required");
-  ["card", "apple_pay", "google_pay"].forEach((m, i) => p.set(`payment_method_types[${i}]`, m));
+  // "card" automatically offers Apple Pay / Google Pay in Checkout for eligible
+  // browsers; listing those as explicit payment_method_types is invalid and
+  // errors the Stripe API, so we only request "card".
+  p.set("payment_method_types[0]", "card");
   p.set("line_items[0][quantity]", String(o.quantity));
   p.set("line_items[0][price_data][currency]", "gbp");
   p.set("line_items[0][price_data][unit_amount]", String(o.unitAmountPence));
