@@ -24,6 +24,7 @@ import {
   sendResend,
   serviceClient,
   syncToMailchimp,
+  testMode,
   tooFast,
   upsertContactAndActivity,
   validateCommon,
@@ -116,7 +117,9 @@ serve(async (req: Request) => {
 
     // Mailchimp: event tags always; marketing tag only on consent (spec 1.3 / 2.2).
     const mailchimpKey = Deno.env.get("MAILCHIMP_API_KEY");
-    if (mailchimpKey) {
+    if (testMode()) {
+      console.log(`[test-mode] mailchimp: skipped, would-have-tagged: ${fields.email}`);
+    } else if (mailchimpKey) {
       syncToMailchimp(
         {
           email: fields.email,
@@ -150,7 +153,9 @@ serve(async (req: Request) => {
     // (spec 1.2 / 2.2). Body copy is a Mae deliverable; this is the v1 wiring
     // with Phil-voice sign-off (D16 default).
     const resendKey = Deno.env.get("RESEND_API_KEY");
-    if (resendKey) {
+    if (testMode()) {
+      console.log(`[test-mode] email: skipped, would-have-sent: {to:${fields.email}, subject:webinar confirmation}`);
+    } else if (resendKey) {
       const joinBlock = ZOOM_WEBINAR_JOIN
         ? `<p><strong>Join link:</strong> <a href="${escapeHtml(ZOOM_WEBINAR_JOIN)}">${escapeHtml(ZOOM_WEBINAR_JOIN)}</a></p>`
         : `<p>Your Zoom join link will follow by email before the session.</p>`;

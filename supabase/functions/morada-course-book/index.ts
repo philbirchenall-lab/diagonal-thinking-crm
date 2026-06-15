@@ -35,6 +35,7 @@ import {
   serviceClient,
   stripeKey,
   syncToMailchimp,
+  testMode,
   tooFast,
   validateCommon,
 } from "../_shared/forms.ts";
@@ -246,7 +247,9 @@ serve(async (req: Request) => {
 
     // Mailchimp at booking: Warm Lead + booked tag (paid tag added on payment).
     const mailchimpKey = Deno.env.get("MAILCHIMP_API_KEY");
-    if (mailchimpKey) {
+    if (testMode()) {
+      console.log(`[test-mode] mailchimp: skipped, would-have-tagged: ${fields.email}`);
+    } else if (mailchimpKey) {
       syncToMailchimp(
         {
           email: fields.email,

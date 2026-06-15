@@ -705,6 +705,16 @@ export function stripeKey(): string | null {
   return Deno.env.get("STRIPE_SECRET_KEY") ?? null;
 }
 
+// MORADA_TEST_MODE (P0 safety kill-switch, Tes 2026-06-15): when "true" the
+// functions short-circuit all EXTERNAL side-effects (FreeAgent invoice, customer
+// email, Mailchimp) to logged no-ops, while still running validation, CORS,
+// honeypot, rate limit, idempotency and CRM/activity writes. Lets Tes run live
+// attack probes without touching Phil's books or mailing list; also a post-launch
+// kill-switch. Default false.
+export function testMode(): boolean {
+  return Deno.env.get("MORADA_TEST_MODE") === "true";
+}
+
 export async function createStripeCheckoutSession(o: {
   key: string;
   successUrl: string;
@@ -832,7 +842,10 @@ export async function fulfillCoursePayment(supabase: any, p: {
     .maybeSingle();
   if (existing && existing.status === "paid") return { already: true };
 
-  // 1. Upsert the CRM contact as Client (email-keyed, idempotent).
+  const TEST = testMode();
+
+  // 1. Upsert the CRM contact as Client (email-keyed, idempotent). ALWAYS runs
+  //    (Tes verifies activity/CRM state even in test mode).
   const { data: contactRow } = await supabase
     .from("contacts")
     .upsert({
@@ -847,10 +860,13 @@ export async function fulfillCoursePayment(supabase: any, p: {
   const contactId = existing?.contact_id ?? contactRow?.id ?? null;
 
   // 2. Record the FreeAgent invoice for VAT/books (best-effort, non-fatal).
+  //    Skipped in test mode so probes never hit Phil's live books.
   let invoiceUrl: string | null = null;
   let invoiceRef: string | null = null;
   const faCfg = freeAgentConfig();
-  if (faCfg) {
+  if (TEST) {
+    console.log(`[test-mode] freeagent: skipped (test mode), would-have-created: {email:${email}, seats:${seats}, intent:${paymentIntent}}`);
+  } else if (faCfg) {
     try {
       const token = await freeAgentAccessToken(faCfg);
       const contactUrl = await findOrCreateFreeAgentContact(token, { email, firstName, lastName, company });
@@ -878,9 +894,11 @@ export async function fulfillCoursePayment(supabase: any, p: {
     console.log(`[fulfil] FreeAgent not provisioned; invoice deferred for ${email} (intent ${paymentIntent}).`);
   }
 
-  // 3. Mailchimp: Client + paid tag.
+  // 3. Mailchimp: Client + paid tag. Skipped in test mode (no live-list pollution).
   const mailchimpKey = Deno.env.get("MAILCHIMP_API_KEY");
-  if (mailchimpKey && email) {
+  if (TEST) {
+    console.log(`[test-mode] mailchimp: skipped, would-have-tagged: ${email} morada-course-2026-09-paid`);
+  } else if (mailchimpKey && email) {
     await syncToMailchimp({
       email, firstName, lastName, company, type: "Client",
       tags: ["morada-ai-2026", "morada-course-2026-09-paid"],
@@ -889,9 +907,11 @@ export async function fulfillCoursePayment(supabase: any, p: {
     }, mailchimpKey).catch((e) => console.error("[fulfil] mailchimp error:", e));
   }
 
-  // 4. Confirmation email (once).
+  // 4. Confirmation email (once). Skipped in test mode.
   const resendKey = Deno.env.get("RESEND_API_KEY");
-  if (resendKey && email) {
+  if (TEST) {
+    console.log(`[test-mode] email: skipped, would-have-sent: {to:${email}, subject:Payment received: AI for Contractors course}`);
+  } else if (resendKey && email) {
     await sendResend({
       to: email,
       subject: "Payment received: AI for Contractors course",

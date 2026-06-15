@@ -105,6 +105,7 @@ Needed before Form 2 launch:
 | Var | Used by | Without it |
 | --- | --- | --- |
 | `STRIPE_SECRET_KEY` | book + thank-you + poll | Booking returns 503; thank-you returns "processing". Build is inert until set. |
+| `MORADA_TEST_MODE` | all (via fulfilment) | `true` short-circuits FreeAgent invoice + confirmation email + Mailchimp to logged no-ops (CRM/activity writes + all security checks still run). Safe verification window + post-launch kill-switch. Default `false`. Set `true` for Tes's probes, flip `false` for production. |
 | `MORADA_THANKYOU_URL` | book | Optional; defaults to `https://www.diagonalthinking.co/morada-thank-you`. Set if the slug differs. |
 | `MORADA_COURSE_PAGE_URL` | book | Optional; defaults to the course slug (used as Stripe `cancel_url`). |
 | `GA4_MEASUREMENT_ID` + `GA4_API_SECRET` | poll | Optional; server-side `purchase` fallback for the poll path only (the thank-you page fires `purchase` client-side). |
