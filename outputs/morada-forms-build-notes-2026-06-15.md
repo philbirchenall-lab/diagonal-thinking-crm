@@ -48,8 +48,18 @@ our confirmation email. No direct Stripe code, no Stripe keys.
 FreeAgent API forum, Jun 2026; it is an open feature request). So payment is
 detected by **polling invoice status**, which is the repo's existing pattern for
 scheduled jobs (`proposal-followup-cron`). Phil chose the poll (15 Jun 2026).
-Outcome is identical to the intended webhook (automated "payment received"
-email); confirmation lands within one poll interval of payment.
+
+**Payment-received vs reconciled timing (Phil's note 15 Jun 2026).** FreeAgent
+has two payment events: `payment_at_url_status` flips within seconds of the
+customer paying via the Stripe link ("Payment processing"), whereas `status`
+becomes "Paid" only after the Stripe payout lands and the bank transaction is
+reconciled (up to a week later on new rolling payouts). The poll fires the
+confirmation on **payment received**, not reconciliation, so the customer is not
+left waiting. The exact `payment_at_url_status` value is not pinned down in the
+public docs, so the poll also accepts a payment-taken pattern plus "Paid" as a
+backstop; **confirm the exact value against Phil's live test invoice once the
+OAuth creds are set** (one-line tweak to `PAYMENT_TAKEN` in `_shared/forms.ts`).
+Run the poll every 5 to 15 minutes so confirmation lands within minutes.
 
 **Stripe connect:** FreeAgent's Connect-to-Stripe accepts an existing Stripe
 account (you enter the account email). Phil's Monzo-managed Stripe is a standard
@@ -65,9 +75,10 @@ Payments; nothing for Rex to do on the Stripe side.
    supabase functions deploy morada-course-book --no-verify-jwt
    supabase functions deploy morada-course-poll-paid --no-verify-jwt
    ```
-2. **Schedule the poll** (hourly is fine). Either Supabase scheduled functions /
-   pg_cron invoking `morada-course-poll-paid`, or any scheduler hitting its URL
-   with `Authorization: Bearer ${MORADA_POLL_SECRET}`.
+2. **Schedule the poll** every 5 to 15 minutes (Phil wants confirmation within
+   minutes of payment). Either Supabase scheduled functions / pg_cron invoking
+   `morada-course-poll-paid`, or any scheduler hitting its URL with
+   `Authorization: Bearer ${MORADA_POLL_SECRET}`.
 3. **Phil connects Stripe** in FreeAgent Settings -> Online Payments (existing
    Monzo-managed Stripe account).
 4. **Paste the embeds** into the two Squarespace Code Blocks; the CONFIG block is

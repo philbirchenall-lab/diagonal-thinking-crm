@@ -14,8 +14,9 @@
 //      email, sends a server-side GA4 purchase (best-effort), and flips the
 //      activity to "paid" so it is not processed again.
 //
-// SCHEDULING: invoke on a schedule (e.g. hourly) via Supabase scheduled functions
-// / pg_cron, or any external scheduler hitting this URL with the shared secret:
+// SCHEDULING: invoke every 5 to 15 minutes (Phil wants the confirmation within
+// minutes of payment, not hours) via Supabase scheduled functions / pg_cron, or
+// any external scheduler hitting this URL with the shared secret:
 //   Authorization: Bearer ${MORADA_POLL_SECRET}
 // Manual-fallback bookings (no FreeAgent invoice URL) are skipped here; Phil
 // confirms those by hand.
@@ -95,7 +96,9 @@ serve(async (req: Request) => {
       console.error(`[poll] invoice fetch failed for activity ${row.id}:`, e);
       continue;
     }
-    if (inv.status !== "Paid") continue;
+    // Fire on payment RECEIVED (Stripe charge taken, seconds after paying), NOT
+    // on full bank reconciliation ("Paid", up to a week later). See helper note.
+    if (!inv.paymentReceived) continue;
 
     paidCount++;
     const contact = (row.contacts ?? {}) as { email?: string; contact_name?: string; company?: string };
@@ -155,7 +158,8 @@ serve(async (req: Request) => {
 
     // Flip the activity to paid so it is not processed again.
     meta.confirmation_sent = true;
-    meta.paid_on = inv.paidOn;
+    meta.paid_on = inv.paidOn; // null until bank reconciliation catches up
+    meta.payment_url_status = inv.paymentUrlStatus;
     await supabase.from("contact_activities")
       .update({ status: "paid", activity_type: "course_booking_paid", body: JSON.stringify(meta) })
       .eq("id", row.id)

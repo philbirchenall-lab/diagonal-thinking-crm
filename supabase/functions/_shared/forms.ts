@@ -464,7 +464,8 @@ export interface FreeAgentConfig {
 // to the manual-invoice path and logs it).
 export function freeAgentConfig(): FreeAgentConfig | null {
   const clientId = Deno.env.get("FREEAGENT_CLIENT_ID") ?? Deno.env.get("FREEAGENT_API_KEY");
-  const clientSecret = Deno.env.get("FREEAGENT_CLIENT_SECRET");
+  // Accept FREEAGENT_OAUTH_SECRET as an alias (the name used during provisioning).
+  const clientSecret = Deno.env.get("FREEAGENT_CLIENT_SECRET") ?? Deno.env.get("FREEAGENT_OAUTH_SECRET");
   const refreshToken = Deno.env.get("FREEAGENT_REFRESH_TOKEN");
   if (!clientId || !clientSecret || !refreshToken) return null;
   return { clientId, clientSecret, refreshToken };
@@ -599,18 +600,36 @@ export async function createAndSendFreeAgentInvoice(
   return { url: invoiceUrl, reference: invoice.reference as string };
 }
 
-// Reads invoice status for the poll. Returns { status, paidOn, permalink }.
+// Reads invoice status for the poll.
+//
+// TIMING (Phil's note 15 Jun 2026): two very different events.
+//   - `payment_at_url_status` flips to a payment-taken value within SECONDS of
+//     the customer paying via the Stripe link ("Payment processing" in the UI).
+//   - `status` becomes "Paid" only after the Stripe payout lands and FreeAgent
+//     reconciles the bank transaction - up to a week later on rolling payouts.
+// We must confirm on the FORMER so the customer is not left waiting a week.
+//
+// NB: the public API docs do not nail down the exact `payment_at_url_status`
+// values, so paymentReceived also accepts status "Paid" as a backstop. The
+// exact value must be confirmed against Phil's live test invoice JSON once the
+// OAuth creds are set (a one-line tweak to PAYMENT_TAKEN if needed).
+const PAYMENT_TAKEN = /paid|processing|received|complete|succeed/i;
+
 export async function getFreeAgentInvoice(
   token: string,
   invoiceUrl: string,
-): Promise<{ status: string; paidOn: string | null; permalink: string | null }> {
+): Promise<{ status: string; paidOn: string | null; permalink: string | null; paymentReceived: boolean; paymentUrlStatus: string | null }> {
   const res = await fetch(invoiceUrl, { headers: faHeaders(token) });
   if (!res.ok) throw new Error(`FreeAgent invoice fetch failed (${res.status}): ${await res.text()}`);
   const { invoice } = await res.json();
+  const status = invoice.status ?? "Unknown";
+  const paymentUrlStatus = invoice.payment_at_url_status ?? null;
   return {
-    status: invoice.status ?? "Unknown",
+    status,
     paidOn: invoice.paid_on ?? null,
     permalink: invoice.permalink ?? null,
+    paymentUrlStatus,
+    paymentReceived: status === "Paid" || (!!paymentUrlStatus && PAYMENT_TAKEN.test(paymentUrlStatus)),
   };
 }
 
