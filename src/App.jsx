@@ -8,6 +8,7 @@ import { signOut } from "./AuthWrapper.jsx";
 import ProposalWriterForm from "./proposals/ProposalForm.jsx";
 import { ClientAreaTab, ContactSessionsPanel } from "./clientArea.jsx";
 import {
+  ChevronDown,
   Download,
   Eye,
   FileSpreadsheet,
@@ -2739,6 +2740,25 @@ export default function App() {
   const dataLoadRef = useRef(null);
   const contactsListRef = useRef(null);
 
+  // Client-safe homepage (Rex, 12 Jun 2026): all pipeline / money figures are hidden
+  // by default so the CRM homepage can be shown to clients. Phil reveals them with the
+  // "Internal metrics" toggle below the tile strip. The preference persists per browser
+  // via localStorage (light-touch, no schema change) so it survives across sessions.
+  const [pipelineExpanded, setPipelineExpanded] = useState(() => {
+    try {
+      return localStorage.getItem("dt-crm:internalMetricsExpanded") === "true";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("dt-crm:internalMetricsExpanded", String(pipelineExpanded));
+    } catch {
+      // localStorage unavailable (private mode and similar) - in-memory only.
+    }
+  }, [pipelineExpanded]);
+
   function navigateToFilter(type) {
     setTypeFilter(type);
     setTimeout(() => {
@@ -3378,9 +3398,11 @@ export default function App() {
                 <div className="mt-1 font-display text-[28px] font-normal leading-none tracking-[0.02em] tabular-nums text-brand">
                   {stats.counts["Warm Lead"]} Warm Leads
                 </div>
-                <div className="mt-1 text-sm tabular-nums text-slate-500">
-                  {formatCurrency(stats.warmLeadValue)} projected
-                </div>
+                {pipelineExpanded && (
+                  <div className="mt-1 text-sm tabular-nums text-slate-500">
+                    {formatCurrency(stats.warmLeadValue)} projected
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -3396,11 +3418,33 @@ export default function App() {
               value={stats.networkPartnerCount}
               onClick={() => { setNetworkPartnerFilter(true); setTimeout(() => contactsListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }}
             />
-            <SummaryCard
-              label="Projected Pipeline"
-              value={formatCurrency(stats.projected)}
-              className="col-span-2 sm:col-span-3 lg:col-span-1"
-            />
+          </div>
+
+          {/* Internal metrics - all pipeline / money figures live behind this toggle,
+              collapsed by default so the homepage is safe to show clients (Rex, 12 Jun 2026). */}
+          <div className="border-t border-line bg-white">
+            <button
+              type="button"
+              onClick={() => setPipelineExpanded((expanded) => !expanded)}
+              aria-expanded={pipelineExpanded}
+              aria-controls="internal-metrics-panel"
+              className="flex min-h-[44px] w-full items-center justify-between gap-2 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 transition-colors hover:bg-mist sm:px-5"
+            >
+              <span>Internal metrics</span>
+              <ChevronDown
+                size={18}
+                aria-hidden="true"
+                className={`shrink-0 transition-transform duration-200 ${pipelineExpanded ? "rotate-180" : ""}`}
+              />
+            </button>
+            {pipelineExpanded && (
+              <div id="internal-metrics-panel" className="border-t border-line">
+                <SummaryCard
+                  label="Projected Pipeline"
+                  value={formatCurrency(stats.projected)}
+                />
+              </div>
+            )}
           </div>
           </>)}
         </header>
@@ -3672,6 +3716,7 @@ export default function App() {
                   >
                     Company
                   </SortableHeader>
+                  {pipelineExpanded && (<>
                   <SortableHeader
                     active={sortConfig.key === "totalClientValue"}
                     direction={sortConfig.direction}
@@ -3696,6 +3741,7 @@ export default function App() {
                   >
                     Projected
                   </SortableHeader>
+                  </>)}
                   <th className="px-4 py-4 font-semibold w-[13%]">Contact</th>
                   <SortableHeader
                     active={sortConfig.key === "type"}
@@ -3734,6 +3780,7 @@ export default function App() {
                           <div className="truncate text-sm text-slate-500">{contact.email || "No email"}</div>
                         </button>
                       </td>
+                      {pipelineExpanded && (<>
                       <td className="px-4 py-3 text-right text-sm font-semibold text-ink">
                         {formatCurrencyOrDash(contact.totalClientValue)}
                       </td>
@@ -3743,6 +3790,7 @@ export default function App() {
                       <td className="px-4 py-3 text-right text-sm font-semibold text-ink">
                         {formatCurrencyOrDash(oppTotals.get(contact.id) ?? 0)}
                       </td>
+                      </>)}
                       <td className="px-4 py-3 text-sm text-slate-600 max-w-0">
                         <div className="truncate">{contact.contactName || "No contact name"}</div>
                         <div className="truncate text-slate-400">{contact.phone || ""}</div>
@@ -3814,7 +3862,7 @@ export default function App() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="9" className="px-6 py-16 text-center text-slate-500">
+                    <td colSpan={pipelineExpanded ? 9 : 6} className="px-6 py-16 text-center text-slate-500">
                       No contacts match the current search and filters.
                     </td>
                   </tr>
@@ -3877,6 +3925,7 @@ export default function App() {
                     </div>
                   )}
                   <div className="mt-3 grid gap-3 border-t border-line pt-3">
+                    {pipelineExpanded && (
                     <div className="grid grid-cols-3 gap-3 text-sm">
                       <div>
                         <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Invoiced</div>
@@ -3891,6 +3940,7 @@ export default function App() {
                         <div className="mt-1 font-semibold text-ink">{formatCurrencyOrDash(oppTotals.get(contact.id) ?? 0)}</div>
                       </div>
                     </div>
+                    )}
                     <div className="text-sm">
                       <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Date Added</div>
                       <div className="mt-1 text-slate-600">{formatDate(contact.dateAdded)}</div>
