@@ -22,6 +22,7 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import {
+  addContactService,
   badRequest,
   buildCorsHeaders,
   checkDbRateLimit,
@@ -219,6 +220,10 @@ serve(async (req: Request) => {
       console.error("Supabase contact upsert error (bailing before checkout):", contactError);
       return json({ error: "Could not start your booking. Please try again." }, 500, cors);
     }
+
+    // Tag the contact so this booker is findable under the CRM "Morada AI
+    // Workshops" service filter. Non-fatal: merges into existing services.
+    await addContactService(supabase, fields.email, "Morada AI Workshops");
 
     let session;
     try {

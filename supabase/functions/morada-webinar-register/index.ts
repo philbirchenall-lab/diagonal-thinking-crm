@@ -8,6 +8,7 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import {
+  addContactService,
   badRequest,
   brandedEmail,
   buildCorsHeaders,
@@ -124,6 +125,10 @@ serve(async (req: Request) => {
     if (contactError) {
       return json({ error: "Failed to save your registration. Please try again." }, 500, cors);
     }
+
+    // Tag the contact so this registrant is findable under the CRM "Morada
+    // Webinar" service filter. Non-fatal: merges into existing services.
+    await addContactService(supabase, fields.email, "Morada Webinar");
 
     // Mailchimp: event tags always; marketing tag only on consent (spec 1.3 / 2.2).
     const mailchimpKey = Deno.env.get("MAILCHIMP_API_KEY");

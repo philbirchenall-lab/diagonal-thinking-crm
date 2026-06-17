@@ -427,6 +427,36 @@ export async function upsertContactAndActivity(
   return { contactError: null };
 }
 
+// Add a single service tag to a contact (text[] column) WITHOUT clobbering any
+// existing services - read, merge, write. Makes Morada bookings findable under
+// the CRM "Service Filter" (App.jsx SERVICE_OPTIONS): "Morada Webinar" for
+// webinar registrants, "Morada AI Workshops" for course bookers. Best-effort and
+// non-fatal: a tagging hiccup must never fail a registration or a checkout.
+// deno-lint-ignore no-explicit-any
+export async function addContactService(
+  supabase: any,
+  email: string,
+  service: string,
+): Promise<void> {
+  const e = email.trim().toLowerCase();
+  try {
+    const { data, error } = await supabase
+      .from("contacts")
+      .select("id, services")
+      .eq("email", e)
+      .maybeSingle();
+    if (error || !data?.id) return;
+    const current: string[] = Array.isArray(data.services) ? data.services : [];
+    if (current.includes(service)) return;
+    await supabase
+      .from("contacts")
+      .update({ services: [...current, service] })
+      .eq("id", data.id);
+  } catch (err) {
+    console.error("addContactService error (non-fatal):", err);
+  }
+}
+
 // === Mailchimp sync + tagging (spec 1.3) ===================================
 
 export async function subscriberHash(email: string): Promise<string> {
