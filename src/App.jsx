@@ -47,6 +47,8 @@ const SERVICE_OPTIONS = [
   "AI Action Day",
   "AI Retainer",
   "Non-AI Work",
+  "Morada Webinar",
+  "Morada AI Workshops",
 ];
 const SOURCE_OPTIONS = [
   "Invoices",
