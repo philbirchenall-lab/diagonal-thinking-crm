@@ -9,7 +9,8 @@ alter table public.contact_activities
   add column if not exists stripe_session_id text;
 
 -- Partial unique index gives the atomic exactly-once claim (one fulfilment per
--- Stripe session, even under concurrent thank-you + poll calls).
-create unique index if not exists contact_activities_stripe_session_id_uidx
+-- Stripe session, even under concurrent thank-you + poll calls). Name matches the
+-- index already present on the live DB so this is a true no-op there.
+create unique index if not exists contact_activities_stripe_session_uidx
   on public.contact_activities (stripe_session_id)
   where stripe_session_id is not null;
