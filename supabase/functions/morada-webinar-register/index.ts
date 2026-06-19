@@ -18,6 +18,7 @@ import {
   escapeHtml,
   getClientIp,
   icsToBase64,
+  internalNotifyTo,
   isHoneypotTripped,
   json,
   ok,
@@ -178,6 +179,7 @@ serve(async (req: Request) => {
       sendResend(
         {
           to: fields.email,
+          replyTo: internalNotifyTo(),
           subject: "You are registered: AI for Contractors webinar, Mon 20 Jul",
           html: brandedEmail({
             heading: "You are registered",
@@ -198,6 +200,7 @@ serve(async (req: Request) => {
       sendInternalNotification(
         {
           event: "AI for Contractors webinar",
+          replyTo: fields.email,
           fields: [
             { label: "Name", value: `${fields.first_name} ${fields.last_name}`.trim() },
             { label: "Email", value: fields.email },

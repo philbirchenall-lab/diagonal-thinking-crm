@@ -576,6 +576,7 @@ export function internalNotifyCc(): string[] {
 export interface InternalNotify {
   event: string; // "AI for Contractors webinar" | "AI for Contractors course"
   fields: Array<{ label: string; value: string }>;
+  replyTo?: string; // set to the registrant email so Phil/Steve can reply to the lead
 }
 
 // Plain, scannable internal email. Empty values are dropped. All values escaped.
@@ -601,6 +602,7 @@ export async function sendInternalNotification(n: InternalNotify, apiKey: string
   await sendResend({
     to: internalNotifyTo(),
     cc: internalNotifyCc(),
+    replyTo: n.replyTo,
     subject: `New ${n.event} booking`,
     html: internalNotificationHtml(n),
   }, apiKey);
@@ -1104,6 +1106,7 @@ export async function fulfillCoursePayment(supabase: any, p: {
   if (resendKey && email && !emailSuppressed()) {
     await sendResend({
       to: email,
+      replyTo: internalNotifyTo(),
       subject: "Payment received: AI for Contractors course",
       html: brandedEmail({
         heading: "Payment received",
@@ -1121,6 +1124,7 @@ export async function fulfillCoursePayment(supabase: any, p: {
     // Item 1: internal notification to Phil (cc Steve). Course details + takeaway.
     await sendInternalNotification({
       event: "AI for Contractors course",
+      replyTo: email,
       fields: [
         { label: "Name", value: `${firstName} ${lastName}`.trim() },
         { label: "Email", value: email },
