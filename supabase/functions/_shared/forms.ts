@@ -240,7 +240,9 @@ export function escapeHtml(str: string): string {
 // DT-branded transactional email shell (Pix brand pack): navy #305DAB, Oswald
 // uppercase logo lockup with a 3px navy strip, Source Sans 3 body (web-safe
 // fallbacks for email clients that strip web fonts), em-dash zero.
-export function brandedEmail(opts: { heading: string; bodyHtml: string }): string {
+export function brandedEmail(opts: { heading: string; bodyHtml: string; footer?: string }): string {
+  const footer = opts.footer ??
+    "Diagonal Thinking Ltd. You are receiving this because you registered or booked with us.";
   return `<div style="margin:0;padding:24px 0;background:#f4f5f7;">
   <div style="max-width:560px;margin:0 auto;background:#FFFFFF;border-radius:8px;overflow:hidden;font-family:'Source Sans 3',Helvetica,Arial,sans-serif;color:#111111;">
     <div style="padding:22px 28px 14px;">
@@ -252,7 +254,7 @@ export function brandedEmail(opts: { heading: string; bodyHtml: string }): strin
       ${opts.bodyHtml}
     </div>
     <div style="padding:14px 28px;background:#f7f8fb;color:#6b6862;font-size:12px;line-height:1.4;">
-      Diagonal Thinking Ltd. You are receiving this because you registered or booked with us.
+      ${footer}
     </div>
   </div>
 </div>`;
@@ -528,24 +530,80 @@ export interface ResendEmail {
   to: string;
   subject: string;
   html: string;
+  cc?: string | string[]; // optional carbon-copy recipients (e.g. internal cc)
+  replyTo?: string; // optional Reply-To header
   attachments?: Array<{ filename: string; content: string }>; // content = base64
 }
 
 export async function sendResend(email: ResendEmail, apiKey: string): Promise<void> {
+  // deno-lint-ignore no-explicit-any
+  const payload: Record<string, any> = {
+    from: "Diagonal Thinking <notifications@diagonalthinking.co>",
+    to: [email.to],
+    subject: email.subject,
+    html: email.html,
+  };
+  if (email.cc) payload.cc = Array.isArray(email.cc) ? email.cc : [email.cc];
+  if (email.replyTo) payload.reply_to = email.replyTo;
+  if (email.attachments) payload.attachments = email.attachments;
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      from: "Diagonal Thinking <notifications@diagonalthinking.co>",
-      to: [email.to],
-      subject: email.subject,
-      html: email.html,
-      attachments: email.attachments,
-    }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) {
     console.error(`Resend send failed (${res.status}): ${await res.text()}`);
   }
+}
+
+// === Internal booking notification (Item 1, Phil 19 Jun 2026) ================
+//
+// Emails Phil (cc Steve at Morada) for every webinar registration and every paid
+// course booking, with the registrant's details and their free-text "what they
+// want to get out of it" answer. INDEPENDENT of MORADA_TEST_MODE (see
+// emailSuppressed) so the flow is provable before the Stripe live flip.
+// Recipients default to the launch addresses; override via env without a code
+// change. MORADA_NOTIFY_CC is comma-separated.
+export function internalNotifyTo(): string {
+  return Deno.env.get("MORADA_NOTIFY_TO") ?? "phil@diagonalthinking.co";
+}
+export function internalNotifyCc(): string[] {
+  const cc = Deno.env.get("MORADA_NOTIFY_CC") ?? "Steven@morada.uk";
+  return cc.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+export interface InternalNotify {
+  event: string; // "AI for Contractors webinar" | "AI for Contractors course"
+  fields: Array<{ label: string; value: string }>;
+}
+
+// Plain, scannable internal email. Empty values are dropped. All values escaped.
+export function internalNotificationHtml(n: InternalNotify): string {
+  const rows = n.fields
+    .filter((f) => f.value && f.value.trim())
+    .map(
+      (f) =>
+        `<tr><td style="padding:4px 14px 4px 0;vertical-align:top;color:#6b6862;white-space:nowrap;">${escapeHtml(f.label)}</td>` +
+        `<td style="padding:4px 0;vertical-align:top;color:#111111;">${escapeHtml(f.value)}</td></tr>`,
+    )
+    .join("");
+  return brandedEmail({
+    heading: `New booking: ${n.event}`,
+    bodyHtml:
+      `<p>A new registration has come in via the ${escapeHtml(n.event)} form.</p>` +
+      `<table style="border-collapse:collapse;font-size:15px;line-height:1.5;">${rows}</table>`,
+    footer: "Internal notification from the Diagonal Thinking booking forms.",
+  });
+}
+
+export async function sendInternalNotification(n: InternalNotify, apiKey: string): Promise<void> {
+  await sendResend({
+    to: internalNotifyTo(),
+    cc: internalNotifyCc(),
+    subject: `New ${n.event} booking`,
+    html: internalNotificationHtml(n),
+  }, apiKey);
 }
 
 // === .ics calendar generation (spec 2.2 / 3.5) =============================
@@ -596,6 +654,31 @@ export function buildIcs(events: IcsEvent[]): string {
 
 export function icsToBase64(ics: string): string {
   return btoa(unescape(encodeURIComponent(ics)));
+}
+
+// The three Sep 2026 course sessions, 15:00-16:00 BST = 14:00-15:00 UTC. Returns
+// one multi-event .ics so the attendee gets all three dates in a single invite
+// (Item 4, Phil 19 Jun 2026). METHOD:PUBLISH (a "save the slot" invite, no RSVP
+// round-trip), consistent with the webinar invite. UID is stable per attendee
+// per session so re-sends update rather than duplicate.
+export const COURSE_SESSIONS_UTC: Array<{ day: string; startUtc: string; endUtc: string }> = [
+  { day: "03", startUtc: "20260903T140000Z", endUtc: "20260903T150000Z" },
+  { day: "10", startUtc: "20260910T140000Z", endUtc: "20260910T150000Z" },
+  { day: "17", startUtc: "20260917T140000Z", endUtc: "20260917T150000Z" },
+];
+
+export function buildCourseIcs(email: string): string {
+  return buildIcs(
+    COURSE_SESSIONS_UTC.map((s, i) => ({
+      uid: `morada-course-2026-09-${s.day}-${email}`,
+      startUtc: s.startUtc,
+      endUtc: s.endUtc,
+      summary: `Diagonal Thinking: AI for Contractors (session ${i + 1} of 3)`,
+      description:
+        "AI for Contractors course with Diagonal Thinking and Morada. " +
+        "Phil will send the joining details and materials before each session.",
+    })),
+  );
 }
 
 // === FreeAgent API (Form 2 payment leg, post-pivot 15 Jun 2026) =============
@@ -773,6 +856,16 @@ export function stripeKey(): string | null {
 // kill-switch. Default false.
 export function testMode(): boolean {
   return Deno.env.get("MORADA_TEST_MODE") === "true";
+}
+
+// Email kill-switch, INDEPENDENT of MORADA_TEST_MODE (Phil 19 Jun 2026). The
+// attendee confirmation and the internal notification must send even while the
+// form is in test mode, so the end-to-end flow can be proven before the Stripe
+// live flip. MORADA_TEST_MODE still suppresses FreeAgent + Mailchimp. Set
+// MORADA_SUPPRESS_EMAIL=true only if emails ever need an independent kill.
+// Default: emails ON.
+export function emailSuppressed(): boolean {
+  return Deno.env.get("MORADA_SUPPRESS_EMAIL") === "true";
 }
 
 export async function createStripeCheckoutSession(o: {
@@ -1003,11 +1096,12 @@ export async function fulfillCoursePayment(supabase: any, p: {
     }, mailchimpKey).catch((e) => console.error("[fulfil] mailchimp error:", e));
   }
 
-  // 4. Confirmation email (once). Skipped in test mode.
+  // 4. Emails (once). DECOUPLED from MORADA_TEST_MODE (Phil 19 Jun 2026): the
+  //    confirmation + internal notification send even in test mode so the flow is
+  //    provable before the Stripe live flip. Independent kill = MORADA_SUPPRESS_EMAIL.
+  //    The confirmation carries the 3-session .ics invite (Item 4).
   const resendKey = Deno.env.get("RESEND_API_KEY");
-  if (TEST) {
-    console.log(`[test-mode] email: skipped, would-have-sent: {to:${email}, subject:Payment received: AI for Contractors course}`);
-  } else if (resendKey && email) {
+  if (resendKey && email && !emailSuppressed()) {
     await sendResend({
       to: email,
       subject: "Payment received: AI for Contractors course",
@@ -1016,11 +1110,35 @@ export async function fulfillCoursePayment(supabase: any, p: {
         bodyHtml:
           `<p>Hi ${escapeHtml(firstName)},</p>` +
           `<p>Thanks, your payment has been received and your place on the AI for Contractors course is confirmed.</p>` +
-          `<p>Phil will be in touch with the joining details and course materials closer to each session ` +
-          `(Thursdays 3, 10 and 17 September 2026, 3:00pm to 4:00pm BST).</p>` +
+          `<p>Your three sessions are Thursdays 3, 10 and 17 September 2026, 3:00pm to 4:00pm BST. ` +
+          `A calendar invite for all three is attached so you do not lose the slots.</p>` +
+          `<p>Phil will be in touch with the joining details and course materials before each session.</p>` +
           `<p>See you there,<br>Phil<br>Diagonal Thinking</p>`,
       }),
+      attachments: [{ filename: "ai-for-contractors-course.ics", content: icsToBase64(buildCourseIcs(email)) }],
     }, resendKey).catch((e) => console.error("[fulfil] resend error:", e));
+
+    // Item 1: internal notification to Phil (cc Steve). Course details + takeaway.
+    await sendInternalNotification({
+      event: "AI for Contractors course",
+      fields: [
+        { label: "Name", value: `${firstName} ${lastName}`.trim() },
+        { label: "Email", value: email },
+        { label: "Company", value: company },
+        { label: "Role", value: meta.role ?? "" },
+        { label: "Seats", value: String(seats) },
+        { label: "Total (inc VAT)", value: meta.total_inc_vat ? `GBP ${meta.total_inc_vat}` : "" },
+        { label: "Billing address", value: meta.billing_address ?? "" },
+        { label: "VAT number", value: meta.vat_number ?? "" },
+        { label: "How heard", value: meta.how_heard ?? "" },
+        { label: "Looking to get out of it", value: meta.takeaway ?? "" },
+        { label: "Marketing consent", value: meta.marketing_consent === "true" ? "Yes" : "No" },
+        { label: "Campaign", value: meta.utm_campaign ?? "" },
+        { label: "Stripe payment intent", value: paymentIntent },
+      ],
+    }, resendKey).catch((e) => console.error("[fulfil] internal notify error:", e));
+  } else {
+    console.log(`[fulfil] email send skipped (suppressed=${emailSuppressed()}, key=${!!resendKey}) for ${email}`);
   }
 
   // 5. Finalize the claimed row -> paid (only the claimer reaches here).

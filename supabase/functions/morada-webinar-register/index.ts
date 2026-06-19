@@ -14,6 +14,7 @@ import {
   buildCorsHeaders,
   buildIcs,
   checkDbRateLimit,
+  emailSuppressed,
   escapeHtml,
   getClientIp,
   icsToBase64,
@@ -23,6 +24,7 @@ import {
   originRefererOk,
   parseUtm,
   routeFromUtm,
+  sendInternalNotification,
   sendResend,
   serviceClient,
   syncToMailchimp,
@@ -164,13 +166,12 @@ serve(async (req: Request) => {
       },
     ]);
 
-    // Transactional confirmation email. Always sent, regardless of consent
-    // (spec 1.2 / 2.2). Body copy is a Mae deliverable; this is the v1 wiring
-    // with Phil-voice sign-off (D16 default).
+    // Transactional confirmation email + internal notification. DECOUPLED from
+    // MORADA_TEST_MODE (Phil 19 Jun 2026) so they send even in test mode; the
+    // independent kill-switch is MORADA_SUPPRESS_EMAIL. The confirmation is sent
+    // regardless of marketing consent (spec 1.2 / 2.2).
     const resendKey = Deno.env.get("RESEND_API_KEY");
-    if (testMode()) {
-      console.log(`[test-mode] email: skipped, would-have-sent: {to:${fields.email}, subject:webinar confirmation}`);
-    } else if (resendKey) {
+    if (resendKey && !emailSuppressed()) {
       const joinBlock = ZOOM_WEBINAR_JOIN
         ? `<p><strong>Join link:</strong> <a href="${escapeHtml(ZOOM_WEBINAR_JOIN)}">${escapeHtml(ZOOM_WEBINAR_JOIN)}</a></p>`
         : `<p>Your Zoom join link will follow by email before the session.</p>`;
@@ -192,6 +193,26 @@ serve(async (req: Request) => {
         },
         resendKey,
       ).catch((err) => console.error("Resend send error:", err));
+
+      // Item 1: internal notification to Phil (cc Steve). Webinar details + takeaway.
+      sendInternalNotification(
+        {
+          event: "AI for Contractors webinar",
+          fields: [
+            { label: "Name", value: `${fields.first_name} ${fields.last_name}`.trim() },
+            { label: "Email", value: fields.email },
+            { label: "Company", value: fields.company },
+            { label: "Role", value: fields.role },
+            { label: "How heard", value: howHeard },
+            { label: "Looking to get out of it", value: takeaway },
+            { label: "Marketing consent", value: marketingConsent ? "Yes" : "No" },
+            { label: "Campaign", value: utm.utm_campaign ?? "" },
+          ],
+        },
+        resendKey,
+      ).catch((err) => console.error("Internal notify error:", err));
+    } else {
+      console.log(`[webinar] email send skipped (suppressed=${emailSuppressed()}, key=${!!resendKey}) for ${fields.email}`);
     }
 
     // Return the join link + ics so the embed can render the success panel and
