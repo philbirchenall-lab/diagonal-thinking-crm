@@ -535,7 +535,10 @@ export interface ResendEmail {
   attachments?: Array<{ filename: string; content: string }>; // content = base64
 }
 
-export async function sendResend(email: ResendEmail, apiKey: string): Promise<void> {
+// Returns true only on a confirmed accepted send. Never throws (callers that
+// fire-and-forget can ignore the result; the alert path checks it before
+// stamping invoice_alerted_at so a failed alert is retried, not lost).
+export async function sendResend(email: ResendEmail, apiKey: string): Promise<boolean> {
   // deno-lint-ignore no-explicit-any
   const payload: Record<string, any> = {
     from: "Diagonal Thinking <notifications@diagonalthinking.co>",
@@ -547,13 +550,20 @@ export async function sendResend(email: ResendEmail, apiKey: string): Promise<vo
   if (email.replyTo) payload.reply_to = email.replyTo;
   if (email.attachments) payload.attachments = email.attachments;
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    console.error(`Resend send failed (${res.status}): ${await res.text()}`);
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      console.error(`Resend send failed (${res.status}): ${await res.text()}`);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("Resend send error:", e);
+    return false;
   }
 }
 
@@ -729,11 +739,28 @@ export async function freeAgentAccessToken(cfg: FreeAgentConfig): Promise<string
     headers: {
       Authorization: `Basic ${btoa(`${cfg.clientId}:${cfg.clientSecret}`)}`,
       "Content-Type": "application/x-www-form-urlencoded",
+      // FreeAgent requires a User-Agent on every request (including the token grant).
+      "User-Agent": "DiagonalThinkingCRM (phil@diagonalthinking.co)",
+      Accept: "application/json",
     },
     body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: cfg.refreshToken }).toString(),
   });
-  if (!res.ok) throw new Error(`FreeAgent token refresh failed (${res.status}): ${await res.text()}`);
+  if (!res.ok) {
+    const body = await res.text();
+    // A 401 / invalid_grant means the stored refresh token is dead (revoked or
+    // expired) and the FreeAgent app must be re-authorised. Flag that distinctly
+    // so the failure alert can tell Phil exactly what to fix, vs a transient blip.
+    const dead = res.status === 401 || /invalid_grant/i.test(body);
+    throw new Error(
+      `FreeAgent token refresh failed (${res.status})` +
+        (dead ? " [AUTH_DEAD: re-authorise the FreeAgent app and update FREEAGENT_REFRESH_TOKEN]" : "") +
+        `: ${body}`,
+    );
+  }
   const data = await res.json();
+  // The refresh grant also returns a rotated refresh_token + refresh_token_expires_in
+  // (~20 years). We keep using the long-lived env token (reusable for this scope);
+  // if FreeAgent ever invalidates it, the dead-token branch above surfaces it.
   return data.access_token as string;
 }
 
@@ -755,11 +782,17 @@ export async function findOrCreateFreeAgentContact(
   const base = freeAgentBaseUrl();
   const email = c.email.toLowerCase().trim();
 
-  const listRes = await fetch(`${base}/v2/contacts?view=all&per_page=100`, { headers: faHeaders(token) });
-  if (listRes.ok) {
+  // Paginate so an existing contact beyond page 1 is reliably matched: a missed
+  // match would create a DUPLICATE contact and also defeat the per-contact invoice
+  // dedup (causing a duplicate invoice). If a list page fails, throw rather than
+  // risk creating a duplicate contact.
+  for (let page = 1; page <= 10; page++) {
+    const listRes = await fetch(`${base}/v2/contacts?view=all&per_page=100&page=${page}`, { headers: faHeaders(token) });
+    if (!listRes.ok) throw new Error(`FreeAgent contact list failed (${listRes.status}): ${await listRes.text()}`);
     const { contacts = [] } = await listRes.json();
     const hit = contacts.find((x: { email?: string }) => (x.email ?? "").toLowerCase().trim() === email);
     if (hit?.url) return hit.url;
+    if (contacts.length < 100) break; // last page
   }
 
   const createRes = await fetch(`${base}/v2/contacts`, {
@@ -794,47 +827,112 @@ export interface FreeAgentInvoiceItem {
 // in the comments for reconciliation. NB: FreeAgent has no API "mark Paid"
 // transition - the invoice reconciles when the Stripe payout lands in the
 // connected bank feed, or Phil marks it paid manually.
+// Transition a Draft invoice to Sent. AWAITED + checked: a silent failure here
+// would leave a stray Draft that looks like success, so we throw on non-ok and
+// let the retry path re-issue the transition (dedup finds the Draft by reference).
+async function markFreeAgentInvoiceSent(token: string, invoiceUrl: string): Promise<void> {
+  const id = invoiceUrl.split("/").pop();
+  const res = await fetch(`${freeAgentBaseUrl()}/v2/invoices/${id}/transitions/mark_as_sent`, {
+    method: "PUT",
+    headers: faHeaders(token),
+  });
+  if (!res.ok) throw new Error(`FreeAgent mark_as_sent failed (${res.status}): ${await res.text()}`);
+}
+
+// Idempotency backstop: find an existing invoice for the contact whose reference
+// matches (covers the case where a prior attempt created the invoice but never
+// persisted the URL). FreeAgent has no server-side reference filter, so we
+// paginate the contact's invoices and match client-side. Returns null if not
+// found, or if the list call fails (caller falls back to the DB-first guard).
+export async function findFreeAgentInvoiceByReference(
+  token: string,
+  contactUrl: string,
+  reference: string,
+): Promise<{ url: string; reference: string; status: string } | null> {
+  if (!reference) return null;
+  const base = freeAgentBaseUrl();
+  for (let page = 1; page <= 10; page++) {
+    const res = await fetch(
+      `${base}/v2/invoices?contact=${encodeURIComponent(contactUrl)}&view=all&per_page=100&page=${page}`,
+      { headers: faHeaders(token) },
+    );
+    // Throw (not return null) so a failed dedup check never leads to a blind
+    // create-that-could-duplicate; the booking is retried instead.
+    if (!res.ok) throw new Error(`FreeAgent invoice list failed (${res.status}): ${await res.text()}`);
+    const { invoices = [] } = await res.json();
+    const hit = invoices.find((x: { reference?: string }) => (x.reference ?? "") === reference);
+    if (hit?.url) return { url: hit.url, reference: hit.reference ?? reference, status: hit.status ?? "" };
+    if (invoices.length < 100) break; // last page
+  }
+  return null;
+}
+
 export async function recordFreeAgentInvoice(
   token: string,
   inv: {
     contactUrl: string;
     datedOn: string; // YYYY-MM-DD
     paymentTermsDays: number;
-    reference: string;
+    reference: string; // deterministic per booking; doubles as the dedup key
     comments: string;
     items: FreeAgentInvoiceItem[];
   },
 ): Promise<{ url: string; reference: string }> {
   const base = freeAgentBaseUrl();
 
-  const createRes = await fetch(`${base}/v2/invoices`, {
+  // Idempotency: if an invoice with this deterministic reference already exists
+  // for the contact, reuse it instead of creating a duplicate. If a prior attempt
+  // left it Draft (mark_as_sent had failed), finish the transition now.
+  const existing = await findFreeAgentInvoiceByReference(token, inv.contactUrl, inv.reference);
+  if (existing) {
+    if ((existing.status ?? "").toLowerCase() === "draft") {
+      await markFreeAgentInvoiceSent(token, existing.url);
+    }
+    return { url: existing.url, reference: existing.reference };
+  }
+
+  const invoiceBody: Record<string, unknown> = {
+    contact: inv.contactUrl,
+    dated_on: inv.datedOn,
+    payment_terms_in_days: inv.paymentTermsDays,
+    currency: "GBP",
+    comments: inv.comments,
+    invoice_items: inv.items.map((it) => ({
+      description: it.description,
+      item_type: "Services",
+      quantity: it.quantity,
+      price: it.price,
+      sales_tax_rate: it.sales_tax_rate,
+    })),
+  };
+  // Send reference only when set (an empty string is not how FreeAgent requests
+  // auto-numbering). We always pass a deterministic ref, which also drives dedup.
+  if (inv.reference) invoiceBody.reference = inv.reference;
+
+  let createRes = await fetch(`${base}/v2/invoices`, {
     method: "POST",
     headers: faHeaders(token),
-    body: JSON.stringify({
-      invoice: {
-        contact: inv.contactUrl,
-        dated_on: inv.datedOn,
-        payment_terms_in_days: inv.paymentTermsDays,
-        currency: "GBP",
-        reference: inv.reference,
-        comments: inv.comments,
-        invoice_items: inv.items.map((it) => ({
-          description: it.description,
-          item_type: "Services",
-          quantity: it.quantity,
-          price: it.price,
-          sales_tax_rate: it.sales_tax_rate,
-        })),
-      },
-    }),
+    body: JSON.stringify({ invoice: invoiceBody }),
   });
+  // If FreeAgent rejected the custom reference (e.g. strict sequential numbering),
+  // retry once WITHOUT it so the sale is still invoiced. The DB-first guard in
+  // recordInvoiceForBooking still prevents duplicates on later retries.
+  if (!createRes.ok && invoiceBody.reference) {
+    const errText = await createRes.text();
+    console.error(`FreeAgent invoice create with reference failed (${createRes.status}): ${errText}; retrying without reference`);
+    delete invoiceBody.reference;
+    createRes = await fetch(`${base}/v2/invoices`, {
+      method: "POST",
+      headers: faHeaders(token),
+      body: JSON.stringify({ invoice: invoiceBody }),
+    });
+  }
   if (!createRes.ok) throw new Error(`FreeAgent invoice create failed (${createRes.status}): ${await createRes.text()}`);
   const { invoice } = await createRes.json();
-  const id = (invoice.url as string).split("/").pop();
 
-  // Mark as sent (Draft -> Sent) so it is a live record on the books.
-  await fetch(`${base}/v2/invoices/${id}/transitions/mark_as_sent`, { method: "PUT", headers: faHeaders(token) })
-    .catch((e) => console.error("FreeAgent mark_as_sent error:", e));
+  // Mark as sent (Draft -> Sent) so it is a live record on the books. Throws on
+  // failure so the booking is retried rather than left a stray Draft.
+  await markFreeAgentInvoiceSent(token, invoice.url as string);
 
   return { url: invoice.url as string, reference: invoice.reference as string };
 }
@@ -974,6 +1072,119 @@ const COURSE_LABEL = "AI for Contractors - Sep 2026 beginner cohort (3 sessions)
 const COURSE_NET_PER_SEAT = 300;
 const COURSE_VAT_RATE = 20;
 
+// Self-heal retry ceiling: after this many failed FreeAgent attempts a booking
+// is escalated to Phil by email instead of being retried forever.
+export const FA_MAX_INVOICE_ATTEMPTS = 5;
+
+// Records the FreeAgent invoice for one paid booking. Idempotent and NON-throwing:
+// it owns the contact_activities.invoice_status lifecycle so a failure is durable
+// (queryable + retryable) instead of a silent log line. Reused by
+// fulfillCoursePayment (first attempt) and morada-course-poll-paid (self-heal).
+// Pass a pre-minted access token so the poll reuses ONE token per run (FreeAgent
+// caps token refreshes at 15/min). Returns the resulting invoice state.
+//
+// Idempotency is two-layer: (1) DB-first - re-reads its own row and skips if
+// already 'recorded' or the body already carries an invoice URL; (2) FreeAgent
+// backstop - a deterministic reference (MOR-<sessionSuffix>) lets recordFreeAgentInvoice
+// reuse an invoice a prior attempt created but never persisted. Stripe TEST
+// sessions, test mode, and an unprovisioned FreeAgent are marked 'skipped'.
+// deno-lint-ignore no-explicit-any
+export async function recordInvoiceForBooking(
+  supabase: any,
+  activityId: string,
+  p: { sessionId: string; paymentIntent: string; meta: Record<string, string>; seats: number },
+  token?: string,
+): Promise<{ status: "recorded" | "failed" | "skipped" }> {
+  const { sessionId, paymentIntent, meta, seats } = p;
+  const email = (meta.email ?? "").toLowerCase().trim();
+  const seatWord = seats === 1 ? "seat" : "seats";
+
+  // Genuinely never-invoice cases -> 'skipped' (kept out of the retry queue): test
+  // mode or a Stripe TEST session (never invoice fake bookings on the live books).
+  if (testMode() || sessionId.startsWith("cs_test_")) {
+    const reason = testMode() ? "test mode" : "test session";
+    console.log(`[invoice] skipped (${reason}) for ${email} (session ${sessionId})`);
+    await supabase.from("contact_activities").update({ invoice_status: "skipped" }).eq("id", activityId)
+      .then(() => {}).catch(() => {});
+    return { status: "skipped" };
+  }
+
+  // DB-first idempotency: if this row already recorded its invoice, do nothing.
+  const { data: row } = await supabase
+    .from("contact_activities")
+    .select("invoice_status, invoice_attempts, body")
+    .eq("id", activityId)
+    .maybeSingle();
+  if (row?.invoice_status === "recorded") return { status: "recorded" };
+  let body: Record<string, unknown> = {};
+  try { body = JSON.parse(row?.body ?? "{}"); } catch { /* ignore */ }
+  if (body.freeagent_invoice_url) {
+    await supabase.from("contact_activities").update({ invoice_status: "recorded" }).eq("id", activityId)
+      .then(() => {}).catch(() => {});
+    return { status: "recorded" };
+  }
+  const attempts = (row?.invoice_attempts ?? 0) + 1;
+
+  // FreeAgent not provisioned on a REAL paid booking is a misconfiguration, NOT a
+  // skip: mark 'failed' so it stays queued and escalates to an alert (never silent).
+  const faCfg = freeAgentConfig();
+  if (!faCfg) {
+    const msg = "FreeAgent not provisioned (FREEAGENT_CLIENT_ID/SECRET/REFRESH_TOKEN missing)";
+    console.error(`[invoice][RECONCILE] ${msg} for session ${sessionId} (${email})`);
+    await supabase.from("contact_activities").update({
+      invoice_status: "failed",
+      invoice_attempts: attempts,
+      invoice_last_error: msg,
+      invoice_last_attempt_at: new Date().toISOString(),
+    }).eq("id", activityId).then(() => {}).catch(() => {});
+    return { status: "failed" };
+  }
+
+  // Deterministic reference per booking (stable across retries) drives dedup.
+  const reference = `MOR-${sessionId.slice(-12)}`;
+
+  try {
+    const tok = token ?? await freeAgentAccessToken(faCfg);
+    const contactUrl = await findOrCreateFreeAgentContact(tok, {
+      email, firstName: meta.first_name ?? "", lastName: meta.last_name ?? "", company: meta.company ?? "",
+    });
+    const rec = await recordFreeAgentInvoice(tok, {
+      contactUrl,
+      datedOn: new Date().toISOString().slice(0, 10),
+      paymentTermsDays: 0,
+      reference,
+      comments:
+        `Paid via Stripe Checkout (payment intent ${paymentIntent}). ` +
+        `Billing: ${meta.billing_address ?? ""}${meta.vat_number ? ` | VAT: ${meta.vat_number}` : ""}`,
+      items: [{
+        description: `${COURSE_LABEL} - ${seats} ${seatWord}`,
+        quantity: seats,
+        price: COURSE_NET_PER_SEAT,
+        sales_tax_rate: COURSE_VAT_RATE,
+      }],
+    });
+    body.freeagent_invoice_url = rec.url;
+    body.freeagent_reference = rec.reference;
+    await supabase.from("contact_activities").update({
+      invoice_status: "recorded",
+      invoice_attempts: attempts,
+      invoice_last_attempt_at: new Date().toISOString(),
+      body: JSON.stringify(body),
+    }).eq("id", activityId).then(() => {}).catch(() => {});
+    return { status: "recorded" };
+  } catch (e) {
+    const msg = (e instanceof Error ? e.message : String(e)).slice(0, 500);
+    console.error(`[invoice][RECONCILE] FreeAgent invoice attempt ${attempts} FAILED for session ${sessionId} (${email}): ${msg}`);
+    await supabase.from("contact_activities").update({
+      invoice_status: "failed",
+      invoice_attempts: attempts,
+      invoice_last_error: msg,
+      invoice_last_attempt_at: new Date().toISOString(),
+    }).eq("id", activityId).then(() => {}).catch(() => {});
+    return { status: "failed" };
+  }
+}
+
 // deno-lint-ignore no-explicit-any
 export async function fulfillCoursePayment(supabase: any, p: {
   sessionId: string;
@@ -1048,44 +1259,12 @@ export async function fulfillCoursePayment(supabase: any, p: {
     claimedId = ins.id;
   }
 
-  // 2. Record the FreeAgent invoice for VAT/books (best-effort, non-fatal).
-  //    Skipped in test mode so probes never hit Phil's live books.
-  let invoiceUrl: string | null = null;
-  let invoiceRef: string | null = null;
-  const faCfg = freeAgentConfig();
-  if (TEST) {
-    console.log(`[test-mode] freeagent: skipped (test mode), would-have-created: {email:${email}, seats:${seats}, intent:${paymentIntent}}`);
-  } else if (faCfg) {
-    try {
-      const token = await freeAgentAccessToken(faCfg);
-      const contactUrl = await findOrCreateFreeAgentContact(token, { email, firstName, lastName, company });
-      const rec = await recordFreeAgentInvoice(token, {
-        contactUrl,
-        datedOn: new Date().toISOString().slice(0, 10),
-        paymentTermsDays: 0,
-        reference: "",
-        comments:
-          `Paid via Stripe Checkout (payment intent ${paymentIntent}). ` +
-          `Billing: ${meta.billing_address ?? ""}${meta.vat_number ? ` | VAT: ${meta.vat_number}` : ""}`,
-        items: [{
-          description: `${COURSE_LABEL} - ${seats} ${seatWord}`,
-          quantity: seats,
-          price: COURSE_NET_PER_SEAT,
-          sales_tax_rate: COURSE_VAT_RATE,
-        }],
-      });
-      invoiceUrl = rec.url;
-      invoiceRef = rec.reference;
-    } catch (e) {
-      // Money taken but invoice failed: loud marker for manual reconciliation
-      // (the manual-invoice fallback). Durable auto-retry is a tracked follow-up.
-      console.error(`[fulfil][RECONCILE] FreeAgent invoice FAILED for paid session ${sessionId} (intent ${paymentIntent}, ${email}) - raise it by hand:`, e);
-    }
-  } else {
-    console.log(`[fulfil] FreeAgent not provisioned; invoice deferred for ${email} (intent ${paymentIntent}).`);
-  }
+  // (The FreeAgent invoice is recorded AFTER finalize, in step 5 below, via the
+  //  idempotent non-throwing recordInvoiceForBooking. A failure there leaves
+  //  invoice_status='failed' for the poll to self-heal, instead of being a silent
+  //  log-only loss as it was before.)
 
-  // 3. Mailchimp: Client + paid tag. Skipped in test mode (no live-list pollution).
+  // 2. Mailchimp: Client + paid tag. Skipped in test mode (no live-list pollution).
   const mailchimpKey = Deno.env.get("MAILCHIMP_API_KEY");
   if (TEST) {
     console.log(`[test-mode] mailchimp: skipped, would-have-tagged: ${email} morada-course-2026-09-paid`);
@@ -1098,7 +1277,7 @@ export async function fulfillCoursePayment(supabase: any, p: {
     }, mailchimpKey).catch((e) => console.error("[fulfil] mailchimp error:", e));
   }
 
-  // 4. Emails (once). DECOUPLED from MORADA_TEST_MODE (Phil 19 Jun 2026): the
+  // 3. Emails (once). DECOUPLED from MORADA_TEST_MODE (Phil 19 Jun 2026): the
   //    confirmation + internal notification send even in test mode so the flow is
   //    provable before the Stripe live flip. Independent kill = MORADA_SUPPRESS_EMAIL.
   //    The confirmation carries the 3-session .ics invite (Item 4).
@@ -1145,19 +1324,27 @@ export async function fulfillCoursePayment(supabase: any, p: {
     console.log(`[fulfil] email send skipped (suppressed=${emailSuppressed()}, key=${!!resendKey}) for ${email}`);
   }
 
-  // 5. Finalize the claimed row -> paid (only the claimer reaches here).
+  // 4. Finalize the claimed row -> paid. Payment is captured regardless of the
+  //    invoice outcome; the invoice is recorded separately (step 5) so a FreeAgent
+  //    failure never blocks the sale or hides it from the self-heal poll.
   const paidBody = JSON.stringify({
     ...meta,
     stripe_session_id: sessionId,
     stripe_payment_intent: paymentIntent,
-    freeagent_invoice_url: invoiceUrl,
-    freeagent_reference: invoiceRef,
     confirmation_sent: true,
   });
   await supabase.from("contact_activities")
     .update({ status: "paid", activity_type: "course_booking_paid", body: paidBody, stripe_session_id: sessionId })
     .eq("id", claimedId)
     .then(() => {}).catch((e: unknown) => console.error("[fulfil] activity finalize error:", e));
+
+  // 5. Record the FreeAgent invoice (VAT/books). Idempotent + non-throwing: on
+  //    failure it sets invoice_status='failed' so the scheduled poll self-heals;
+  //    test sessions / test mode / unprovisioned -> 'skipped'. status stays 'paid'.
+  if (claimedId) {
+    await recordInvoiceForBooking(supabase, claimedId, { sessionId, paymentIntent, meta, seats })
+      .catch((e) => console.error("[fulfil] recordInvoiceForBooking error:", e));
+  }
 
   return { already: false };
 }
