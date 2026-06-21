@@ -175,6 +175,11 @@ export async function logRegistrationIfNeeded(sessionId: string, contactId: stri
   return data;
 }
 
+// SEC-CA-006: 1-hour magic-link validity. Single-use is already
+// enforced by markMagicLinkUsed in the verify route. Tightening from
+// 7 days reduces the window in which a leaked email gives access.
+const MAGIC_LINK_VALIDITY_MS = 60 * 60 * 1000;
+
 export async function createMagicLink(sessionSlug: string, contactId: string) {
   const supabase = createServiceClient();
   const token = `${crypto.randomUUID()}-${crypto.randomBytes(18).toString("hex")}`;
@@ -185,7 +190,7 @@ export async function createMagicLink(sessionSlug: string, contactId: string) {
       contact_id: contactId,
       session_slug: sessionSlug,
       token,
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      expires_at: new Date(Date.now() + MAGIC_LINK_VALIDITY_MS).toISOString(),
       used_at: null,
     })
     .select("*")
