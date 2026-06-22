@@ -105,6 +105,9 @@ serve(async (req: Request) => {
     const acceptTerms = body.accept_terms === true || body.accept_terms === "true";
     const marketingConsent = body.marketing_consent === true || body.marketing_consent === "true";
     const howHeard = String(body.how_heard ?? "").trim().slice(0, 100);
+    // Item 1: free-text "what are you looking to get out of it" (optional). Stripe
+    // metadata values cap at 500 chars, so slice to match.
+    const takeaway = String(body.takeaway ?? "").trim().slice(0, 500);
     const seats = Math.floor(Number(body.seats ?? 0));
 
     // Item 4: strict validation (legit-user 400 messages).
@@ -189,6 +192,7 @@ serve(async (req: Request) => {
       total_inc_vat: String(totalIncVat),
       marketing_consent: String(marketingConsent),
       how_heard: howHeard,
+      takeaway,
       source: route.source,
       opp_route: route.oppRoute,
       utm_campaign: utm.utm_campaign ?? "",

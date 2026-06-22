@@ -83,6 +83,12 @@
       </select>
     </div>
 
+    <div class="dtf-field">
+      <label for="dtc-takeaway">What are you looking to get out of the course?</label>
+      <textarea id="dtc-takeaway" name="takeaway" rows="3" maxlength="500"></textarea>
+      <span class="dtf-hint">Optional. It helps us tailor the sessions to you.</span>
+    </div>
+
     <div class="dtf-total" id="dtc-total-wrap">
       <span>Total</span>
       <strong id="dtc-total">GBP 360.00</strong>
@@ -284,6 +290,7 @@
       vat_number: form.elements.vat_number.value,
       seats: seats,
       how_heard: form.elements.how_heard.value,
+      takeaway: form.elements.takeaway.value,
       accept_terms: form.elements.accept_terms.checked,
       marketing_consent: form.elements.marketing_consent.checked,
       _gotcha: form.elements._gotcha.value,
