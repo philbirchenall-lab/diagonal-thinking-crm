@@ -406,7 +406,7 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 **What it does:** Client-facing area with magic link authentication, registration, and session management. Admin side lives in `src/clientArea.jsx` (CRM tab). Client-facing side is a **separate Next.js app** deployed to `client.diagonalthinking.co`.
 
 **Status (CRM admin side):** Live — `ClientAreaTab`, `SessionEditorModal`, `ContactSessionsPanel` all deployed.
-**Status (client-facing Next.js app):** Deployed to `client.diagonalthinking.co` — separate repo, NOT in this repository.
+**Status (client-facing Next.js app):** Live at `client.diagonalthinking.co`. Lives in this repo under `client-area/` (registration, magic-link auth, and session pages).
 
 **Key files (CRM admin side — this repo):**
 - `src/clientArea.jsx` — CRM admin UI (session list, session editor, contact sessions panel)
@@ -439,8 +439,20 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 | `resourceLabel` | Resolved resource label |
 | `resourceId` | resource_id from DB — added 3 Apr 2026 |
 
+**Registration -> contact categorisation:**
+
+When someone registers to access a Client Area, `ensureContactForSessionRegistration` (`client-area/src/lib/client-server.ts`) sets the contact `type` from the session type:
+
+- Non-Open-Event sessions (in-house): the registrant is a client. A new contact is created with `type = "Client"`; an existing contact is raised to `Client`.
+- Open Event sessions: the registrant stays on the `Mailing List`. A new contact is created with `type = "Mailing List"`; an existing contact's type is left unchanged.
+
+Session type is resolved by `inferSessionType` (`client-area/src/lib/client-data.ts`), which yields `"open_event"` or `"in_house"`. There is no `session_type` column on the `sessions` table: the type is read from a `status::type` encoding when present, otherwise derived from `organisation_id` (null = Open Event, set = in-house). Open Events are always stored with a null `organisation_id` (`api/_lib/client-area.js`), so in current live data the gate keys off `organisation_id`. Verified 23 Jun 2026 against the live schema: 1 Open Event (CBSA, null org) and 18 in-house (org set).
+
+> **Gotcha for future work (schema vs derived value):** always resolve session type through `inferSessionType`, never a raw `SELECT session_type FROM sessions`. Migration `20260402153305_add-session-type-to-sessions.sql` is empty (0 bytes) and the `session_type` column was never created in the live DB, so a raw column read returns nothing and any gate built on it would silently never fire. There is no `get_public_session_meta` RPC in this repo or the live DB either. The canonical source is the `inferSessionType` resolver.
+
+CRM status never downgrades. The upgrade is gated by a contact-type rank (`Client` > `Warm Lead` > `Cold Lead` > `Mailing List`), so an existing `Client`, `Warm Lead`, or `Cold Lead` is never lowered to a weaker type. Changed 23 Jun 2026.
+
 **Known issues / notes:**
-- The client-facing Next.js app is NOT in this repo. CA-BUG-001/002/003 require a direct Codex session against the client-area repo.
 - CA-BUG-001 (Open Resource button) is high priority and likely a missing href/click handler in the resource list component.
 
 ---

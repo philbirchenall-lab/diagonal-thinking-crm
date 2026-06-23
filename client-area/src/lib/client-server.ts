@@ -12,6 +12,22 @@ function buildContactName(firstName: string, lastName: string) {
   return [firstName, lastName].map((value) => value.trim()).filter(Boolean).join(" ");
 }
 
+// Contact type ranking, highest to lowest. CRM status never downgrades, so a
+// registration may only ever raise a contact's type, never lower it. An unknown
+// or empty existing type ranks at 0 so any known type is treated as an upgrade.
+const CONTACT_TYPE_RANK: Record<string, number> = {
+  Client: 4,
+  "Warm Lead": 3,
+  "Cold Lead": 2,
+  "Mailing List": 1,
+};
+
+function isContactTypeUpgrade(current: unknown, next: string) {
+  const currentRank = CONTACT_TYPE_RANK[String(current ?? "").trim()] ?? 0;
+  const nextRank = CONTACT_TYPE_RANK[next] ?? 0;
+  return nextRank > currentRank;
+}
+
 function setJobTitleInNotes(notes: string | null, jobTitle: string) {
   const cleanTitle = jobTitle.trim();
   if (!cleanTitle) return notes ?? "";
@@ -57,6 +73,15 @@ export async function ensureContactForSessionRegistration(payload: {
       ? payload.session.organisationName ?? companyName
       : companyName || payload.session.organisationName || "";
 
+  // Accessing a Client Area makes someone a client, unless the session is an
+  // Open Event, in which case they remain on the Mailing List. sessionType is
+  // resolved by inferSessionType (client-data.ts): there is no session_type
+  // column on the sessions table, so it reads a status::type encoding when
+  // present and otherwise derives from organisation_id (null = open_event,
+  // set = in_house). Open Events are always stored with a null organisation_id.
+  const isOpenEvent = payload.session.sessionType === "open_event";
+  const registrationType = isOpenEvent ? "Mailing List" : "Client";
+
   const { data: existingContact, error: lookupError } = await supabase
     .from("contacts")
     .select("*")
@@ -91,6 +116,13 @@ export async function ensureContactForSessionRegistration(payload: {
       updates.organisation_id = payload.session.organisationId;
     }
 
+    // Raise the contact to Client for non-Open-Event sessions. Never downgrade:
+    // an existing Client (or any higher rank) is left untouched. Open Events
+    // keep current behaviour and never change an existing contact's type.
+    if (!isOpenEvent && isContactTypeUpgrade(existingContact.type, registrationType)) {
+      updates.type = registrationType;
+    }
+
     if (Object.keys(updates).length > 0) {
       updates.last_updated = new Date().toISOString();
       const { data: updatedContact, error: updateError } = await supabase
@@ -117,7 +149,7 @@ export async function ensureContactForSessionRegistration(payload: {
       contact_name: contactName || null,
       email,
       phone: null,
-      type: "Mailing List",
+      type: registrationType,
       services: [],
       projected_value: 0,
       notes: jobTitle ? setJobTitleInNotes("", jobTitle) : null,
