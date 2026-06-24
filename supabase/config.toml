@@ -40,3 +40,23 @@ policy = "oneshot"
 [functions.mailchimp-sync]
 enabled = true
 verify_jwt = false
+
+# Morada launch forms are public (posted to from the Squarespace site with no
+# JWT). They run their own Origin/Referer allowlist + spam gates; the poll uses a
+# shared-secret Bearer. Declared here so a redeploy cannot silently re-lock them
+# (they were previously deployed with the --no-verify-jwt flag only).
+[functions.morada-webinar-register]
+enabled = true
+verify_jwt = false
+
+[functions.morada-course-book]
+enabled = true
+verify_jwt = false
+
+[functions.morada-course-thank-you]
+enabled = true
+verify_jwt = false
+
+[functions.morada-course-poll-paid]
+enabled = true
+verify_jwt = false
