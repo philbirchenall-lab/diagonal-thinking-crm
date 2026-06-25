@@ -53,6 +53,10 @@ export function decodeSessionState(rawValue) {
   };
 }
 
+// Session type is persisted in its own `session_type` column (see migration
+// 20260402153305). The `status` column intentionally encodes status only — the
+// sessionType arg is kept for the legacy "status::type" call signature but is not
+// written into status, so nothing that reads status raw can be fooled by it.
 export function encodeSessionState(status, sessionType) {
   return status === "inactive" ? "inactive" : "active";
 }
@@ -159,7 +163,7 @@ export async function getSessionBySlug(supabase, slug) {
     organisationName,
     date: sessionRow.date || "",
     status: state.status,
-    sessionType: state.sessionType,
+    sessionType: inferSessionType(sessionRow),
     createdAt: sessionRow.created_at || "",
   };
 }
@@ -574,6 +578,7 @@ export async function saveSessionDetails(supabase, payload) {
     organisation_id: sessionType === "open_event" ? null : organisationId,
     date,
     status: encodeSessionState(status, sessionType),
+    session_type: sessionType,
   };
 
   let sessionId = payload.id || null;

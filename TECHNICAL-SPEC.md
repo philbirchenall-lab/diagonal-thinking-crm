@@ -418,7 +418,7 @@ Stored via `supabase secrets set <KEY>=<VALUE>` and accessed via `Deno.env.get()
 
 | Table | Purpose |
 |---|---|
-| `sessions` | Session records (name, slug, org, date, status) |
+| `sessions` | Session records (name, slug, org, date, status, **session_type**) |
 | `resources` | Resources per session (label, type, url, sort_order) |
 | `engagement_log` | Event log — registrations (`event_type=resource_click, resource_id=null`) and resource opens |
 | `magic_links` | One-time auth tokens (contact_id, session_slug, token, expires_at) |
@@ -446,9 +446,9 @@ When someone registers to access a Client Area, `ensureContactForSessionRegistra
 - Non-Open-Event sessions (in-house): the registrant is a client. A new contact is created with `type = "Client"`; an existing contact is raised to `Client`.
 - Open Event sessions: the registrant stays on the `Mailing List`. A new contact is created with `type = "Mailing List"`; an existing contact's type is left unchanged.
 
-Session type is resolved by `inferSessionType` (`client-area/src/lib/client-data.ts`), which yields `"open_event"` or `"in_house"`. There is no `session_type` column on the `sessions` table: the type is read from a `status::type` encoding when present, otherwise derived from `organisation_id` (null = Open Event, set = in-house). Open Events are always stored with a null `organisation_id` (`api/_lib/client-area.js`), so in current live data the gate keys off `organisation_id`. Verified 23 Jun 2026 against the live schema: 1 Open Event (CBSA, null org) and 18 in-house (org set).
+Session type is resolved by `inferSessionType` (`client-area/src/lib/client-data.ts`), which yields `"open_event"` or `"in_house"`. It reads an explicit `session_type` column on the `sessions` table first, falling back to a legacy `status::type` encoding, then to `organisation_id` presence (null = Open Event, set = in-house) for any row written before the column existed. `saveSessionDetails` (`api/_lib/client-area.js`) writes `session_type` on every save, and Open Events are still stored with a null `organisation_id`. Verified 24 Jun 2026 against the live schema: `session_type` is `NOT NULL DEFAULT 'in_house'`, CHECK-constrained to `in_house | open_event`, fully backfilled, with no row whose `session_type` disagrees with its `organisation_id`.
 
-> **Gotcha for future work (schema vs derived value):** always resolve session type through `inferSessionType`, never a raw `SELECT session_type FROM sessions`. Migration `20260402153305_add-session-type-to-sessions.sql` is empty (0 bytes) and the `session_type` column was never created in the live DB, so a raw column read returns nothing and any gate built on it would silently never fire. There is no `get_public_session_meta` RPC in this repo or the live DB either. The canonical source is the `inferSessionType` resolver.
+> **Gotcha for future work (schema vs derived value):** resolve session type through `inferSessionType`, not a bare column read. The `session_type` column now exists (migration `20260402153305_add-session-type-to-sessions.sql`, applied to live 24 Jun 2026) and is the persisted source of truth written on every save — but `inferSessionType` is still the canonical *resolver* because it also covers any legacy `status::type` rows and pre-migration rows. There is no `get_public_session_meta` RPC in this repo or the live DB.
 
 CRM status never downgrades. The upgrade is gated by a contact-type rank (`Client` > `Warm Lead` > `Cold Lead` > `Mailing List`), so an existing `Client`, `Warm Lead`, or `Cold Lead` is never lowered to a weaker type. Changed 23 Jun 2026.
 
@@ -473,6 +473,7 @@ CRM status never downgrades. The upgrade is gated by a contact-type rank (`Clien
   - `total_client_value` (NUMERIC) — CRM-004
   - `live_work_value` (NUMERIC) — CRM-004
   - `platforms` (TEXT[]) — CRM-008
+- The `sessions` table is created directly in the Supabase dashboard (no definition in `setup/schema.sql`). Its `session_type` column is defined in `supabase/migrations/20260402153305_add-session-type-to-sessions.sql` and was applied to the live DB on 24 Jun 2026 (see F-09).
 - There is no `proposals` or `proposal_access` table definition in any file in this repo — those were created directly in the Supabase dashboard ⚠️ verify.
 
 ---
