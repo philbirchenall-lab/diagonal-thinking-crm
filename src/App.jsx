@@ -2893,7 +2893,9 @@ export default function App() {
     };
   }, [contacts, oppTotals]);
 
-  // Dedup: find another contact with the same email or normalised company name
+  // Dedup: find another contact that looks like the same person. One organisation
+  // routinely has many distinct contacts, so a shared employer is never on its own
+  // grounds to flag a duplicate. Mirrors findDuplicate() used by the import path.
   const potentialDuplicate = useMemo(() => {
     if (!activeContact || isNewContact) return null;
     const email = activeContact.email?.trim().toLowerCase();
@@ -2902,8 +2904,11 @@ export default function App() {
       contacts.find((c) => {
         if (c.id === activeContact.id) return false;
         if (email && c.email?.trim().toLowerCase() === email) return true;
-        if (company && normalizeCompanyName(c.company) === company) return true;
-        return false;
+        return Boolean(
+          company &&
+            normalizeCompanyName(c.company) === company &&
+            similarText(c.contactName, activeContact.contactName),
+        );
       }) ?? null
     );
   }, [contacts, activeContact, isNewContact]);
