@@ -311,7 +311,7 @@ p {
 }
 
 .dt-resource-card__title {
-  color: var(--dt-ink);
+  color: var(--dt-navy);
   font-size: 1.5rem;
   line-height: 1.08;
 }
