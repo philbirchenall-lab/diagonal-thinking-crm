@@ -119,10 +119,24 @@ const TYPE_COLORS = {
   "Mailing List": "var(--chart-contact-mailing-list)",
 };
 
-const STAGES = ["Identified", "Qualifying", "Proposal", "Negotiating", "Won", "Lost"];
+// Funnel order per the sales-pipeline domain: Discovery sits between
+// Identified and Qualifying (Phil-set 12 Jun 2026; five live opps carry it).
+const STAGES = ["Identified", "Discovery", "Qualifying", "Proposal", "Negotiating", "Won", "Lost"];
+
+// Terminal = any closed stage, however it is spelled. Live rows carry variants
+// outside the STAGES enum ("Closed Won", "Closed - Duplicate", historic
+// imports), and a strict equality check let them leak through the
+// "Show Won / Lost" filter and into the Active Pipeline value (Phil,
+// 12 Jun 2026). Normalise, then match won/lost anywhere plus any
+// "closed..." prefix.
+const isTerminalStage = (stage) => {
+  const s = String(stage ?? "").trim().toLowerCase();
+  return s.includes("won") || s.includes("lost") || s.startsWith("closed");
+};
 
 const STAGE_STYLES = {
   Identified: "bg-slate-100 text-slate-600 ring-slate-200",
+  Discovery: "bg-cyan-50 text-cyan-700 ring-cyan-200",
   Qualifying: "bg-blue-50 text-blue-700 ring-blue-200",
   Proposal: "bg-orange-50 text-orange-700 ring-orange-200",
   Negotiating: "bg-purple-50 text-purple-700 ring-purple-200",
@@ -1766,7 +1780,7 @@ function ContactOpportunitiesPanel({ contact, onOppChange }) {
     }
   }
 
-  const isTerminal = (stage) => stage === "Won" || stage === "Lost";
+  const isTerminal = isTerminalStage;
 
   return (
     <div className="border border-line bg-white p-5">
@@ -1933,7 +1947,7 @@ function OpportunitiesTab({ contacts, onOpenContact }) {
 
   useEffect(() => { load(); }, []);
 
-  const isTerminal = (stage) => stage === "Won" || stage === "Lost";
+  const isTerminal = isTerminalStage;
 
   function handleSort(col) {
     if (sortCol === col) {
