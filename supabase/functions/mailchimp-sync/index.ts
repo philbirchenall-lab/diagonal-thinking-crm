@@ -37,6 +37,23 @@ interface WebhookPayload {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/**
+ * SEC-SUP-004: scrub Mailchimp / generic secrets from error strings before
+ * they hit logs or HTTP responses. Mailchimp errors occasionally echo the
+ * Authorization header back, and Basic-auth tokens decode to the API key.
+ * This helper masks anything that looks like a credential.
+ */
+function scrubSecrets(input: string): string {
+  if (!input) return input;
+  return input
+    // Bearer / Basic / Token <value>
+    .replace(/\b(Bearer|Basic|Token)\s+[A-Za-z0-9._\-+/=]{8,}/gi, "$1 [REDACTED]")
+    // key=<value>, apikey=<value>, api_key=<value>, password=<value>
+    .replace(/\b(api[_-]?key|key|password|secret|token)\s*[:=]\s*[A-Za-z0-9._\-+/=]{6,}/gi, "$1=[REDACTED]")
+    // Mailchimp dc-suffixed keys (xxxxxxxx-us8)
+    .replace(/\b[a-f0-9]{32}-[a-z]{2}\d+\b/gi, "[REDACTED-MC-KEY]");
+}
+
 /** MD5 hash of a lowercase email — required by Mailchimp as the subscriber ID */
 async function subscriberHash(email: string): Promise<string> {
   const normalized = email.toLowerCase().trim();
@@ -116,7 +133,7 @@ async function upsertMember(
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Mailchimp upsert failed (${res.status}): ${err}`);
+    throw new Error(`Mailchimp upsert failed (${res.status}): ${scrubSecrets(err)}`);
   }
 
   console.log(`Mailchimp upsert OK for ${contact.email}`);
@@ -147,7 +164,7 @@ async function archiveMember(
   // 204 = success, 404 = subscriber didn't exist — both are fine
   if (!res.ok && res.status !== 404) {
     const err = await res.text();
-    throw new Error(`Mailchimp archive failed (${res.status}): ${err}`);
+    throw new Error(`Mailchimp archive failed (${res.status}): ${scrubSecrets(err)}`);
   }
 
   console.log(`Mailchimp archive OK for ${contact.email} (status ${res.status})`);
@@ -191,8 +208,9 @@ Deno.serve(async (req: Request) => {
       console.log(`Ignoring unknown event type: ${type}`);
     }
   } catch (err) {
-    console.error("Sync error:", err);
-    return new Response(`Sync error: ${(err as Error).message}`, {
+    const scrubbed = scrubSecrets((err as Error).message ?? String(err));
+    console.error("Sync error:", scrubbed);
+    return new Response(`Sync error: ${scrubbed}`, {
       status: 500,
     });
   }
