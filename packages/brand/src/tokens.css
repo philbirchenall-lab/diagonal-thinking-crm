@@ -107,22 +107,22 @@
   --dt-surface-page: var(--bg);           /* light default: page chrome */
   --dt-surface-card: var(--paper);        /* light default: card surface */
   --dt-surface-accent: #E7EEF8;           /* light default: brandSoft */
-  --dt-shadow: #FF00FF;                   /* PLACEHOLDER dark "shadow" (primary card). v1.6.8. */
-  --dt-night: #FF00FF;                    /* PLACEHOLDER dark "night" (page chrome). v1.6.8. */
-  --dt-dusk: #FF00FF;                     /* PLACEHOLDER dark "dusk" (accent). v1.6.8. */
+  --dt-shadow: #0B1220;                   /* Shadow: primary dark card surface (Pix v1.6.8 §2.7.1) */
+  --dt-night: #05090F;                    /* Night: page chrome, darkest surface (Pix v1.6.8 §2.7.1) */
+  --dt-dusk: #1A2847;                     /* Dusk: tertiary / accent dark surface (Pix v1.6.8 §2.7.1) */
 
   /* ---------- Navy accents (Pix 2.7.2) ---------- */
-  --dt-navy-light: #FF00FF;               /* PLACEHOLDER "navy's voice on dark". v1.6.8. */
-  --dt-navy-mist: #FF00FF;                /* PLACEHOLDER softest navy-family. v1.6.8. */
+  --dt-navy-light: #5E8BD4;               /* Navy Light: navy's voice on dark (Pix v1.6.8 §2.7.2) */
+  --dt-navy-mist: #93B1DE;                /* Navy Mist: softest navy-family value (Pix v1.6.8 §2.7.2) */
 
   /* ---------- Dark-mode type stack (Pix 2.7.3) ---------- */
   --dt-text-primary: var(--ink);          /* light default */
   --dt-text-secondary: #5A6372;           /* light default: muted */
   --dt-text-tertiary: #94A3B8;            /* light default: slate-400 */
   --dt-text-disabled: #A7A59F;            /* light default: stone */
-  --dt-pewter: #FF00FF;                   /* PLACEHOLDER dark secondary text. v1.6.8. */
-  --dt-mist-dark: #FF00FF;                /* PLACEHOLDER dark tertiary text. v1.6.8. */
-  --dt-graphite: #FF00FF;                 /* PLACEHOLDER dark disabled caption. v1.6.8. */
+  --dt-pewter: #CBD5E1;                   /* Pewter: secondary text on dark (Pix v1.6.8 §2.7.3) */
+  --dt-mist-dark: #94A3B8;                /* Mist: tertiary / muted text on dark (Pix v1.6.8 §2.7.3) */
+  --dt-graphite: #64748B;                 /* Graphite: disabled / caption on dark, 14 px+ only (Pix v1.6.8 §2.7.3) */
 
   /* ---------- Dark-mode borders (Pix 2.7.5) ---------- */
   --dt-border-default: var(--border);     /* light default */
@@ -138,9 +138,9 @@
      These semantic slots power the dashboard PieChart (src/App.jsx).
      TYPE_COLORS in App.jsx reads from these CSS variables, so a
      theme change swaps chart colours without re-render logic. */
-  --chart-contact-client: #10B981;        /* PLACEHOLDER light emerald-500 per Pix 2.7.6. v1.6.8. */
+  --chart-contact-client: #10B981;        /* emerald-500: light contact-type chart slot (Pix v1.6.8 §2.7.6) */
   --chart-contact-warm-lead: #305DAB;     /* light: DT Navy (current prod value) */
-  --chart-contact-cold-lead: #0EA5E9;     /* PLACEHOLDER light sky-500 per Pix 2.7.6. v1.6.8. */
+  --chart-contact-cold-lead: #0EA5E9;     /* sky-500: light contact-type chart slot (Pix v1.6.8 §2.7.6) */
   --chart-contact-mailing-list: #A7A59F;  /* light: Stone (current prod value) */
 
   /* ---------- Chart series palette (Pix 2.7.7, dark-mode chart rules) ---------- */
@@ -151,13 +151,12 @@
 }
 
 /* =============================================================
-   Dark-mode overrides (Pix 2.7, Brand Guidelines v1.6.8 SCAFFOLD)
+   Dark-mode overrides (Pix 2.7, Brand Guidelines v1.6.8)
    -------------------------------------------------------------
    Applied when <html class="dark"> is set by the useTheme hook.
-   ALL values below are PLACEHOLDERS until Phil signs off the
-   v1.6.8 patch. Final hex values will replace #FF00FF in a
-   follow-up commit. DO NOT ship to production while this block
-   contains placeholder magenta.
+   v1.6.8 final hex values landed (CRM-DARK-MODE-MAGENTA-SENTINELS).
+   Source-of-truth and WCAG contrast evidence:
+   ~/Documents/Claude/outputs/brand-guidelines-v1.6.8-patch.md
    ============================================================= */
 
 .dark {
@@ -183,9 +182,9 @@
   --dt-identity-beat: var(--dt-navy-light);
 
   /* Contact-type chart slots (Pix 2.7.6 TYPE_COLORS_DARK) */
-  --chart-contact-client: #FF00FF;        /* PLACEHOLDER dark emerald-400 in v1.6.8. */
+  --chart-contact-client: #34D399;        /* emerald-400: dark contact-type chart slot (Pix v1.6.8 §2.7.6) */
   --chart-contact-warm-lead: var(--dt-navy-light);
-  --chart-contact-cold-lead: #FF00FF;     /* PLACEHOLDER dark sky-400 in v1.6.8. */
+  --chart-contact-cold-lead: #38BDF8;     /* sky-400: dark contact-type chart slot (Pix v1.6.8 §2.7.6) */
   --chart-contact-mailing-list: var(--dt-pewter);
 
   /* Chart series (Pix 2.7.7, lightness-stepped rather than opacity-stepped) */
